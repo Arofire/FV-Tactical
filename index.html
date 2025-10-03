@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FV-Tactical - Empire Ship Designer</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/widgets.css">
+    <link rel="stylesheet" href="css/nodes.css">
+</head>
+<body>
+    <!-- Empire Info Bar -->
+    <div id="empireBar" class="empire-bar">
+        <div class="empire-info">
+            <span id="empireName">New Empire</span>
+            <span id="techPoints">Tech Points: 0</span>
+        </div>
+        <div class="empire-controls">
+            <button id="saveEmpire">Save Empire</button>
+            <button id="loadEmpire">Load Empire</button>
+            <button id="exportData">Export Data</button>
+            <input type="file" id="importData" accept=".json" style="display: none;">
+            <button id="importDataBtn">Import Data</button>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div id="mainContainer" class="main-container">
+        <!-- Tech Tree Panel -->
+        <div id="techTreePanel" class="side-panel left-panel">
+            <div class="panel-header">
+                <h3>Tech Tree</h3>
+                <button id="techTreeToggle" class="panel-toggle">−</button>
+            </div>
+            <div class="panel-content">
+                <div class="tech-tree-controls">
+                    <button id="toggleExpandCollapseTech" class="tech-control-btn" data-mode="expanded">Collapse All</button>
+                    <button id="toggleUnavailableTech" class="tech-control-btn" data-active="false" title="Hide technologies you cannot yet research">Hide Unavailable</button>
+                    <button id="toggleResearchedTech" class="tech-control-btn" data-active="false" title="Hide technologies you have already researched">Hide Researched</button>
+                </div>
+                <div id="techTreeContainer"></div>
+            </div>
+        </div>
+
+        <!-- Preflight Toggle (matches panel toggle style) -->
+        <div id="preflightToggle" class="preflight-toggle-btn" title="Show/Hide Preflight Issues">
+            <button id="preflightMinimizeBtn" class="panel-toggle" aria-label="Toggle Preflight">−</button>
+            <div id="preflightSummary" class="preflight-summary">
+                <span class="preflight-badge error" id="summaryErrors" style="display: none;">0</span>
+                <span class="preflight-badge warning" id="summaryWarnings" style="display: none;">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace (spans full width under panels) -->
+    <div id="workspace" class="workspace">
+        <!-- Canvas for Widgets and Nodes -->
+        <div id="canvas" class="canvas">
+            <div id="emptyCanvasText" class="empty-canvas-text">Double click to add a widget</div>
+            <!-- Widgets will be dynamically created here -->
+        </div>
+
+        <!-- Node Connection SVG Overlay -->
+        <svg id="connectionSvg" class="connection-svg"></svg>
+        
+        <!-- Pinned Widgets Layer (fixed position, not affected by workspace transform) -->
+        <div id="pinnedLayer" class="pinned-layer"></div>
+
+    <!-- Cursor Coordinates Display -->
+    <div id="cursorCoords" class="cursor-coords">0 , 0</div>
+
+        <!-- Minimap -->
+        <div id="minimap" class="minimap">
+            <div id="minimapViewport" class="minimap-viewport"></div>
+        </div>
+        
+        <!-- Floating Preflight Issues -->
+        <div id="preflightOverlay" class="preflight-overlay">
+            <div id="preflightIssues" class="preflight-issues"></div>
+        </div>
+        
+        <!-- Workspace Utility Buttons -->
+        <div id="workspaceUtilities" class="workspace-utilities">
+            <button id="resetViewBtn" class="panel-toggle" title="Reset view / fit all">⤢</button>
+            <button id="toggleCascadeDrag" class="panel-toggle" title="Toggle cascade drag (hierarchical move)" data-enabled="false">⇳</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/core/Empire.js"></script>
+    <script src="js/core/TechTree.js"></script>
+    <script src="js/core/Widget.js"></script>
+    <script src="js/core/NodeSystem.js"></script>
+    <script src="js/core/DataManager.js"></script>
+    <script src="js/core/PreflightCheck.js"></script>
+    <script src="js/widgets/ShipWidget.js"></script>
+    <script src="js/widgets/SystemsWidget.js"></script>
+    <script src="js/widgets/CraftWidget.js"></script>
+    <script src="js/widgets/TroopsWidget.js"></script>
+    <script src="js/widgets/OtherWidgets.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

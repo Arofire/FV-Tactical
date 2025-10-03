@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Creation Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/widgets.css">
+    <link rel="stylesheet" href="css/nodes.css">
+</head>
+<body>
+    <div style="padding: 20px; background: #1a1a1a; color: #e0e0e0; min-height: 100vh;">
+        <h1>Widget Creation Debug</h1>
+        <button id="test-ship" style="background: #4a6741; color: white; padding: 10px; margin: 5px; border: none; cursor: pointer;">Create Ship Widget</button>
+        <button id="test-craft" style="background: #4a6741; color: white; padding: 10px; margin: 5px; border: none; cursor: pointer;">Create Craft Widget</button>
+        
+        <div id="canvas" style="width: 100%; height: 500px; background: #333; margin-top: 20px; position: relative; border: 1px solid #555;"></div>
+        
+        <div id="debug-log" style="margin-top: 20px; background: #2d2d2d; padding: 10px; border: 1px solid #555; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/core/Empire.js"></script>
+    <script src="js/core/TechTree.js"></script>
+    <script src="js/core/Widget.js"></script>
+    <script src="js/core/NodeSystem.js"></script>
+    <script src="js/core/DataManager.js"></script>
+    <script src="js/core/PreflightCheck.js"></script>
+    <script src="js/widgets/ShipWidget.js"></script>
+    <script src="js/widgets/CraftWidget.js"></script>
+    <script src="js/widgets/TroopsWidget.js"></script>
+    <script src="js/widgets/OtherWidgets.js"></script>
+    
+    <script>
+        // Override console.log to show in debug log
+        const debugLog = document.getElementById('debug-log');
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            debugLog.innerHTML += '<div style="color: #90ee90;">[LOG] ' + args.join(' ') + '</div>';
+            debugLog.scrollTop = debugLog.scrollHeight;
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            debugLog.innerHTML += '<div style="color: #ff6666;">[ERROR] ' + args.join(' ') + '</div>';
+            debugLog.scrollTop = debugLog.scrollHeight;
+        };
+        
+        // Initialize globals
+        window.empire = new Empire();
+        window.nodeSystem = new NodeSystem();
+        window.preflightCheck = { runCheck: () => console.log('Preflight check called') };
+        
+        console.log('Globals initialized');
+        
+        // Test widget creation
+        document.getElementById('test-ship').addEventListener('click', () => {
+            console.log('Creating ship widget...');
+            try {
+                const widget = new ShipWidget(100, 100);
+                console.log('Ship widget created successfully:', widget.id);
+            } catch (error) {
+                console.error('Error creating ship widget:', error);
+            }
+        });
+        
+        document.getElementById('test-craft').addEventListener('click', () => {
+            console.log('Creating craft widget...');
+            try {
+                const widget = new CraftWidget(200, 100);
+                console.log('Craft widget created successfully:', widget.id);
+            } catch (error) {
+                console.error('Error creating craft widget:', error);
+            }
+        });
+        
+        console.log('Test page ready');
+    </script>
+</body>
+</html>

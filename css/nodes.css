@@ -1,0 +1,302 @@
+/* Node System Styles */
+.node {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #666;
+    background: #2d2d2d;
+    cursor: pointer;
+    z-index: 20;
+    transition: all 0.2s;
+    /* Increased margin to guarantee separation */
+    margin: 8px;
+}
+
+.node:hover {
+    transform: scale(1.2);
+    border-color: #4a90e2;
+    background: #4a90e2;
+}
+
+.node.input {
+    background: #4a6741;
+    border-color: #5a7751;
+}
+
+.node.output {
+    background: #674147;
+    border-color: #775157;
+}
+
+.node.connected {
+    background: #4a90e2;
+    border-color: #4a90e2;
+}
+
+.node.dragging-connection {
+    transform: scale(1.5);
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.6);
+}
+
+/* Node Labels */
+.node-label {
+    position: absolute;
+    font-size: 10px;
+    color: #ccc;
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
+    z-index: 21;
+}
+
+.node-label.input {
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.node-label.output {
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Connection Lines */
+.connection-line {
+    stroke: #4a90e2;
+    stroke-width: 2;
+    fill: none;
+    pointer-events: stroke;
+    cursor: pointer;
+}
+
+.connection-line:hover {
+    stroke: #6aa6f2;
+    stroke-width: 3;
+}
+
+.connection-line.selected {
+    stroke: #8ac4f7;
+    stroke-width: 3;
+    stroke-dasharray: 5,5;
+    animation: dash 1s linear infinite;
+}
+
+.connection-line.invalid {
+    stroke: #f02020;
+    stroke-dasharray: 3,3;
+}
+
+.connection-line.temp {
+    stroke: #f0a020;
+    stroke-dasharray: 2,2;
+    opacity: 0.7;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: -10;
+    }
+}
+
+/* Node Connection Preview */
+.connection-preview {
+    stroke: #f0a020;
+    stroke-width: 2;
+    fill: none;
+    stroke-dasharray: 5,5;
+    opacity: 0.8;
+    pointer-events: none;
+    animation: dash 0.5s linear infinite;
+}
+
+/* Widget Node Container */
+.widget-nodes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.widget .node {
+    pointer-events: all;
+}
+
+/* Node Types */
+.node.power {
+    border-color: #f0f020;
+    background: #4a4a20;
+}
+
+.node.power.connected,
+.node.power:hover {
+    background: #f0f020;
+    border-color: #f0f020;
+}
+
+.node.weapon {
+    border-color: #f02020;
+    background: #4a2020;
+}
+
+.node.weapon.connected,
+.node.weapon:hover {
+    background: #f02020;
+    border-color: #f02020;
+}
+
+.node.magazine {
+    border-color: #f0a020;
+    background: #4a3020;
+}
+
+.node.magazine.connected,
+.node.magazine:hover {
+    background: #f0a020;
+    border-color: #f0a020;
+}
+
+.node.component {
+    border-color: #20f0a0;
+    background: #204a30;
+}
+
+.node.component.connected,
+.node.component:hover {
+    background: #20f0a0;
+    border-color: #20f0a0;
+}
+
+.node.data {
+    border-color: #a020f0;
+    background: #302040;
+}
+
+.node.data.connected,
+.node.data:hover {
+    background: #a020f0;
+    border-color: #a020f0;
+}
+
+/* Connection Type Colors */
+.connection-line.power {
+    stroke: #f0f020;
+}
+
+.connection-line.weapon {
+    stroke: #f02020;
+}
+
+.connection-line.magazine {
+    stroke: #f0a020;
+}
+
+.connection-line.component {
+    stroke: #20f0a0;
+}
+
+.connection-line.data {
+    stroke: #a020f0;
+}
+
+/* Node Tooltip */
+.node-tooltip {
+    position: absolute;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: #e0e0e0;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.node-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #555;
+}
+
+.node-tooltip::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid #1a1a1a;
+}
+
+/* Connection Context Menu */
+.connection-menu {
+    position: absolute;
+    background: #2d2d2d;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 120px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.connection-menu-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #e0e0e0;
+    transition: background 0.2s;
+}
+
+.connection-menu-item:hover {
+    background: #4a4a4a;
+}
+
+.connection-menu-item.danger:hover {
+    background: #664444;
+    color: #ff6666;
+}
+
+/* Node Connection Validation */
+.node.valid-target {
+    background: #20f020;
+    border-color: #20f020;
+    box-shadow: 0 0 8px rgba(32, 240, 32, 0.5);
+}
+
+.node.invalid-target {
+    background: #f02020;
+    border-color: #f02020;
+    box-shadow: 0 0 8px rgba(240, 32, 32, 0.5);
+}
+
+/* Responsive Node Sizes */
+@media (max-width: 900px) {
+    .node {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .node-label {
+        font-size: 11px;
+    }
+    
+    .node-label.input {
+        right: 20px;
+    }
+    
+    .node-label.output {
+        left: 20px;
+    }
+}

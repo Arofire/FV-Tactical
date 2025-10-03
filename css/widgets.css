@@ -1,0 +1,675 @@
+/* Widget Base Styles */
+.widget {
+    position: absolute;
+    background: #2d2d2d;
+    border: 2px solid #555;
+    border-radius: 8px;
+    min-width: 250px;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: box-shadow 0.2s, border-color 0.2s;
+    z-index: 10;
+}
+
+.widget:hover {
+    border-color: #777;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.widget.selected {
+    border-color: #4a90e2;
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.3);
+}
+
+.widget.dragging {
+    opacity: 0.8;
+    z-index: 100;
+    cursor: move;
+}
+
+/* Widget Header */
+.widget-header {
+    background: #3d3d3d;
+    padding: 8px 12px;
+    border-bottom: 1px solid #555;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 6px 6px 0 0;
+    flex-shrink: 0;
+}
+
+.widget-title {
+    font-weight: 600;
+    font-size: 14px;
+    user-select: none;
+}
+
+.widget-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.widget-control-btn {
+    background: #555;
+    border: none;
+    color: #e0e0e0;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.widget-control-btn:hover {
+    background: #666;
+}
+
+.widget-control-btn.minimize:hover {
+    background: #e6a23c;
+}
+
+.widget-control-btn.close:hover {
+    background: #f56c6c;
+}
+
+
+/* Widget Content */
+.widget-content {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Widget Input Groups */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.input-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #ccc;
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea {
+    background: #1a1a1a;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.input-group textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+/* Component Lists */
+.component-list {
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.component-item {
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.component-item:last-child {
+    border-bottom: none;
+}
+
+.component-item:hover {
+    background: #2d2d2d;
+}
+
+.component-item.selected {
+    background: #4a4a2d;
+    color: #f0f090;
+}
+
+.component-name {
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.component-details {
+    font-size: 11px;
+    color: #999;
+}
+
+.component-remove {
+    background: #664444;
+    border: none;
+    color: #ff6666;
+    padding: 2px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.component-remove:hover {
+    background: #774444;
+}
+
+/* Add Component Button */
+.add-component-btn {
+    background: #4a6741;
+    border: 1px solid #5a7751;
+    color: #e0e0e0;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    align-self: flex-start;
+    transition: background 0.2s;
+}
+
+.add-component-btn:hover {
+    background: #5a7751;
+}
+
+/* Widget Type Specific Styles */
+.ship-widget {
+    border-left: 4px solid #4a90e2;
+}
+
+.craft-widget {
+    border-left: 4px solid #e2904a;
+}
+
+.troops-widget {
+    border-left: 4px solid #90e24a;
+}
+
+.missiles-widget {
+    border-left: 4px solid #e24a90;
+}
+
+.loadouts-widget {
+    border-left: 4px solid #e2e24a;
+}
+
+.powerplants-widget {
+    border-left: 4px solid #4ae290;
+}
+
+.factories-widget {
+    border-left: 4px solid #904ae2;
+}
+
+.shipyards-widget {
+    border-left: 4px solid #e2904a;
+}
+
+/* Widget Stats Display */
+.widget-stats {
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 10px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    font-size: 12px;
+}
+
+.stat-label {
+    color: #ccc;
+}
+
+.stat-value {
+    color: #e0e0e0;
+    font-weight: 500;
+}
+
+.stat-value.warning {
+    color: #f0a020;
+}
+
+.stat-value.error {
+    color: #f02020;
+}
+
+/* Minimized Widget State */
+.widget.minimized {
+    height: 40px;
+    min-height: 40px;
+    resize: none;
+}
+
+.widget.minimized .widget-content {
+    display: none;
+}
+
+/* Tab System for Complex Widgets */
+.widget-tabs {
+    display: flex;
+    background: #3d3d3d;
+    border-bottom: 1px solid #555;
+}
+
+.widget-tab {
+    background: none;
+    border: none;
+    color: #ccc;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 12px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.widget-tab:hover {
+    background: #4a4a4a;
+    color: #e0e0e0;
+}
+
+.widget-tab.active {
+    color: #4a90e2;
+    border-bottom-color: #4a90e2;
+    background: #2d2d2d;
+}
+
+.widget-tab-content {
+    display: none;
+}
+
+.widget-tab-content.active {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Resize Handle */
+.widget-resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    cursor: se-resize;
+    background: linear-gradient(-45deg, transparent 30%, #555 30%, #555 40%, transparent 40%, transparent 60%, #555 60%, #555 70%, transparent 70%);
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.widget:hover .widget-resize-handle {
+    opacity: 1;
+}
+
+/* Widget Preflight Indicators */
+.widget-preflight-indicator {
+    display: flex;
+    gap: 4px;
+    margin-right: 8px;
+    position: relative;
+}
+
+.preflight-badge {
+    background: #ff4444;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 16px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.preflight-badge.warning {
+    background: #ffaa00;
+}
+
+.preflight-badge.error {
+    background: #ff4444;
+}
+
+.preflight-tooltip {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    min-width: 200px;
+    max-width: 300px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-5px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.widget-preflight-indicator:hover .preflight-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.preflight-issue {
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.preflight-issue:last-child {
+    margin-bottom: 0;
+}
+
+.preflight-issue.error {
+    color: #ff6b6b;
+}
+
+.preflight-issue.warning {
+    color: #ffa726;
+}
+
+/* Compact UI Styling for Ship and Systems Widgets */
+.ship-widget .widget-content,
+.systems-widget .widget-content {
+    padding: 8px;
+    gap: 8px;
+}
+
+.ship-widget .input-group,
+.systems-widget .input-group {
+    gap: 2px;
+}
+
+.ship-widget .input-group label,
+.systems-widget .input-group label {
+    font-size: 11px;
+}
+
+.ship-widget .input-group input,
+.ship-widget .input-group select,
+.ship-widget .input-group textarea,
+.systems-widget .input-group input,
+.systems-widget .input-group select,
+.systems-widget .input-group textarea {
+    padding: 4px 6px;
+    font-size: 12px;
+}
+
+/* Foundations grid */
+.foundations-section {
+    margin: 6px 0;
+}
+
+.foundations-section h4 {
+    margin: 0 0 4px 0;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.foundations-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+}
+
+.foundation-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #ccc;
+}
+
+.foundation-item input[type="checkbox"] {
+    margin: 0;
+}
+
+/* Top flags */
+.top-flags {
+    display: flex;
+    gap: 12px;
+    margin: 6px 0;
+    padding: 4px 0;
+    border-bottom: 1px solid #444;
+}
+
+.flag-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #ccc;
+}
+
+.flag-item input[type="checkbox"] {
+    margin: 0;
+}
+
+/* Hull composition grid */
+.hull-composition {
+    margin: 6px 0;
+}
+
+.hull-composition h4 {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.hull-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+.hull-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1a1a1a;
+    padding: 4px 6px;
+    border-radius: 3px;
+    border: 1px solid #444;
+}
+
+.hull-item label {
+    font-size: 11px;
+    color: #ccc;
+    margin: 0;
+}
+
+.hull-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.hull-btn {
+    background: #555;
+    border: none;
+    color: #e0e0e0;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hull-btn:hover {
+    background: #666;
+}
+
+.hull-count {
+    min-width: 16px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.hull-total {
+    margin-top: 6px;
+    padding: 4px 6px;
+    background: #333;
+    border-radius: 3px;
+    font-size: 12px;
+    text-align: center;
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+/* Section blocks for linear layout */
+.section-block {
+    margin: 8px 0;
+    padding: 6px 0;
+}
+
+.section-block:not(:last-child) {
+    border-bottom: 1px solid #444;
+}
+
+.section-block h4 {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    color: #ccc;
+}
+
+/* Power and heat management stats */
+.power-propulsion-segment,
+.heat-management-segment {
+    margin: 6px 0;
+}
+
+.power-stats,
+.heat-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    background: #1a1a1a;
+    padding: 6px;
+    border-radius: 3px;
+    border: 1px solid #444;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+}
+
+.stat-item label {
+    color: #ccc;
+    margin: 0;
+}
+
+.stat-item span {
+    color: #e0e0e0;
+    font-weight: 500;
+}
+
+/* Systems widget module lists */
+.systems-widget .module-list {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.systems-widget .module-item {
+    padding: 4px 6px;
+    font-size: 11px;
+}
+
+/* Statistics widget grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+.stat-input {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stat-input label {
+    font-size: 10px;
+    color: #ccc;
+}
+
+.stat-input input {
+    padding: 3px 4px;
+    font-size: 11px;
+}
+
+/* Pin button styling */
+.widget-control-btn.pin {
+    font-size: 10px;
+}
+
+.widget-control-btn.pin:hover {
+    background: #4a90e2;
+}
+
+/* Pinned widgets layer and styling */
+.pinned-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 10000;
+}
+
+.pinned-widget {
+    opacity: 0.95;
+    background: #2d2d2d;
+    pointer-events: auto;
+}
+
+.pinned-widget .widget-header {
+    background: #4a90e2;
+}
+
+.pinned-widget .widget-control-btn.unpin:hover {
+    background: #357abd;
+}
