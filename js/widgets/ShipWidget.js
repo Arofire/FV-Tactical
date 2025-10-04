@@ -395,13 +395,12 @@ class ShipWidget extends Widget {
         
         // Always add base ship data output node
         this.addNode('output', 'data', 'Ship Data', 1, 0.2, {
-            anchorId: 'ship-basic'
+            anchorId: 'ship-name'
         });
         
         // Statistics output node
         this.addNode('output', 'statistics', 'Statistics', 1, 0.35, {
-            anchorId: 'ship-power',
-            anchorOffset: -60
+            anchorId: 'ship-flags'
         });
         
         // Add conditional nodes based on hull composition
