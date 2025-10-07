@@ -90,6 +90,13 @@
     gap: 10px;
 }
 
+.widget-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
 /* Widget Input Groups */
 .input-group {
     display: flex;
@@ -203,6 +210,244 @@
 /* Widget Type Specific Styles */
 .ship-widget {
     border-left: 4px solid #4a90e2;
+}
+
+.outfit-widget {
+    border-left: 4px solid #8cc0ff;
+}
+
+.outfit-widget .widget-content {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.outfit-meta-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #1f1f1f;
+    border: 1px solid #3f3f3f;
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.outfit-header-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+}
+
+.outfit-stat {
+    background: #262626;
+    border: 1px solid #3d3d3d;
+    border-radius: 6px;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.outfit-stat .label {
+    font-size: 11px;
+    color: #9fa8b2;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.outfit-stat .value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e0e7ff;
+}
+
+.ship-meta-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    background: #1f1f1f;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.ship-flag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #ccc;
+}
+
+.ship-flag input[type="checkbox"] {
+    accent-color: #4a90e2;
+}
+
+.ship-dvp {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ship-dvp input[type="number"] {
+    width: 100%;
+}
+
+.role-group .role-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.role-select {
+    flex: 1;
+}
+
+.role-input {
+    flex: 1;
+}
+
+.role-toggle-btn {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    color: #ddd;
+    width: 34px;
+    height: 34px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.role-toggle-btn:hover {
+    background: #4a4a4a;
+    border-color: #666;
+}
+
+.hardpoints-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #1a1a1a;
+    border: 1px solid #353535;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.hardpoints-table th,
+.hardpoints-table td {
+    border-bottom: 1px solid #2d2d2d;
+    padding: 8px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.hardpoints-table thead th {
+    background: #222;
+    color: #c0c0c0;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-size: 11px;
+}
+
+.hardpoints-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.hardpoints-table input[type="number"] {
+    width: 80px;
+    background: #101010;
+    color: #e0e0e0;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.hardpoint-note {
+    font-size: 11px;
+    color: #7f8894;
+    margin-top: 6px;
+}
+
+.composition-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.composition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.composition-item {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.composition-item label {
+    font-size: 12px;
+    color: #ccc;
+}
+
+.hull-spin {
+    width: 100%;
+    background: #111;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #e0e0e0;
+    padding: 6px;
+    font-size: 13px;
+}
+
+.hull-spin:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.composition-total {
+    font-size: 12px;
+    color: #ccc;
+    text-align: right;
+}
+
+.composition-total.mismatch {
+    color: #f0a020;
+}
+
+.foundations-note,
+.composition-note {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+}
+
+.foundations-note.locked {
+    color: #a0c4ff;
+}
+
+.composition-note.warning {
+    color: #f0a020;
+}
+
+.foundation-item.locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.foundation-item.locked input[type="checkbox"] {
+    pointer-events: none;
 }
 
 .craft-widget {
@@ -404,29 +649,23 @@
     color: #ffa726;
 }
 
-/* Compact UI Styling for Ship and Systems Widgets */
-.ship-widget .widget-content,
-.systems-widget .widget-content {
+/* Compact UI Styling for Ship Widgets */
+.ship-widget .widget-content {
     padding: 8px;
     gap: 8px;
 }
 
-.ship-widget .input-group,
-.systems-widget .input-group {
+.ship-widget .input-group {
     gap: 2px;
 }
 
-.ship-widget .input-group label,
-.systems-widget .input-group label {
+.ship-widget .input-group label {
     font-size: 11px;
 }
 
 .ship-widget .input-group input,
 .ship-widget .input-group select,
-.ship-widget .input-group textarea,
-.systems-widget .input-group input,
-.systems-widget .input-group select,
-.systems-widget .input-group textarea {
+.ship-widget .input-group textarea {
     padding: 4px 6px;
     font-size: 12px;
 }
@@ -573,6 +812,15 @@
     color: #ccc;
 }
 
+.placeholder-block {
+    border: 1px dashed #424242;
+    border-radius: 6px;
+    padding: 12px;
+    color: #5f5f5f;
+    font-size: 12px;
+    text-align: center;
+}
+
 /* Power and heat management stats */
 .power-propulsion-segment,
 .heat-management-segment {
@@ -606,15 +854,326 @@
     font-weight: 500;
 }
 
-/* Systems widget module lists */
-.systems-widget .module-list {
-    max-height: 150px;
-    overflow-y: auto;
+.systems-section .widget-tabs {
+    margin-bottom: 8px;
 }
 
-.systems-widget .module-item {
-    padding: 4px 6px;
+.modules-section h5,
+.installed-modules-section h5,
+.weapons-subsection h5 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    color: #cdd6f4;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.module-card {
+    background: #181818;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.25);
+}
+
+.module-card.disabled {
+    opacity: 0.6;
+    filter: grayscale(0.4);
+}
+
+.module-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #d0d0ff;
+    font-weight: 600;
+}
+
+.module-description {
     font-size: 11px;
+    color: #9aa7bb;
+    line-height: 1.35;
+}
+
+.module-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.install-btn {
+    background: #4a90e2;
+    border: none;
+    color: #f5f5f5;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.install-btn:hover {
+    background: #5aa0f2;
+}
+
+.status-error {
+    color: #ff8080;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status-installed {
+    color: #90e29d;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.installed-modules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 42px;
+    background: #121212;
+    border: 1px solid #2f2f2f;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.installed-module-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1f1f1f;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 11px;
+}
+
+.uninstall-btn {
+    background: #5c2b2b;
+    color: #ffabab;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.uninstall-btn:hover {
+    background: #6f3434;
+}
+
+.no-modules {
+    color: #707a87;
+    font-size: 11px;
+}
+
+.heat-management-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.heat-systems {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.heat-system-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #181818;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.heat-system-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.heat-system-name {
+    font-size: 12px;
+    color: #d8dee9;
+}
+
+.heat-system-count {
+    font-size: 11px;
+    color: #8fa4c4;
+}
+
+.heat-system-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.heat-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: #2f3b4d;
+    color: #ebf6ff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.heat-btn:hover {
+    background: #3f4b5f;
+}
+
+.heat-stats-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    background: #121212;
+    border: 1px solid #303030;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    background: #121212;
+    border: 1px solid #303030;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.features-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    background: #151515;
+    border: 1px solid #333;
+}
+
+.features-table th,
+.features-table td {
+    border: 1px solid #2a2a2a;
+    padding: 4px 6px;
+    text-align: center;
+    color: #c9ced8;
+}
+
+.features-table tbody td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: #dde6ff;
+}
+
+.weapons-subsection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.weapons-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.weapons-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #141414;
+    border: 1px solid #303030;
+}
+
+.weapons-table th,
+.weapons-table td {
+    border: 1px solid #262626;
+    padding: 6px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.weapons-table th {
+    background: #1f1f1f;
+    color: #c7d4ff;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+}
+
+.weapons-table select,
+.weapons-table input[type="number"],
+.weapons-table input[type="text"] {
+    width: 100%;
+    background: #0f0f0f;
+    color: #e2e2e2;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 12px;
+}
+
+.add-weapon-btn {
+    background: #3b7dda;
+    border: none;
+    color: #f1f5ff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.add-weapon-btn:hover {
+    background: #4d8aeb;
+}
+
+.remove-weapon {
+    background: #5c2b2b;
+    border: none;
+    color: #ff9f9f;
+    border-radius: 4px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+}
+
+.remove-weapon:hover {
+    background: #6f3434;
+}
+
+.weapons-table .hp,
+.weapons-table .cost {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+}
+
+.weapons-subsection.spinal select {
+    width: 220px;
+    max-width: 100%;
+    background: #0f0f0f;
+    color: #f2f2f2;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 6px 8px;
+}
+
+.no-weapons {
+    color: #6f7b90;
+    font-size: 11px;
+    text-align: center;
 }
 
 /* Statistics widget grid */

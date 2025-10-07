@@ -48,17 +48,17 @@
     user-select: none;
     pointer-events: none;
     z-index: 21;
+    top: 50%;
+    transform: translateY(-50%);
+    display: block;
 }
 
 .node-label.input {
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    text-align: right;
 }
+
 .node-label.output {
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    text-align: left;
 }
 
 /* Connection Lines */

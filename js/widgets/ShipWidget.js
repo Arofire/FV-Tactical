@@ -3,6 +3,12 @@ class ShipWidget extends Widget {
     constructor(x = 100, y = 100) {
         super('ship', 'New Ship Class', x, y, 400, 600);
         
+        this.defaultRoles = [
+            'corvette', 'frigate', 'destroyer', 'cruiser', 'battleship', 
+            'dreadnought', 'carrier', 'fighter', 'bomber', 'scout', 
+            'transport', 'support'
+        ];
+
         // Initialize ship class data
         this.shipData = {
             name: 'New Ship Class',
@@ -12,6 +18,7 @@ class ShipWidget extends Widget {
             designNotes: '',
             appearance: '',
             text2imgPrompt: '',
+            developmentCost: null,
             hullComposition: {
                 containment: 0,
                 remass: 0,
@@ -48,12 +55,13 @@ class ShipWidget extends Widget {
             },
             ignoreTechRequirements: false
         };
-        
-        this.defaultRoles = [
-            'corvette', 'frigate', 'destroyer', 'cruiser', 'battleship', 
-            'dreadnought', 'carrier', 'fighter', 'bomber', 'scout', 
-            'transport', 'support', 'custom'
-        ];
+
+        this.roleMode = 'dropdown';
+        this.availableRoles = ShipWidget.loadStoredRoles(this.defaultRoles);
+        this.ensureRoleAvailable(this.shipData.role);
+        if (this.shipData.customRole) {
+            this.roleMode = 'custom';
+        }
         
         this.hullTypes = [
             'containment', 'remass', 'magazine', 'hangar', 
@@ -65,7 +73,157 @@ class ShipWidget extends Widget {
             'navigation', 'sensors', 'weapons', 'defense', 'logistics'
         ];
         
+        this.lockedHullTotal = null;
+        this.isSubclass = false;
+
         this.init();
+    }
+
+    static getRoleStorageKey() {
+        return 'shipWidgetRoles';
+    }
+
+    static loadStoredRoles(defaultRoles = []) {
+        let stored = [];
+        try {
+            const fromStorage = localStorage.getItem(ShipWidget.getRoleStorageKey());
+            if (fromStorage) {
+                stored = JSON.parse(fromStorage);
+            }
+        } catch (err) {
+            console.warn('Unable to load stored ship roles', err);
+        }
+        const merged = new Set([...(defaultRoles || []), ...(stored || [])]);
+        return Array.from(merged).sort((a, b) => a.localeCompare(b));
+    }
+
+    static saveStoredRoles(roles = []) {
+        try {
+            localStorage.setItem(ShipWidget.getRoleStorageKey(), JSON.stringify(roles));
+        } catch (err) {
+            console.warn('Unable to persist ship roles', err);
+        }
+    }
+
+    getRoleInputValue() {
+        if (this.roleMode === 'custom') {
+            return this.shipData.customRole || this.shipData.role || '';
+        }
+        return this.shipData.role || '';
+    }
+
+    formatRoleLabel(role) {
+        if (!role) return '';
+        return role.charAt(0).toUpperCase() + role.slice(1);
+    }
+
+    generateRoleOptionsHTML(selectedRole) {
+        return this.availableRoles
+            .sort((a, b) => a.localeCompare(b))
+            .map(role => `<option value="${role}" ${selectedRole === role ? 'selected' : ''}>${this.formatRoleLabel(role)}</option>`)
+            .join('');
+    }
+
+    populateRoleSelect(selectElement, selectedRole = this.shipData.role) {
+        if (!selectElement) return;
+        selectElement.innerHTML = this.generateRoleOptionsHTML(selectedRole);
+        if (selectedRole) {
+            selectElement.value = selectedRole;
+        }
+    }
+
+    ensureRoleAvailable(role) {
+        if (!role) return;
+        const normalized = role.trim();
+        if (!normalized) return;
+        if (!this.availableRoles.includes(normalized)) {
+            this.availableRoles.push(normalized);
+            this.availableRoles.sort((a, b) => a.localeCompare(b));
+            ShipWidget.saveStoredRoles(this.availableRoles);
+        }
+    }
+
+    getParentShipWidget() {
+        if (!this.parents || this.parents.size === 0) return null;
+        if (!window.widgetManager) return null;
+        for (const parentId of this.parents) {
+            const parentWidget = window.widgetManager.getWidget(parentId);
+            if (parentWidget && parentWidget.type === 'ship') {
+                return parentWidget;
+            }
+        }
+        return null;
+    }
+
+    syncFoundationsFromParent(parentWidget) {
+        if (!parentWidget?.shipData?.foundations) return;
+        this.shipData.foundations = { ...parentWidget.shipData.foundations };
+        this.foundationKeys.forEach(key => {
+            const cb = document.getElementById(`${this.id}-foundation-${key}`);
+            if (cb) {
+                cb.checked = !!this.shipData.foundations[key];
+            }
+        });
+    }
+
+    setFoundationsLocked(isLocked, parentWidget = null) {
+        this.foundationKeys.forEach(key => {
+            const cb = document.getElementById(`${this.id}-foundation-${key}`);
+            if (cb) {
+                cb.disabled = isLocked;
+                const label = cb.closest('.foundation-item');
+                if (label) {
+                    label.classList.toggle('locked', isLocked);
+                }
+            }
+        });
+        const noteEl = document.getElementById(`${this.id}-foundations-note`);
+        if (!noteEl) return;
+        if (isLocked) {
+            const parentName = parentWidget?.shipData?.name || 'Parent Ship';
+            noteEl.textContent = `Inherited from ${parentName}.`;
+            noteEl.classList.add('locked');
+        } else {
+            noteEl.textContent = '';
+            noteEl.classList.remove('locked');
+        }
+    }
+
+    updateSubclassState() {
+        const parentShip = this.getParentShipWidget();
+        if (parentShip) {
+            this.isSubclass = true;
+            this.lockedHullTotal = parentShip.getTotalHulls();
+            this.syncFoundationsFromParent(parentShip);
+            this.setFoundationsLocked(true, parentShip);
+        } else {
+            this.isSubclass = false;
+            this.lockedHullTotal = null;
+            this.setFoundationsLocked(false);
+        }
+        this.updateHullDisplay();
+    }
+
+    notifyShipChildrenToRefresh() {
+        if (!this.children || this.children.size === 0 || !window.widgetManager) return;
+        this.children.forEach(childId => {
+            const childWidget = window.widgetManager.getWidget(childId);
+            if (childWidget && childWidget.type === 'ship' && typeof childWidget.updateSubclassState === 'function') {
+                childWidget.updateSubclassState();
+            }
+        });
+    }
+
+    onParentLinked(parentWidget) {
+        if (parentWidget?.type === 'ship') {
+            this.updateSubclassState();
+        }
+    }
+
+    onParentUnlinked(parentWidget) {
+        if (parentWidget?.type === 'ship') {
+            this.updateSubclassState();
+        }
     }
 
     getTotalHulls() {
@@ -93,27 +251,37 @@ class ShipWidget extends Widget {
     }
 
     createContent(contentElement) {
+        const roleOptions = this.generateRoleOptionsHTML(this.shipData.role);
+        const roleInputValue = this.getRoleInputValue();
+
         contentElement.innerHTML = `
-            <!-- Basic Information -->
-            <div class="input-group">
-                <label>Ship Class Name</label>
+            <div class="ship-meta-header widget-sticky-header" id="${this.id}-meta-header">
+                <label class="ship-flag"><input type="checkbox" id="${this.id}-operational" ${this.shipData.operational ? 'checked' : ''}> Operational</label>
+                <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-tech" ${this.shipData.ignoreTechRequirements ? 'checked' : ''}> Ignore Tech</label>
+                <div class="ship-dvp">
+                    <label for="${this.id}-dvp-cost">DvP Cost</label>
+                    <input type="number" min="0" step="1" id="${this.id}-dvp-cost" value="${this.shipData.developmentCost ?? ''}" placeholder="0">
+                </div>
+            </div>
+            <div class="input-group" id="${this.id}-name-group">
+                <label>Class Name</label>
                 <input type="text" id="${this.id}-name" value="${this.shipData.name}" placeholder="Enter ship class name">
             </div>
-            
-            <div class="input-group">
+            <div class="input-group role-group" id="${this.id}-role-group">
                 <label>Role</label>
-                <select id="${this.id}-role">
-                    ${this.defaultRoles.map(role => 
-                        `<option value="${role}" ${this.shipData.role === role ? 'selected' : ''}>${role.charAt(0).toUpperCase() + role.slice(1)}</option>`
-                    ).join('')}
-                </select>
-                <input type="text" id="${this.id}-custom-role" placeholder="Enter custom role" 
-                       style="display: ${this.shipData.role === 'custom' ? 'block' : 'none'}; margin-top: 4px;" 
-                       value="${this.shipData.customRole}">
+                <div class="role-controls">
+                    <select id="${this.id}-role-select" class="role-select" ${this.roleMode === 'custom' ? 'style="display:none;"' : ''}>
+                        ${roleOptions}
+                    </select>
+                    <input type="text" id="${this.id}-role-custom" class="role-input" placeholder="Enter custom role" value="${roleInputValue}" ${this.roleMode === 'dropdown' ? 'style="display:none;"' : ''}>
+                    <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '✏️' : '🌳'}</button>
+                </div>
             </div>
-            
-            <!-- Foundations Section -->
-            <div class="foundations-section">
+            <div class="input-group" id="${this.id}-notes-group">
+                <label>Class Notes</label>
+                <textarea id="${this.id}-class-notes" placeholder="Design notes, doctrine, or operational directives...">${this.shipData.designNotes}</textarea>
+            </div>
+            <div class="section-block foundations-section" id="${this.id}-foundations-section">
                 <h4>Foundations</h4>
                 <div class="foundations-grid">
                     ${this.foundationKeys.map(key => `
@@ -123,119 +291,22 @@ class ShipWidget extends Widget {
                         </label>
                     `).join('')}
                 </div>
+                <div class="foundations-note" id="${this.id}-foundations-note"></div>
             </div>
-            
-            <!-- Top-level Status Controls -->
-            <div class="top-flags">
-                <label class="flag-item"><input type="checkbox" id="${this.id}-operational" ${this.shipData.operational ? 'checked' : ''}> Operational</label>
-                <label class="flag-item"><input type="checkbox" id="${this.id}-ignore-tech" ${this.shipData.ignoreTechRequirements ? 'checked' : ''}> Ignore Tech Requirements</label>
-            </div>
-
-            <!-- Basic Info Section -->
-            <div class="section-block" id="${this.id}-basic-section">
-                <div class="input-group">
-                    <label>Description</label>
-                    <textarea id="${this.id}-description" placeholder="Ship class description and purpose...">${this.shipData.description}</textarea>
-                </div>
-                
-                <div class="input-group">
-                    <label>Design Notes</label>
-                    <textarea id="${this.id}-design-notes" placeholder="Internal design notes and requirements...">${this.shipData.designNotes}</textarea>
-                </div>
-                
-                <div class="input-group">
-                    <label>Appearance</label>
-                    <textarea id="${this.id}-appearance" placeholder="Visual description for opponents...">${this.shipData.appearance}</textarea>
-                </div>
-                
-                <div class="input-group">
-                    <label>Text2Img Prompt</label>
-                    <textarea id="${this.id}-text2img" placeholder="AI image generation prompt (auto-generated from design criteria)..." readonly>${this.shipData.text2imgPrompt}</textarea>
-                </div>
-                
-                <!-- Ignore tech checkbox moved to top flags -->
-            </div>
-            <!-- Hull Composition Section -->
-            <div class="section-block" id="${this.id}-hulls-section">
-                <div class="hull-composition">
-                    <h4>Hull Composition</h4>
-                    <div class="hull-grid">
-                        ${this.hullTypes.map(hullType => `
-                            <div class="hull-item">
-                                <label>${hullType.charAt(0).toUpperCase() + hullType.slice(1)}</label>
-                                <div class="hull-controls">
-                                    <button class="hull-btn decrease" data-hull="${hullType}">−</button>
-                                    <span class="hull-count" id="${this.id}-hull-${hullType}">${this.shipData.hullComposition[hullType]}</span>
-                                    <button class="hull-btn increase" data-hull="${hullType}">+</button>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="hull-total">
-                        Total: <span id="${this.id}-hull-total">${this.getTotalHulls()}</span>
-                    </div>
-                </div>
-            </div>
-            <!-- Power & Propulsion Section -->
-            <div class="section-block" id="${this.id}-power-section">
-                <div class="power-propulsion-segment">
-                    <h4>Power & Propulsion</h4>
-                    <div class="power-stats" id="${this.id}-power-stats">
-                        <div class="stat-item">
-                            <label>Thrust:</label>
-                            <span>${this.shipData.powerAndPropulsion.thrust}</span>
+            <div class="section-block composition-section" id="${this.id}-composition-section">
+                <h4>Composition</h4>
+                <div class="composition-grid">
+                    ${this.hullTypes.map(hullType => `
+                        <div class="composition-item">
+                            <label>${hullType.charAt(0).toUpperCase() + hullType.slice(1)}</label>
+                            <input type="number" class="hull-spin" data-hull="${hullType}" id="${this.id}-hull-${hullType}" min="0" step="1" value="${this.shipData.hullComposition[hullType]}">
                         </div>
-                        <div class="stat-item">
-                            <label>Burn Rating:</label>
-                            <span>${this.shipData.powerAndPropulsion.burnRating}</span>
-                        </div>
-                        <div class="stat-item">
-                            <label>Heat Efficiency:</label>
-                            <span>${this.shipData.powerAndPropulsion.heatEfficiency}</span>
-                        </div>
-                        <div class="stat-item">
-                            <label>Supply Rating:</label>
-                            <span>${this.shipData.powerAndPropulsion.supplyRating}</span>
-                        </div>
-                    </div>
-                    <div class="powerplant-status" id="${this.id}-powerplant-status">
-                        ${this.shipData.hullComposition.powerplant > 0 ? 
-                            '<div class="status-warning">⚠️ Powerplant node required</div>' : 
-                            '<div class="status-info">No powerplant hulls - no power requirements</div>'
-                        }
-                    </div>
+                    `).join('')}
                 </div>
-            </div>
-            <!-- Heat Management Section -->
-            <div class="section-block" id="${this.id}-heat-section">
-                <div class="heat-management-segment">
-                    <h4>Heat Management</h4>
-                    <div class="heat-stats" id="${this.id}-heat-stats">
-                        <div class="stat-item">
-                            <label>Heat Capacity:</label>
-                            <span>${this.shipData.heatManagement.capacity}</span>
-                        </div>
-                        <div class="stat-item">
-                            <label>Heat Dissipation:</label>
-                            <span>${this.shipData.heatManagement.dissipation}/turn</span>
-                        </div>
-                        <div class="heat-thresholds">
-                            <h5>Heat Thresholds</h5>
-                            <div class="stat-item">
-                                <label>Warning:</label>
-                                <span>${this.shipData.heatManagement.thresholds.warning}</span>
-                            </div>
-                            <div class="stat-item">
-                                <label>Critical:</label>
-                                <span>${this.shipData.heatManagement.thresholds.critical}</span>
-                            </div>
-                            <div class="stat-item">
-                                <label>Maximum:</label>
-                                <span>${this.shipData.heatManagement.thresholds.maximum}</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="composition-total">
+                    Total Hulls: <span id="${this.id}-hull-total">${this.getTotalHulls()}</span>
                 </div>
+                <div class="composition-note" id="${this.id}-composition-note"></div>
             </div>
         `;
         
@@ -249,12 +320,12 @@ class ShipWidget extends Widget {
         if (!this.element) return;
 
         const anchorConfigs = [
-            { id: 'ship-name', selector: `#${this.id}-name`, closest: '.input-group' },
-            { id: 'ship-role', selector: `#${this.id}-role`, closest: '.input-group' },
-            { id: 'ship-basic', selector: `#${this.id}-basic-section` },
-            { id: 'ship-hulls', selector: `#${this.id}-hulls-section` },
-            { id: 'ship-power', selector: `#${this.id}-power-section` },
-            { id: 'ship-heat', selector: `#${this.id}-heat-section` }
+            { id: 'ship-meta', selector: `#${this.id}-meta-header` },
+            { id: 'ship-name', selector: `#${this.id}-name-group` },
+            { id: 'ship-role', selector: `#${this.id}-role-group` },
+            { id: 'ship-notes', selector: `#${this.id}-notes-group` },
+            { id: 'ship-foundations', selector: `#${this.id}-foundations-section` },
+            { id: 'ship-composition', selector: `#${this.id}-composition-section` }
         ];
 
         anchorConfigs.forEach(({ id, selector, closest }) => {
@@ -265,21 +336,6 @@ class ShipWidget extends Widget {
             }
         });
 
-        const foundations = this.element.querySelector('.foundations-section');
-        if (foundations) {
-            this.addLayoutAnchor('ship-foundations', foundations, { offset: -10, selector: '.foundations-section' });
-        }
-
-        const topFlags = this.element.querySelector('.top-flags');
-        if (topFlags) {
-            this.addLayoutAnchor('ship-flags', topFlags, { selector: '.top-flags' });
-        }
-
-        const systemHullBadge = this.element.querySelector(`#${this.id}-hull-system`);
-        if (systemHullBadge) {
-            const hullItem = systemHullBadge.closest('.hull-item') || systemHullBadge;
-            this.addLayoutAnchor('ship-system-hull', hullItem, { offset: 16, selector: `#${this.id}-hull-system`, closest: '.hull-item' });
-        }
     }
 
     setupEventListeners() {
@@ -289,32 +345,27 @@ class ShipWidget extends Widget {
         if (this._eventsBound) return;
         this._eventsBound = true;
         
-        // Basic information inputs
         const nameInput = document.getElementById(`${this.id}-name`);
-        const roleSelect = document.getElementById(`${this.id}-role`);
-        const customRoleInput = document.getElementById(`${this.id}-custom-role`);
+        const notesInput = document.getElementById(`${this.id}-class-notes`);
         const ignoreTechCheckbox = document.getElementById(`${this.id}-ignore-tech`);
-    const operationalCheckbox = document.getElementById(`${this.id}-operational`);
-        
+        const operationalCheckbox = document.getElementById(`${this.id}-operational`);
+    const dvpInput = document.getElementById(`${this.id}-dvp-cost`);
+    const roleSelect = document.getElementById(`${this.id}-role-select`);
+    const customRoleInput = document.getElementById(`${this.id}-role-custom`);
+    const roleToggleBtn = document.getElementById(`${this.id}-role-toggle`);
+    this.roleSelectElement = roleSelect;
+    this.roleCustomInput = customRoleInput;
+    this.roleToggleButton = roleToggleBtn;
+
         if (nameInput) {
             nameInput.addEventListener('input', (e) => {
                 this.shipData.name = e.target.value;
                 this.updateTitle(this.shipData.name);
-                this.updateText2ImgPrompt();
             });
         }
-        if (roleSelect) {
-            roleSelect.addEventListener('change', (e) => {
-                this.shipData.role = e.target.value;
-                const customRoleInput = document.getElementById(`${this.id}-custom-role`);
-                if (customRoleInput) customRoleInput.style.display = e.target.value === 'custom' ? 'block' : 'none';
-                this.updateText2ImgPrompt();
-            });
-        }
-        if (customRoleInput) {
-            customRoleInput.addEventListener('input', (e) => {
-                this.shipData.customRole = e.target.value;
-                this.updateText2ImgPrompt();
+        if (notesInput) {
+            notesInput.addEventListener('input', (e) => {
+                this.shipData.designNotes = e.target.value;
             });
         }
         if (ignoreTechCheckbox) {
@@ -327,104 +378,257 @@ class ShipWidget extends Widget {
                 this.shipData.operational = e.target.checked;
             });
         }
+        if (dvpInput) {
+            dvpInput.addEventListener('input', (e) => {
+                const raw = e.target.value;
+                if (raw === '' || raw === null) {
+                    this.shipData.developmentCost = null;
+                    return;
+                }
+                const value = parseInt(raw, 10);
+                this.shipData.developmentCost = Number.isFinite(value) && value >= 0 ? value : null;
+                if (this.shipData.developmentCost === null) {
+                    e.target.value = '';
+                }
+                if (this.shipData.developmentCost !== null) {
+                    e.target.value = this.shipData.developmentCost;
+                }
+            });
+        }
+
+        this.applyRoleMode = (mode) => {
+            this.roleMode = mode;
+            if (this.roleSelectElement) {
+                if (mode === 'dropdown') {
+                    this.roleSelectElement.style.display = '';
+                    this.populateRoleSelect(this.roleSelectElement);
+                    this.roleSelectElement.value = this.shipData.role;
+                } else {
+                    this.roleSelectElement.style.display = 'none';
+                }
+            }
+            if (this.roleCustomInput) {
+                if (mode === 'custom') {
+                    this.roleCustomInput.style.display = '';
+                    this.roleCustomInput.value = this.getRoleInputValue();
+                    this.roleCustomInput.focus();
+                } else {
+                    this.roleCustomInput.style.display = 'none';
+                }
+            }
+            if (this.roleToggleButton) {
+                if (mode === 'dropdown') {
+                    this.roleToggleButton.textContent = '✏️';
+                    this.roleToggleButton.title = 'Use custom role';
+                } else {
+                    this.roleToggleButton.textContent = '🌳';
+                    this.roleToggleButton.title = 'Use role list';
+                }
+            }
+        };
+
+        if (roleSelect) {
+            this.populateRoleSelect(roleSelect);
+            roleSelect.addEventListener('change', (e) => {
+                this.shipData.role = e.target.value;
+                this.shipData.customRole = '';
+                this.roleMode = 'dropdown';
+            });
+        }
+
+        if (customRoleInput) {
+            customRoleInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                this.shipData.customRole = value;
+                this.shipData.role = value;
+            });
+            customRoleInput.addEventListener('change', (e) => {
+                this.ensureRoleAvailable(e.target.value);
+            });
+        }
+
+        if (roleToggleBtn) {
+            roleToggleBtn.addEventListener('click', () => {
+                if (this.roleMode === 'dropdown') {
+                    this.applyRoleMode('custom');
+                } else {
+                    const customValue = this.roleCustomInput ? this.roleCustomInput.value.trim() : '';
+                    if (customValue) {
+                        this.ensureRoleAvailable(customValue);
+                        this.shipData.role = customValue;
+                    }
+                    this.shipData.customRole = '';
+                    this.applyRoleMode('dropdown');
+                }
+            });
+        }
+
+        this.applyRoleMode(this.roleMode);
+        this.updateSubclassState();
         // Foundations checkboxes
         this.foundationKeys.forEach(key => {
             const cb = document.getElementById(`${this.id}-foundation-${key}`);
             if (cb) {
                 cb.addEventListener('change', (e) => {
                     this.shipData.foundations[key] = e.target.checked;
+                        this.notifyShipChildrenToRefresh();
                 });
             }
         });
-        
-        // Hull composition controls (single increment guard)
-        const hullButtons = this.element.querySelectorAll('.hull-btn');
-        hullButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const hullType = e.currentTarget.dataset.hull;
-                const isIncrease = e.currentTarget.classList.contains('increase');
-                const current = this.shipData.hullComposition[hullType];
-                this.shipData.hullComposition[hullType] = Math.max(0, current + (isIncrease ? 1 : -1));
+        const hullInputs = this.element.querySelectorAll('.hull-spin');
+        hullInputs.forEach(input => {
+            const updateHull = (value) => {
+                const hullType = input.dataset.hull;
+                const parsed = Math.max(0, parseInt(value, 10) || 0);
+                this.shipData.hullComposition[hullType] = parsed;
+                input.value = parsed;
                 this.updateHullDisplay();
                 this.createNodes();
-                this.updateNodes();
                 this.updateStats();
-                this.updateText2ImgPrompt();
-                // Propagate system hull count if changed
-                if (hullType === 'system') this.propagateSystemHulls();
-            });
+                    this.notifyShipChildrenToRefresh();
+            };
+            input.addEventListener('input', (e) => updateHull(e.target.value));
+            input.addEventListener('change', (e) => updateHull(e.target.value));
         });
-        
     }
     
     updateHullDisplay() {
         this.hullTypes.forEach(hullType => {
             const countElement = document.getElementById(`${this.id}-hull-${hullType}`);
             if (countElement) {
-                countElement.textContent = this.shipData.hullComposition[hullType];
+                countElement.value = this.shipData.hullComposition[hullType];
             }
         });
         
         const totalElement = document.getElementById(`${this.id}-hull-total`);
         if (totalElement) {
-            totalElement.textContent = this.getTotalHulls();
+            const total = this.getTotalHulls();
+            if (this.lockedHullTotal != null) {
+                totalElement.textContent = `${total} / ${this.lockedHullTotal}`;
+                const totalWrapper = totalElement.parentElement;
+                if (totalWrapper) {
+                    totalWrapper.classList.toggle('mismatch', total !== this.lockedHullTotal);
+                }
+            } else {
+                totalElement.textContent = total;
+                const totalWrapper = totalElement.parentElement;
+                if (totalWrapper) {
+                    totalWrapper.classList.remove('mismatch');
+                }
+            }
+        }
+
+        const compositionNote = document.getElementById(`${this.id}-composition-note`);
+        if (compositionNote) {
+            if (this.lockedHullTotal != null) {
+                const total = this.getTotalHulls();
+                const delta = total - this.lockedHullTotal;
+                if (delta === 0) {
+                    compositionNote.textContent = `Locked to parent total of ${this.lockedHullTotal} hulls.`;
+                    compositionNote.classList.remove('warning');
+                } else if (delta > 0) {
+                    compositionNote.textContent = `${delta} hull${delta === 1 ? '' : 's'} above parent total.`;
+                    compositionNote.classList.add('warning');
+                } else {
+                    const deficit = Math.abs(delta);
+                    compositionNote.textContent = `${deficit} hull${deficit === 1 ? '' : 's'} below parent total.`;
+                    compositionNote.classList.add('warning');
+                }
+            } else {
+                compositionNote.textContent = '';
+                compositionNote.classList.remove('warning');
+            }
         }
     }
 
     // switchTab removed - linear layout
 
     updateStats() {
-        // Update powerplant status
-        const powerplantStatus = document.getElementById(`${this.id}-powerplant-status`);
-        if (powerplantStatus) {
-            if (this.shipData.hullComposition.powerplant > 0) {
-                powerplantStatus.innerHTML = '<div class="status-warning">⚠️ Powerplant node required</div>';
-            } else {
-                powerplantStatus.innerHTML = '<div class="status-info">No powerplant hulls - no power requirements</div>';
-            }
+        this.updateHullDisplay();
+    }
+
+    syncFormFromData() {
+        const nameInput = document.getElementById(`${this.id}-name`);
+        if (nameInput) {
+            nameInput.value = this.shipData.name || '';
         }
+
+        const notesInput = document.getElementById(`${this.id}-class-notes`);
+        if (notesInput) {
+            notesInput.value = this.shipData.designNotes || '';
+        }
+
+        const ignoreTechCheckbox = document.getElementById(`${this.id}-ignore-tech`);
+        if (ignoreTechCheckbox) {
+            ignoreTechCheckbox.checked = !!this.shipData.ignoreTechRequirements;
+        }
+
+        const operationalCheckbox = document.getElementById(`${this.id}-operational`);
+        if (operationalCheckbox) {
+            operationalCheckbox.checked = !!this.shipData.operational;
+        }
+
+        const dvpInput = document.getElementById(`${this.id}-dvp-cost`);
+        if (dvpInput) {
+            dvpInput.value = this.shipData.developmentCost ?? '';
+        }
+
+        this.foundationKeys.forEach(key => {
+            const cb = document.getElementById(`${this.id}-foundation-${key}`);
+            if (cb) {
+                cb.checked = !!this.shipData.foundations[key];
+            }
+        });
+
+        this.updateHullDisplay();
+
+        const roleValue = this.shipData.customRole ? this.shipData.customRole : this.shipData.role;
+        this.ensureRoleAvailable(this.shipData.role);
+        if (this.roleSelectElement) {
+            this.populateRoleSelect(this.roleSelectElement, this.shipData.role);
+        }
+        if (this.roleCustomInput) {
+            this.roleCustomInput.value = roleValue || '';
+        }
+        if (typeof this.applyRoleMode === 'function') {
+            this.applyRoleMode(this.shipData.customRole ? 'custom' : 'dropdown');
+        }
+        this.updateSubclassState();
     }
 
     updateNodes() { /* DOM node list removed in linear layout; retained for potential future use */ }
 
     createNodes() {
-        // Create nodes dynamically based on hull composition
-        this.clearNodes();
-        
-        // Always add base ship data output node
-        this.addNode('output', 'data', 'Ship Data', 1, 0.2, {
-            anchorId: 'ship-name'
-        });
-        
-        // Statistics output node
-        this.addNode('output', 'statistics', 'Statistics', 1, 0.35, {
-            anchorId: 'ship-flags'
-        });
-        
-        // Add conditional nodes based on hull composition
-        if (this.shipData.hullComposition.magazine > 0 || this.shipData.hullComposition.hangar > 0) {
-            this.addNode('input', 'loadout', 'Loadout', 0, 0.4, {
-                anchorId: 'ship-hulls',
-                anchorOffset: -40
+        if (this.nodes.size === 0) {
+            // Parent input: connects from another ship class
+            this.addNode('input', 'ship-class', 'Class', 0, 0.3, {
+                anchorId: 'ship-meta',
+                minSpacing: 36
             });
-        }
-        
-        if (this.shipData.hullComposition.powerplant > 0) {
-            this.addNode('input', 'powerplant', 'Powerplant', 0, 0.55, {
-                anchorId: 'ship-power'
+
+            // Child outputs
+            this.addNode('output', 'outfit', 'Outfit', 1, 0.45, {
+                anchorId: 'ship-composition',
+                anchorOffset: -30,
+                minSpacing: 32
             });
-        }
-        
-        if (this.shipData.hullComposition.system > 0) {
-            this.addNode('input', 'systems', 'Systems', 0, 0.75, {
-                anchorId: 'ship-system-hull',
-                anchorOffset: -20
+
+            this.addNode('output', 'loadout', 'Loadout', 1, 0.6, {
+                anchorId: 'ship-composition',
+                anchorOffset: 30,
+                minSpacing: 32
             });
-            this.addNode('output', 'system-hulls', 'System Hulls', 1, 0.85, {
-                anchorId: 'ship-system-hull',
-                anchorOffset: 20
+
+            this.addNode('output', 'statistics', 'Statistics', 1, 0.3, {
+                anchorId: 'ship-meta',
+                anchorOffset: 20,
+                minSpacing: 32
+            });
+
+            this.addNode('output', 'ship-class', 'Subclass', 1, 0.8, {
+                anchorId: 'ship-notes',
+                anchorOffset: 40,
+                minSpacing: 32
             });
         }
 
@@ -439,20 +643,6 @@ class ShipWidget extends Widget {
         }
     }
 
-    propagateSystemHulls() {
-        const systemHullsNode = this.getNodeByType('system-hulls');
-        if (!systemHullsNode) return;
-        
-        const systemHullCount = this.shipData.hullComposition.system;
-        
-        for (const connection of systemHullsNode.connections) {
-            const targetWidget = window.nodeSystem.getWidgetByNodeId(connection.targetNodeId);
-            if (targetWidget && targetWidget.setAvailableSystemHulls) {
-                targetWidget.setAvailableSystemHulls(systemHullCount);
-            }
-        }
-    }
-
     getSerializedData() {
         return {
             ...super.getSerializedData(),
@@ -464,10 +654,13 @@ class ShipWidget extends Widget {
         super.loadSerializedData(data);
         if (data.shipData) {
             this.shipData = { ...this.shipData, ...data.shipData };
-            this.updateHullDisplay();
+            this.ensureRoleAvailable(this.shipData.role);
+            this.roleMode = this.shipData.customRole ? 'custom' : 'dropdown';
+            this.syncFormFromData();
             this.createNodes();
             this.updateStats();
-            this.updateText2ImgPrompt();
+            this.updateSubclassState();
+            this.notifyShipChildrenToRefresh();
         }
     }
 }

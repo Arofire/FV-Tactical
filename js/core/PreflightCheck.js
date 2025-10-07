@@ -159,26 +159,45 @@ class PreflightCheck {
 
     checkHullBasedShip(widget, shipData) {
         const hull = shipData.hullComposition;
-        
-        // Check required connections based on hull composition
-        if (hull.powerplant > 0) {
-            const hasConnectedPowerplant = this.hasConnectedNode(widget, 'powerplant', 'input');
-            if (!hasConnectedPowerplant) {
-                this.addError(`Ship "${widget.title}" has ${hull.powerplant} powerplant hulls but no connected powerplant widget`, widget.id);
-            }
+        const totalHulls = typeof widget.getTotalHulls === 'function'
+            ? widget.getTotalHulls()
+            : Object.values(hull || {}).reduce((sum, count) => sum + count, 0);
+
+        // Connection expectations for new node layout
+        if (!this.hasConnectedNode(widget, 'outfit', 'output')) {
+            this.addWarning(`Ship "${widget.title}" should connect to an Outfit widget`, widget.id);
         }
-        
-        if (hull.system > 0) {
-            const hasConnectedSystems = this.hasConnectedNode(widget, 'systems', 'input');
-            if (!hasConnectedSystems) {
-                this.addWarning(`Ship "${widget.title}" has ${hull.system} system hulls but no connected systems widget`, widget.id);
-            }
+
+        if (!this.hasConnectedNode(widget, 'loadout', 'output')) {
+            this.addWarning(`Ship "${widget.title}" should connect to a Loadout widget`, widget.id);
         }
-        
-        if (hull.magazine > 0 || hull.hangar > 0) {
-            const hasConnectedLoadout = this.hasConnectedNode(widget, 'loadout', 'input');
-            if (!hasConnectedLoadout) {
-                this.addWarning(`Ship "${widget.title}" has magazine/hangar hulls but no connected loadout widget`, widget.id);
+
+        const parentShip = this.getShipParent(widget);
+        if (parentShip) {
+            const parentTotal = typeof parentShip.getTotalHulls === 'function'
+                ? parentShip.getTotalHulls()
+                : Object.values(parentShip.shipData?.hullComposition || {}).reduce((sum, count) => sum + count, 0);
+            if (totalHulls !== parentTotal) {
+                this.addError(
+                    `Ship "${widget.title}" inherits from "${parentShip.title}" and must keep ${parentTotal} hulls (currently ${totalHulls}).`,
+                    widget.id
+                );
+            }
+
+            const parentFoundations = parentShip.shipData?.foundations || {};
+            const childFoundations = shipData.foundations || {};
+            const mismatched = [];
+            Object.keys(parentFoundations).forEach(key => {
+                if (!!parentFoundations[key] !== !!childFoundations[key]) {
+                    const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+                    mismatched.push(label);
+                }
+            });
+            if (mismatched.length > 0) {
+                this.addError(
+                    `Ship "${widget.title}" foundations must match parent "${parentShip.title}" (${mismatched.join(', ')}).`,
+                    widget.id
+                );
             }
         }
         
@@ -195,10 +214,20 @@ class PreflightCheck {
         }
         
         // Basic hull validation
-        const totalHulls = Object.values(hull).reduce((sum, count) => sum + count, 0);
         if (totalHulls === 0) {
             this.addWarning(`Ship "${widget.title}" has no hull sections`, widget.id);
         }
+    }
+
+    getShipParent(widget) {
+        if (!widget?.parents || widget.parents.size === 0 || !this.widgetManager) return null;
+        for (const parentId of widget.parents) {
+            const parentWidget = this.widgetManager.getWidget(parentId);
+            if (parentWidget && parentWidget.type === 'ship') {
+                return parentWidget;
+            }
+        }
+        return null;
     }
 
     hasConnectedNode(widget, nodeType, nodeDirection) {
@@ -509,11 +538,13 @@ class PreflightCheck {
         if (!this.preflightToggle || !this.preflightOverlay) return;
         if (this.isExpanded) {
             this.preflightToggle.classList.add('expanded');
-            this.preflightOverlay.classList.remove('hidden');
+            if (this.preflightSummary) this.preflightSummary.classList.add('is-hidden');
+            if (this.preflightIssues) this.preflightIssues.classList.remove('is-hidden');
             if (this.preflightMinimizeBtn) this.preflightMinimizeBtn.textContent = '−';
         } else {
             this.preflightToggle.classList.remove('expanded');
-            this.preflightOverlay.classList.add('hidden');
+            if (this.preflightSummary) this.preflightSummary.classList.remove('is-hidden');
+            if (this.preflightIssues) this.preflightIssues.classList.add('is-hidden');
             if (this.preflightMinimizeBtn) this.preflightMinimizeBtn.textContent = '+';
         }
     }

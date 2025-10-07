@@ -135,15 +135,16 @@ class NodeSystem {
     areNodeTypesCompatible(type1, type2) {
         const compatibilityMap = {
             'power': ['power'],
-            'weapon': ['weapon', 'magazine'],
+            'weapon': ['weapon'],
             'magazine': ['weapon'],
             'component': ['component'],
             'data': ['data'],
             'loadout': ['loadout'],
             'powerplant': ['powerplant'],
-            'systems': ['systems'],
-            'system-hulls': ['system-hulls'],
-            'statistics': ['statistics']
+            'statistics': ['statistics'],
+            'outfit': ['outfit'],
+            'ship-class': ['ship-class'],
+            'information': ['information']
         };
         
         return compatibilityMap[type1]?.includes(type2) || 
@@ -485,21 +486,21 @@ class NodeSystem {
                 'input': ['powerplants'], // Powerplant input needs powerplant widgets
                 'output': ['ship', 'craft'] // Powerplant output can connect to ships/craft
             },
-            'systems': {
-                'input': ['systems'], // Systems input needs systems widgets
-                'output': ['ship', 'craft'] // Systems output can connect to ships/craft
-            },
-            'system-hulls': {
-                'input': ['ship', 'craft'], // System hulls input comes from ships/craft
-                'output': ['systems'] // System hulls output goes to systems widgets
-            },
-            'systems-output': {
-                'input': ['systems'], // Systems output comes from systems widgets
-                'output': ['ship', 'craft'] // Systems output can go to ships/craft
-            },
             'data': {
                 'input': ['ship', 'craft', 'troops'], // Data input can come from various widgets
                 'output': ['factories', 'shipyards'] // Data output can go to production widgets
+            },
+            'outfit': {
+                'input': ['ship', 'craft'],
+                'output': ['outfit']
+            },
+            'statistics': {
+                'input': ['ship', 'craft'],
+                'output': ['statistics']
+            },
+            'ship-class': {
+                'input': ['ship'],
+                'output': ['ship']
             }
         };
         

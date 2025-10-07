@@ -352,14 +352,48 @@ class Widget {
         const nodeElement = document.getElementById(node.id);
         if (!nodeElement) return;
         const labelElement = nodeElement.nextElementSibling;
-        const x = this.width * node.relativeX;
+        const baseX = this.width * node.relativeX;
         const layout = metrics || this.getNodeLayoutMetrics();
         const clampedY = Math.max(layout.contentTop, Math.min(layout.contentBottom, targetY));
-        nodeElement.style.left = x + 'px';
+
+        const nodeWidth = nodeElement.offsetWidth || 12;
+        const edgeOffset = 12;
+    const labelSpacing = 10;
+    const labelInsideOffset = 14;
+        const isInput = node.type === 'input';
+        const isOutput = node.type === 'output';
+
+        let nodeX = baseX;
+        if (isInput) {
+            nodeX = baseX - nodeWidth - edgeOffset;
+        } else if (isOutput) {
+            nodeX = baseX + edgeOffset;
+        }
+
+        nodeElement.style.left = nodeX + 'px';
         nodeElement.style.top = clampedY + 'px';
+
         if (labelElement) {
-            labelElement.style.left = x + 'px';
+            const measuredWidth = labelElement.offsetWidth || labelElement.getBoundingClientRect?.().width || 0;
+            const labelWidth = measuredWidth || 60;
+            let labelX = baseX;
             labelElement.style.top = clampedY + 'px';
+            labelElement.style.right = '';
+            if (isInput) {
+                labelX = baseX + labelInsideOffset + labelWidth;
+                labelElement.style.left = labelX + 'px';
+                labelElement.style.textAlign = 'right';
+                labelElement.style.transform = 'translate(-100%, -50%)';
+            } else if (isOutput) {
+                labelX = nodeX - labelSpacing;
+                labelElement.style.left = labelX + 'px';
+                labelElement.style.textAlign = 'left';
+                labelElement.style.transform = 'translate(-100%, -50%)';
+            } else {
+                labelElement.style.left = labelX + 'px';
+                labelElement.style.textAlign = 'left';
+                labelElement.style.transform = 'translate(-50%, -50%)';
+            }
         }
         // Persist normalized position for fallback layout
         node.relativeY = (clampedY - layout.contentTop) / layout.availableHeight;
@@ -715,6 +749,9 @@ class Widget {
         if (this.isAncestorOf(widget)) return false; // prevent cycle
         this.children.add(widget.id);
         widget.parents.add(this.id);
+        if (typeof widget.onParentLinked === 'function') {
+            widget.onParentLinked(this);
+        }
         this.autoArrangeHierarchy();
         if (window.widgetManager) {
             this.parents.forEach(parentId => {
@@ -731,6 +768,9 @@ class Widget {
         if (!widget) return;
         this.children.delete(widget.id);
         widget.parents.delete(this.id);
+        if (typeof widget.onParentUnlinked === 'function') {
+            widget.onParentUnlinked(this);
+        }
         this.autoArrangeHierarchy();
         if (window.widgetManager) {
             this.parents.forEach(parentId => {

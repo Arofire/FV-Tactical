@@ -25,12 +25,15 @@ body {
     z-index: 101;
     pointer-events: auto; /* Restore pointer events for panels */
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-    height: 100%; /* Ensure panels fill full height */
+    /* height: 100%; */ /* Ensure panels fill full height */
 }
 
 .left-panel {
-    width: 360px;
-    border-right: 2px solid #555;
+    /* width: 360px; */
+    display: flex;
+    gap: 8px;
+    pointer-events: all;
+    /* border-right: 2px solid #555; */
 }
 
 .right-panel {
@@ -136,15 +139,16 @@ body {
 
 /* Main Container */
 .main-container {
-    position: absolute;
+    position: relative;
     top: 60px; /* Below empire bar */
-    left: 0;
-    right: 0;
-    height: calc(100vh - 60px);
+    /* left: 0; */
+    /* right: 0; */
+    /* height: calc(100vh - 60px); */
+    /* display: block; */
     display: flex;
-    justify-content: space-between;
     pointer-events: none; /* Allow clicks to pass through to workspace */
     z-index: 100;
+    justify-content: space-between;
 }
 
 /* Preflight Summary Updates */
@@ -163,8 +167,7 @@ body {
 
 .preflight-summary {
     display: flex;
-    gap: 4px;
-    margin-left: 10px;
+    gap: 6px;
 }
 
 .preflight-badge {
@@ -224,7 +227,7 @@ body {
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
-    height: 60px;
+    /* height: 60px; */
     position: fixed;
     top: 0;
     left: 0;
@@ -245,6 +248,8 @@ body {
 .empire-controls {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
+    flex-direction: row;
 }
 
 .empire-controls button {
@@ -414,12 +419,16 @@ body {
 }
 
 /* New Floating Preflight System */
-.preflight-toggle-btn {
-    position: fixed;
-    top: 70px;
+.is-hidden {
+    display: none !important;
+}
+
+#preflight-controls {
+    /* position: fixed; */
+    /* top: 70px; */
     right: 20px;
-    background: rgba(45,45,45,0.85);
-    border: 1px solid #555;
+    /* background: rgba(45,45,45,0.85); */
+    /* border: 1px solid #555; */
     border-radius: 8px;
     padding: 6px 10px 6px 8px;
     z-index: 200;
@@ -429,7 +438,7 @@ body {
     transition: background 0.2s ease, border-color 0.2s ease;
 }
 .preflight-toggle-btn:hover { background: rgba(60,60,60,0.9); border-color: #777; }
-.preflight-toggle-btn.expanded { background: rgba(70,70,70,0.95); }
+.preflight-toggle-btn.expanded {/* background: rgba(70,70,70,0.95); */}
 
 #preflightMinimizeBtn.panel-toggle {
     width: 26px;
@@ -470,19 +479,22 @@ body {
 }
 
 .preflight-overlay {
-    position: fixed;
-    top: 110px;
+    /* position: fixed; */
+    /* top: 110px; */
+    display: flex;
     right: 20px;
     max-width: 380px;
     z-index: 150;
-    pointer-events: none;
+    pointer-events: auto;
     opacity: 1;
     transform: translateY(0);
     transition: opacity 0.25s ease, transform 0.25s ease;
+    flex-direction: column;
+    align-items: flex-end;
 }
 .preflight-overlay.hidden { opacity: 0; transform: translateY(-6px); pointer-events: none; }
 
-.preflight-issues { display: flex; flex-direction: column; gap: 6px; padding-right: 4px; max-height: 360px; overflow-y: auto; }
+.preflight-issues {display: flex;flex-direction: column;gap: 6px;padding-right: 4px;max-height: 360px;overflow-y: auto;overflow: hidden;align-items: flex-end;}
 
 .preflight-issue-item {
     background: rgba(50,50,50,0.30);
@@ -554,14 +566,14 @@ body {
 
 /* Workspace Utilities */
 .workspace-utilities {
-  position: fixed;
+  /* position: fixed; */
   left: 16px;
   top: 72px;
   display: flex;
-  flex-direction: column;
   gap: 6px;
   z-index: 180;
   pointer-events: auto;
+  flex-direction: column;
 }
 
 .workspace-utilities .panel-toggle {
@@ -636,7 +648,8 @@ body {
 @media (max-width: 1200px) {
     .side-panel {
         min-width: 200px;
-        width: 250px;
+        /* width: 250px; */
+        border-right: 2px solid #555;
     }
 }
 

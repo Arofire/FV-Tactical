@@ -332,8 +332,8 @@ class FVTacticalApp {
                 case 'missiles':
                     widget = new MissilesWidget(x, y);
                     break;
-                case 'systems':
-                    widget = new SystemsWidget(x, y);
+                case 'outfit':
+                    widget = new OutfitWidget(x, y);
                     break;
                 case 'loadouts':
                     widget = new LoadoutsWidget(x, y);
@@ -651,7 +651,11 @@ class FVTacticalApp {
                 case 'craft': widget = new CraftWidget(); break;
                 case 'troops': widget = new TroopsWidget(); break;
                 case 'missiles': widget = new MissilesWidget(); break;
-                case 'systems': widget = new SystemsWidget(); break;
+                case 'outfit': widget = new OutfitWidget(); break;
+                case 'systems':
+                    widget = new OutfitWidget();
+                    this.migrateLegacySystemsWidget(widgetData, widget);
+                    break;
                 case 'loadouts': widget = new LoadoutsWidget(); break;
                 case 'powerplants': widget = new PowerplantsWidget(); break;
                 case 'factories': widget = new FactoriesWidget(); break;
@@ -675,6 +679,49 @@ class FVTacticalApp {
         this.preflightCheck.runCheck();
         
 
+    }
+
+    migrateLegacySystemsWidget(widgetData, widgetInstance) {
+        if (!widgetData || !widgetInstance) return;
+
+        widgetData.type = 'outfit';
+        widgetData.data = widgetData.data || {};
+
+        const defaults = JSON.parse(JSON.stringify(widgetInstance.outfitData || {}));
+        const existingOutfitData = widgetData.data.outfitData || {};
+        const legacySystems = widgetData.data.systemsData || {};
+        const { heatManagement: legacyHeat = {}, ...legacyRest } = legacySystems;
+
+        const defaultSystems = defaults.systemsData || {};
+        const existingSystems = existingOutfitData.systemsData || {};
+
+        const mergedSystemsData = {
+            ...defaultSystems,
+            ...existingSystems,
+            ...legacyRest,
+            heatManagement: {
+                ...(defaultSystems.heatManagement || {}),
+                ...(existingSystems.heatManagement || {}),
+                ...legacyHeat
+            }
+        };
+
+        const mergedOutfitData = {
+            ...defaults,
+            ...existingOutfitData,
+            systemsData: mergedSystemsData
+        };
+
+        if (!mergedOutfitData.name && widgetData.title) {
+            mergedOutfitData.name = widgetData.title;
+        }
+
+        if (widgetData.title && /system/i.test(widgetData.title)) {
+            widgetData.title = widgetData.title.replace(/Systems?/i, 'Outfit').trim();
+        }
+
+        widgetData.data.outfitData = mergedOutfitData;
+        delete widgetData.data.systemsData;
     }
 
     showNotification(message, type = 'info') {
@@ -748,7 +795,7 @@ class FVTacticalApp {
             { type: 'craft', label: '✈️ Craft Design' },
             { type: 'troops', label: '👥 Troop Unit' },
             { type: 'missiles', label: '🚀 Missile Design' },
-            { type: 'systems', label: '🖥️ Ship Systems' },
+            { type: 'outfit', label: '🧰 Ship Outfit' },
             { type: 'loadouts', label: '📦 Equipment Loadout' },
             { type: 'powerplants', label: '⚡ Powerplant' },
             { type: 'factories', label: '🏭 Factory' },

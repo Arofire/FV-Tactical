@@ -18,6 +18,7 @@ A web-based node-driven design tool for tabletop wargaming spacecraft and milita
 
 ### 🎮 **Interactive Widgets**
 - **Ships**: Design large spacecraft with hull, engines, weapons, and reactors
+- **Outfit**: Configure ship hardpoints, systems modules, and role profiles
 - **Craft**: Create smaller fighters, bombers, and support vessels
 - **Troops**: Manage military units with equipment and specializations
 - **Missiles**: Design guided weapons with warheads and guidance systems
@@ -110,6 +111,7 @@ FV-Tactical/
 │   │   └── PreflightCheck.js # Validation system
 │   ├── widgets/
 │   │   ├── ShipWidget.js   # Ship design widget
+│   │   ├── OutfitWidget.js # Ship outfit planner
 │   │   ├── CraftWidget.js  # Craft design widget
 │   │   ├── TroopsWidget.js # Troops management widget
 │   │   └── OtherWidgets.js # Other specialized widgets
