@@ -42,8 +42,12 @@ class Widget {
         this.element.id = this.id;
         this.element.style.left = this.x + 'px';
         this.element.style.top = this.y + 'px';
-        this.element.style.width = this.width + 'px';
-        this.element.style.height = this.height + 'px';
+        
+        // Set width if specified, otherwise let CSS handle it
+        if (this.width) {
+            this.element.style.width = this.width + 'px';
+        }
+        // Don't set height - let it auto-size based on content
 
         // Create header
         const header = document.createElement('div');
@@ -94,9 +98,14 @@ class Widget {
         header.appendChild(titleElement);
         header.appendChild(controls);
         
-        // Create content area
+        // Create content area with three-column layout
         const content = document.createElement('div');
         content.className = 'widget-content';
+        
+        // Create the main sections container
+        const sectionsContainer = document.createElement('div');
+        sectionsContainer.className = 'widget-sections';
+        content.appendChild(sectionsContainer);
         
         // Create resize handle
         const resizeHandle = document.createElement('div');
@@ -141,6 +150,98 @@ class Widget {
         contentElement.innerHTML = '<p>Base widget content</p>';
     }
 
+    // Helper method to create a three-column section
+    createSection(sectionId, sectionTitle, options = {}) {
+        const section = document.createElement('div');
+        section.className = 'widget-section';
+        section.id = `${this.id}-${sectionId}`;
+        
+        if (options.errorState) {
+            section.classList.add('section-error');
+        } else if (options.warningState) {
+            section.classList.add('section-warning');
+        }
+        
+        // Create the three columns
+        const leftColumn = document.createElement('div');
+        leftColumn.className = 'section-left-column';
+        
+        const bodyColumn = document.createElement('div');
+        bodyColumn.className = 'section-body-column';
+        
+        const rightColumn = document.createElement('div');
+        rightColumn.className = 'section-right-column';
+        
+        // Add title to body column
+        if (sectionTitle) {
+            const title = document.createElement('h4');
+            title.className = 'section-title';
+            title.textContent = sectionTitle;
+            bodyColumn.appendChild(title);
+        }
+        
+        // Add content container to body column
+        const contentContainer = document.createElement('div');
+        contentContainer.className = 'section-content';
+        bodyColumn.appendChild(contentContainer);
+        
+        section.appendChild(leftColumn);
+        section.appendChild(bodyColumn);
+        section.appendChild(rightColumn);
+        
+        return {
+            section,
+            leftColumn,
+            bodyColumn,
+            rightColumn,
+            contentContainer
+        };
+    }
+
+    // Helper methods to set section states
+    setSectionError(sectionId, hasError = true) {
+        const section = this.element?.querySelector(`#${this.id}-${sectionId}`);
+        if (section) {
+            section.classList.toggle('section-error', hasError);
+            if (hasError) {
+                section.classList.remove('section-warning');
+            }
+        }
+    }
+
+    setSectionWarning(sectionId, hasWarning = true) {
+        const section = this.element?.querySelector(`#${this.id}-${sectionId}`);
+        if (section) {
+            section.classList.toggle('section-warning', hasWarning);
+            if (hasWarning) {
+                section.classList.remove('section-error');
+            }
+        }
+    }
+
+    clearSectionState(sectionId) {
+        const section = this.element?.querySelector(`#${this.id}-${sectionId}`);
+        if (section) {
+            section.classList.remove('section-error', 'section-warning');
+        }
+    }
+
+    // Update all nodes to ensure they're in the correct columns
+    updateNodePositions() {
+        for (const [nodeId, node] of this.nodes) {
+            if (node.sectionId) {
+                // Re-create the node element in the correct section
+                const oldElement = document.getElementById(nodeId);
+                const oldLabel = this.element.querySelector(`.node-label[data-node-id="${nodeId}"]`);
+                
+                if (oldElement) oldElement.remove();
+                if (oldLabel) oldLabel.remove();
+                
+                this.createNodeElement(node);
+            }
+        }
+    }
+
     createNodes() {
         // To be overridden by subclasses
         // Example: this.addNode('input', 'power', 'Power Input', 0, 0.5);
@@ -158,7 +259,8 @@ class Widget {
             connections: new Set(),
             anchorId: options.anchorId || null,
             minSpacing: options.minSpacing || 28,
-            anchorOffset: options.anchorOffset || 0
+            anchorOffset: options.anchorOffset || 0,
+            sectionId: options.sectionId || null // Which section to place the node in
         };
         
         this.nodes.set(nodeId, node);
@@ -174,10 +276,29 @@ class Widget {
         const labelElement = document.createElement('div');
         labelElement.className = `node-label ${node.type}`;
         labelElement.textContent = node.label;
+        labelElement.setAttribute('data-node-id', node.id);
         
-        const nodesContainer = this.element.querySelector('.widget-nodes');
-        nodesContainer.appendChild(nodeElement);
-        nodesContainer.appendChild(labelElement);
+        // Find the appropriate column for this node
+        let targetColumn;
+        if (node.sectionId) {
+            // Place in specific section's column
+            const section = this.element.querySelector(`#${this.id}-${node.sectionId}`);
+            if (section) {
+                targetColumn = node.type === 'input' 
+                    ? section.querySelector('.section-left-column')
+                    : section.querySelector('.section-right-column');
+            }
+        }
+        
+        // Fallback to old widget-nodes container if no section specified or found
+        if (!targetColumn) {
+            targetColumn = this.element.querySelector('.widget-nodes');
+        }
+        
+        if (targetColumn) {
+            targetColumn.appendChild(nodeElement);
+            targetColumn.appendChild(labelElement);
+        }
         
         this.updateNodePosition(node.id);
         
@@ -378,21 +499,14 @@ class Widget {
             const labelWidth = measuredWidth || 60;
             let labelX = baseX;
             labelElement.style.top = clampedY + 'px';
-            labelElement.style.right = '';
             if (isInput) {
                 labelX = baseX + labelInsideOffset + labelWidth;
                 labelElement.style.left = labelX + 'px';
-                labelElement.style.textAlign = 'right';
-                labelElement.style.transform = 'translate(-100%, -50%)';
             } else if (isOutput) {
                 labelX = nodeX - labelSpacing;
                 labelElement.style.left = labelX + 'px';
-                labelElement.style.textAlign = 'left';
-                labelElement.style.transform = 'translate(-100%, -50%)';
             } else {
                 labelElement.style.left = labelX + 'px';
-                labelElement.style.textAlign = 'left';
-                labelElement.style.transform = 'translate(-50%, -50%)';
             }
         }
         // Persist normalized position for fallback layout

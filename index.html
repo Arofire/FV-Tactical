@@ -24,62 +24,63 @@
         </div>
     </div>
 
-    <!-- Main Content Container -->
-    <div id="mainContainer" class="main-container">
-        <!-- Tech Tree Panel -->
-        <div class="left-panel">
-            <div id="techTreePanel" class="side-panel">
-                <div class="panel-content">
-                    <div class="tech-tree-controls">
-                        <button id="toggleExpandCollapseTech" class="tech-control-btn" data-mode="expanded">Collapse All</button>
-                        <button id="toggleUnavailableTech" class="tech-control-btn" data-active="false" title="Hide technologies you cannot yet research">Hide Unavailable</button>
-                        <button id="toggleResearchedTech" class="tech-control-btn" data-active="false" title="Hide technologies you have already researched">Hide Researched</button>
+    <!-- Content Area (workspace + overlay) -->
+    <div class="content-area">
+        <!-- Main Content Container -->
+        <div id="mainContainer" class="main-container">
+            <!-- Tech Tree Panel -->
+            <div class="left-panel">
+                <div id="techTreePanel" class="side-panel">
+                    <div class="panel-content">
+                        <div class="tech-tree-controls">
+                            <button id="toggleExpandCollapseTech" class="tech-control-btn" data-mode="expanded">Collapse All</button>
+                            <button id="toggleUnavailableTech" class="tech-control-btn" data-active="false" title="Hide technologies you cannot yet research">Hide Unavailable</button>
+                            <button id="toggleResearchedTech" class="tech-control-btn" data-active="false" title="Hide technologies you have already researched">Hide Researched</button>
+                        </div>
+                        <div id="techTreeContainer"></div>
                     </div>
-                    <div id="techTreeContainer"></div>
+                </div>
+                        <!-- Workspace Utility Buttons -->
+                <div id="workspaceUtilities" class="workspace-utilities">
+                    <button id="techTreeToggle" class="panel-toggle" title="Toggle tech">−</button>
+                    <button id="resetViewBtn" class="panel-toggle" title="Reset view / fit all">⤢</button>
+                    <button id="toggleCascadeDrag" class="panel-toggle" title="Toggle cascade drag (hierarchical move)" data-enabled="false">⇳</button>
+                    <button id="minimapToggle" class="panel-toggle" title="Toggle minimap" data-enabled="true">🗺</button>
                 </div>
             </div>
-                    <!-- Workspace Utility Buttons -->
-            <div id="workspaceUtilities" class="workspace-utilities">
-                <button id="techTreeToggle" class="panel-toggle" title="Toggle tech">−</button>
-                <button id="resetViewBtn" class="panel-toggle" title="Reset view / fit all">⤢</button>
-                <button id="toggleCascadeDrag" class="panel-toggle" title="Toggle cascade drag (hierarchical move)" data-enabled="false">⇳</button>
-            </div>
-        </div>
 
-        <!-- Floating Preflight Issues -->
-        <div id="preflightOverlay" class="preflight-overlay">
-            <div id="preflightToggle" class="preflight-toggle-btn" title="Show/Hide Preflight Issues">
-                <button id="preflightMinimizeBtn" class="panel-toggle" aria-label="Toggle Preflight">−</button>
-                <div id="preflightSummary" class="preflight-summary">
-                    <span class="preflight-badge error" id="summaryErrors" style="display: none;">0</span>
-                    <span class="preflight-badge warning" id="summaryWarnings" style="display: none;">0</span>
+            <!-- Floating Preflight Issues -->
+            <div id="preflightOverlay" class="preflight-overlay">
+                <div id="preflightControl">
+                    <button id="preflightMinimizeBtn" class="panel-toggle" aria-label="Toggle Preflight">−</button>
+                    <div id="preflightSummary" class="preflight-summary">
+                        <span class="preflight-badge error" id="summaryErrors" style="display: none;">0</span>
+                        <span class="preflight-badge warning" id="summaryWarnings" style="display: none;">0</span>
+                    </div>
                 </div>
+                <div id="preflightIssues" class="preflight-issues"></div>
             </div>
-            <div id="preflightIssues" class="preflight-issues"></div>
-        </div>
-    </div>
-    </div>
-
-    <div id="workspace" class="workspace">
-        <div id="canvas" class="canvas">
-            <div id="emptyCanvasText" class="empty-canvas-text">Double click to add a widget</div>
-            <!-- Widgets will be dynamically created here -->
         </div>
 
-        <!-- Node Connection SVG Overlay -->
-        <svg id="connectionSvg" class="connection-svg"></svg>
-        
-        <!-- Pinned Widgets Layer (fixed position, not affected by workspace transform) -->
-        <div id="pinnedLayer" class="pinned-layer"></div>
+        <div id="workspace" class="workspace">
+            <div id="canvas" class="canvas">
+                <div id="emptyCanvasText" class="empty-canvas-text">Double click to add a widget</div>
+                <!-- Widgets will be dynamically created here -->
+            </div>
 
-    <!-- Cursor Coordinates Display -->
-    <div id="cursorCoords" class="cursor-coords">0 , 0</div>
+            <!-- Node Connection SVG Overlay -->
+            <svg id="connectionSvg" class="connection-svg"></svg>
+            
+            <!-- Pinned Widgets Layer (fixed position, not affected by workspace transform) -->
+            <div id="pinnedLayer" class="pinned-layer"></div>
 
-        <!-- Minimap -->
-        <div id="minimap" class="minimap">
-            <div id="minimapViewport" class="minimap-viewport"></div>
+            <!-- Minimap -->
+            <div id="minimap" class="minimap">
+                <div id="minimapViewport" class="minimap-viewport"></div>
+                <!-- Cursor Coordinates Display -->
+                <div id="cursorCoords" class="cursor-coords">0 , 0</div>
+            </div>
         </div>
-        
     </div>
 
     <!-- Scripts -->

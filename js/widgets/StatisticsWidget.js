@@ -1,6 +1,6 @@
 class StatisticsWidget extends Widget {
     constructor(shipWidget, x = 900, y = 100) {
-        super('statistics', 'Statistics', x, y, 340, 480);
+        super('statistics', 'Statistics', x, y, 340); // Remove fixed height
         this.shipWidget = shipWidget;
         this.stats = {
             endurance: 0,
@@ -20,6 +20,10 @@ class StatisticsWidget extends Widget {
     }
 
     createContent(contentElement) {
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Statistics section
+        const statsSection = this.createSection('stats', 'Ship Statistics');
         const statFields = [
             ['endurance','Endurance'],
             ['developmentPoints','Development Points'],
@@ -34,7 +38,7 @@ class StatisticsWidget extends Widget {
             ['qcm','QCM'],
             ['troopCapacity','Troop Capacity']
         ];
-        contentElement.innerHTML = `
+        statsSection.contentContainer.innerHTML = `
             <div class="stats-grid">
                 ${statFields.map(([key,label]) => `
                     <div class="stat-input">
@@ -44,6 +48,8 @@ class StatisticsWidget extends Widget {
                 `).join('')}
             </div>
         `;
+        sectionsContainer.appendChild(statsSection.section);
+        
         this.setupEventListeners();
     }
 

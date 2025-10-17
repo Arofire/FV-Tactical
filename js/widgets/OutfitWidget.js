@@ -1,7 +1,7 @@
 // Outfit widget for configuring ship load-outs
 class OutfitWidget extends Widget {
     constructor(x = 550, y = 120) {
-        super('outfit', 'New Outfit', x, y, 560, 900);
+        super('outfit', 'New Outfit', x, y, 560); // Remove fixed height for auto-sizing
 
         this.defaultRoles = [
             'Artillery',
@@ -231,16 +231,11 @@ class OutfitWidget extends Widget {
     }
 
     createContent(contentElement) {
-        const hardpointRows = this.hardpointDefinitions.map(({ key }) => `
-            <tr>
-                <td>${key}</td>
-                <td id="${this.id}-hp-base-${key}">${this.outfitData.hardpoints.base[key]}</td>
-                <td><input type="number" id="${this.id}-hp-merge-${key}" min="0" step="3" value="${this.outfitData.hardpoints.merge[key]}"></td>
-                <td><input type="number" id="${this.id}-hp-split-${key}" min="0" step="1" value="${this.outfitData.hardpoints.split[key]}"></td>
-            </tr>
-        `).join('');
-
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Meta section
+        const metaSection = this.createSection('meta', 'Meta Information');
+        metaSection.contentContainer.innerHTML = `
             <div class="outfit-meta-header widget-sticky-header" id="${this.id}-meta-header">
                 <div class="outfit-header-row" id="${this.id}-hardpoint-row">
                     ${this.hardpointDefinitions.map(({ key }) => `
@@ -261,6 +256,12 @@ class OutfitWidget extends Widget {
                 <label>Outfit Name</label>
                 <input type="text" id="${this.id}-name" value="${this.outfitData.name}" placeholder="Enter outfit name">
             </div>
+        `;
+        sectionsContainer.appendChild(metaSection.section);
+        
+        // Create Role section
+        const roleSection = this.createSection('role', 'Role');
+        roleSection.contentContainer.innerHTML = `
             <div class="input-group role-group" id="${this.id}-role-group">
                 <label>Role</label>
                 <div class="role-controls">
@@ -275,8 +276,21 @@ class OutfitWidget extends Widget {
                 <label>Outfit Notes</label>
                 <textarea id="${this.id}-notes" placeholder="Doctrine, deployment notes, logistics considerations...">${this.outfitData.notes}</textarea>
             </div>
+        `;
+        sectionsContainer.appendChild(roleSection.section);
+        
+        // Create Hardpoints section
+        const hardpointsSection = this.createSection('hardpoints', 'Hardpoints');
+        const hardpointRows = this.hardpointDefinitions.map(({ key }) => `
+            <tr>
+                <td>${key}</td>
+                <td id="${this.id}-hp-base-${key}">${this.outfitData.hardpoints.base[key]}</td>
+                <td><input type="number" id="${this.id}-hp-merge-${key}" min="0" step="3" value="${this.outfitData.hardpoints.merge[key]}"></td>
+                <td><input type="number" id="${this.id}-hp-split-${key}" min="0" step="1" value="${this.outfitData.hardpoints.split[key]}"></td>
+            </tr>
+        `).join('');
+        hardpointsSection.contentContainer.innerHTML = `
             <div class="section-block" id="${this.id}-hardpoints-section">
-                <h4>Hardpoints</h4>
                 <table class="hardpoints-table">
                     <thead>
                         <tr>
@@ -292,31 +306,35 @@ class OutfitWidget extends Widget {
                 </table>
                 <div class="hardpoint-note">Merging reduces available hardpoints by 3 at a time; splitting increases the available count.</div>
             </div>
-            <div class="section-block" id="${this.id}-power-section">
-                <h4>Power and Propulsion</h4>
-                <div class="placeholder-block">(Reserved)</div>
-            </div>
-            <div class="section-block" id="${this.id}-heat-section">
-                <h4>Heat Management</h4>
-                <div class="placeholder-block">(Reserved)</div>
-            </div>
-            <div class="section-block" id="${this.id}-hyperspace-section">
-                <h4>Hyperspace</h4>
-                <div class="placeholder-block">(Reserved)</div>
-            </div>
+        `;
+        sectionsContainer.appendChild(hardpointsSection.section);
+        
+        // Create Systems section
+        const systemsSection = this.createSection('systems', 'Systems');
+        systemsSection.contentContainer.innerHTML = `
             <div class="section-block systems-section" id="${this.id}-systems-section">
-                <h4>Systems</h4>
                 ${this.renderSystemsSection()}
             </div>
+        `;
+        sectionsContainer.appendChild(systemsSection.section);
+        
+        // Create Features section
+        const featuresSection = this.createSection('features', 'Features');
+        featuresSection.contentContainer.innerHTML = `
             <div class="section-block" id="${this.id}-features-section">
-                <h4>Features</h4>
                 ${this.renderFeaturesTable()}
             </div>
+        `;
+        sectionsContainer.appendChild(featuresSection.section);
+        
+        // Create Weapons section
+        const weaponsSection = this.createSection('weapons', 'Weapons');
+        weaponsSection.contentContainer.innerHTML = `
             <div class="section-block" id="${this.id}-weapons-section">
-                <h4>Weapons</h4>
                 ${this.renderWeaponsSection()}
             </div>
         `;
+        sectionsContainer.appendChild(weaponsSection.section);
 
         this.setupEventListeners();
         this.registerLayoutAnchors();
@@ -330,17 +348,12 @@ class OutfitWidget extends Widget {
         this.resetLayoutAnchors();
         if (!this.element) return;
         const anchors = [
-            { id: 'outfit-meta', selector: `#${this.id}-meta-header` },
-            { id: 'outfit-name', selector: `#${this.id}-name-group` },
-            { id: 'outfit-role', selector: `#${this.id}-role-group` },
-            { id: 'outfit-notes', selector: `#${this.id}-notes-group` },
-            { id: 'outfit-hardpoints', selector: `#${this.id}-hardpoints-section` },
-            { id: 'outfit-power', selector: `#${this.id}-power-section` },
-            { id: 'outfit-heat', selector: `#${this.id}-heat-section` },
-            { id: 'outfit-hyperspace', selector: `#${this.id}-hyperspace-section` },
-            { id: 'outfit-systems', selector: `#${this.id}-systems-section` },
-            { id: 'outfit-features', selector: `#${this.id}-features-section` },
-            { id: 'outfit-weapons', selector: `#${this.id}-weapons-section` }
+            { id: 'outfit-meta', selector: `#${this.id}-meta` },
+            { id: 'outfit-role', selector: `#${this.id}-role` },
+            { id: 'outfit-hardpoints', selector: `#${this.id}-hardpoints` },
+            { id: 'outfit-systems', selector: `#${this.id}-systems` },
+            { id: 'outfit-features', selector: `#${this.id}-features` },
+            { id: 'outfit-weapons', selector: `#${this.id}-weapons` }
         ];
         anchors.forEach(({ id, selector }) => {
             const el = this.element.querySelector(selector);
@@ -1090,14 +1103,17 @@ class OutfitWidget extends Widget {
         }
         this.addNode('input', 'ship-class', 'Class', 0, 0.25, {
             anchorId: 'outfit-meta',
+            sectionId: 'meta',
             minSpacing: 32
         });
         this.addNode('input', 'powerplant', 'Powerplant', 0, 0.45, {
-            anchorId: 'outfit-power',
+            anchorId: 'outfit-systems',
+            sectionId: 'systems',
             minSpacing: 32
         });
         this.addNode('output', 'information', 'Information', 1, 0.4, {
             anchorId: 'outfit-weapons',
+            sectionId: 'weapons',
             minSpacing: 32
         });
         this.reflowNodes();

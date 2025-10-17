@@ -1,6 +1,6 @@
 class BasicInfoWidget extends Widget {
     constructor(shipWidget, x = 550, y = 100) {
-        super('basic-info', 'Basic Info', x, y, 320, 420);
+        super('basic-info', 'Basic Info', x, y, 320); // Remove fixed height
         this.shipWidget = shipWidget; // reference for synchronization
         this.basicData = {
             name: shipWidget?.shipData?.name || 'New Ship Class',
@@ -18,7 +18,11 @@ class BasicInfoWidget extends Widget {
     }
 
     createContent(contentElement) {
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Basic Info section
+        const basicSection = this.createSection('basic', 'Basic Information');
+        basicSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Ship Class Name</label>
                 <input type="text" id="${this.id}-name" value="${this.basicData.name}" placeholder="Enter ship class name">
@@ -30,6 +34,12 @@ class BasicInfoWidget extends Widget {
                 </select>
                 <input type="text" id="${this.id}-custom-role" placeholder="Enter custom role" style="display: ${this.basicData.role === 'custom' ? 'block' : 'none'}; margin-top:4px;" value="${this.basicData.customRole}">
             </div>
+        `;
+        sectionsContainer.appendChild(basicSection.section);
+        
+        // Create Documentation section
+        const documentationSection = this.createSection('documentation', 'Documentation');
+        documentationSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Description</label>
                 <textarea id="${this.id}-description" placeholder="Ship class description and purpose...">${this.basicData.description}</textarea>
@@ -47,6 +57,8 @@ class BasicInfoWidget extends Widget {
                 <textarea id="${this.id}-text2img" placeholder="AI image generation prompt (auto-generated from design criteria)..." readonly>${this.basicData.text2imgPrompt}</textarea>
             </div>
         `;
+        sectionsContainer.appendChild(documentationSection.section);
+        
         this.setupEventListeners();
     }
 

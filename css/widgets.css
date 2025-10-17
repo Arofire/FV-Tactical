@@ -6,6 +6,8 @@
     border-radius: 8px;
     min-width: 250px;
     min-height: 150px;
+    width: auto; /* Allow auto-width based on content */
+    height: auto; /* Allow auto-height based on content */
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -32,7 +34,7 @@
 /* Widget Header */
 .widget-header {
     background: #3d3d3d;
-    padding: 8px 12px;
+    padding: 8PX;
     border-bottom: 1px solid #555;
     cursor: move;
     display: flex;
@@ -83,11 +85,100 @@
 /* Widget Content */
 .widget-content {
     flex: 1;
-    padding: 12px;
-    overflow-y: auto;
+    padding: 0;
+    overflow: visible; /* Remove scrollbar, let widget auto-size */
     display: flex;
     flex-direction: column;
-    gap: 10px;
+}
+
+.widget-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* No gap between sections */
+}
+
+/* Three-Column Section Layout */
+.widget-section {
+    display: grid;
+    grid-template-columns: 60px 1fr 60px; /* left column, body, right column */
+    min-height: 40px;
+    border-bottom: 1px solid #333;
+    transition: background-color 0.2s ease;
+}
+
+.widget-section:last-child {
+    border-bottom: none;
+}
+
+.section-left-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 8px 4px;
+    border-right: 1px solid #333;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.section-body-column {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.section-right-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 8px 4px;
+    border-left: 1px solid #333;
+    background: rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* Nodes within sections */
+.section-left-column .node,
+.section-right-column .node {
+    position: static;
+    margin: 2px 0;
+}
+
+.section-left-column .node-label,
+.section-right-column .node-label {
+    position: static;
+    font-size: 10px;
+    text-align: center;
+    margin-top: 2px;
+}
+
+.section-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e0e0e0;
+    border-bottom: 1px solid #444;
+    padding-bottom: 4px;
+}
+
+.section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Section State Colors */
+.widget-section.section-error {
+    background-color: rgba(220, 38, 127, 0.15);
+    border-color: rgba(220, 38, 127, 0.3);
+}
+
+.widget-section.section-warning {
+    background-color: rgba(255, 193, 7, 0.15);
+    border-color: rgba(255, 193, 7, 0.3);
 }
 
 .widget-sticky-header {
@@ -585,27 +676,10 @@
     gap: 4px;
     margin-right: 8px;
     position: relative;
+    align-items: center;
 }
 
-.preflight-badge {
-    background: #ff4444;
-    color: white;
-    border-radius: 10px;
-    padding: 2px 6px;
-    font-size: 11px;
-    font-weight: bold;
-    min-width: 16px;
-    text-align: center;
-    line-height: 1.2;
-}
 
-.preflight-badge.warning {
-    background: #ffaa00;
-}
-
-.preflight-badge.error {
-    background: #ff4444;
-}
 
 .preflight-tooltip {
     position: absolute;
@@ -772,10 +846,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.2s ease;
 }
 
 .hull-btn:hover {
     background: #666;
+}
+
+.hull-btn:active {
+    background: #3a3a3a;
 }
 
 .hull-count {
@@ -783,6 +862,7 @@
     text-align: center;
     font-size: 12px;
     font-weight: 500;
+    color: #4080f0;
 }
 
 .hull-total {
@@ -794,6 +874,7 @@
     text-align: center;
     font-weight: 500;
     color: #e0e0e0;
+    border: 1px solid #555;
 }
 
 /* Section blocks for linear layout */
@@ -841,6 +922,11 @@
 .stat-item {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: #3a3a3a;
+    border-radius: 3px;
+    border: 1px solid #555;
     font-size: 11px;
 }
 
@@ -850,8 +936,8 @@
 }
 
 .stat-item span {
-    color: #e0e0e0;
-    font-weight: 500;
+    color: #4080f0;
+    font-weight: bold;
 }
 
 .systems-section .widget-tabs {
@@ -875,108 +961,141 @@
 }
 
 .module-card {
-    background: #181818;
-    border: 1px solid #333;
-    border-radius: 6px;
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 4px;
     padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.25);
+    transition: background 0.2s ease;
+}
+
+.module-card:hover:not(.disabled) {
+    background: #404040;
 }
 
 .module-card.disabled {
     opacity: 0.6;
-    filter: grayscale(0.4);
+    cursor: not-allowed;
 }
 
 .module-header {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
-    color: #d0d0ff;
-    font-weight: 600;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.module-name {
+    font-weight: bold;
+    color: #e0e0e0;
+    font-size: 13px;
+}
+
+.module-hulls {
+    background: #4080f0;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
 }
 
 .module-description {
     font-size: 11px;
-    color: #9aa7bb;
-    line-height: 1.35;
+    color: #ccc;
+    margin-bottom: 8px;
+    line-height: 1.3;
 }
 
 .module-status {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
     align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
-.install-btn {
-    background: #4a90e2;
+.install-btn,
+.uninstall-btn {
+    background: #4080f0;
+    color: white;
     border: none;
-    color: #f5f5f5;
-    padding: 4px 10px;
-    border-radius: 4px;
-    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
     font-size: 11px;
-    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
 }
 
 .install-btn:hover {
-    background: #5aa0f2;
+    background: #5090ff;
+}
+
+.uninstall-btn {
+    background: #f04040;
+}
+
+.uninstall-btn:hover {
+    background: #ff5050;
 }
 
 .status-error {
-    color: #ff8080;
-    font-size: 11px;
-    font-weight: 600;
+    background: #4a2d2d;
+    color: #f04040;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
 }
 
 .status-installed {
-    color: #90e29d;
-    font-size: 11px;
-    font-weight: 600;
+    background: #2d4a2d;
+    color: #40f040;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
 }
 
 .installed-modules-list {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    min-height: 42px;
-    background: #121212;
-    border: 1px solid #2f2f2f;
-    border-radius: 6px;
-    padding: 8px;
 }
 
 .installed-module-item {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #1f1f1f;
-    border: 1px solid #333;
-    border-radius: 4px;
-    padding: 6px 8px;
-    font-size: 11px;
 }
 
-.uninstall-btn {
-    background: #5c2b2b;
-    color: #ffabab;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    cursor: pointer;
-    font-size: 11px;
+.installed-module-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.uninstall-btn:hover {
-    background: #6f3434;
+.installed-module-name {
+    font-weight: bold;
+    color: #e0e0e0;
+    font-size: 12px;
+}
+
+.installed-module-hulls {
+    font-size: 10px;
+    color: #4080f0;
 }
 
 .no-modules {
-    color: #707a87;
-    font-size: 11px;
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 15px;
+    background: #2a2a2a;
+    border-radius: 4px;
+    border: 1px solid #444;
 }
 
 .heat-management-section {
@@ -988,33 +1107,35 @@
 .heat-systems {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 .heat-system-item {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #181818;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 8px 10px;
 }
 
 .heat-system-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
 }
 
 .heat-system-name {
-    font-size: 12px;
-    color: #d8dee9;
+    font-weight: bold;
+    color: #e0e0e0;
+    font-size: 13px;
 }
 
 .heat-system-count {
     font-size: 11px;
-    color: #8fa4c4;
+    color: #ccc;
 }
 
 .heat-system-controls {
@@ -1023,38 +1144,46 @@
 }
 
 .heat-btn {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    border: none;
-    background: #2f3b4d;
-    color: #ebf6ff;
-    font-size: 14px;
+    border: 1px solid #666;
+    background: #4a4a4a;
+    color: #e0e0e0;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background 0.2s ease;
 }
 
 .heat-btn:hover {
-    background: #3f4b5f;
+    background: #555;
+}
+
+.heat-btn:active {
+    background: #3a3a3a;
 }
 
 .heat-stats-summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-    background: #121212;
-    border: 1px solid #303030;
-    border-radius: 6px;
-    padding: 8px;
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 12px;
+}
+
+.heat-stats-summary h5 {
+    margin: 0 0 10px 0;
+    color: #e0e0e0;
+    font-size: 13px;
 }
 
 .summary-stats {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-    background: #121212;
-    border: 1px solid #303030;
-    border-radius: 6px;
-    padding: 8px;
+    grid-template-columns: 1fr;
+    gap: 8px;
 }
 
 .features-table {

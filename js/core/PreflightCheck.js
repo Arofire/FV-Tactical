@@ -13,11 +13,11 @@ class PreflightCheck {
         this.widgetIssues = new Map(); // widgetId -> { warnings: [], errors: [], techRequirements: [] }
         
         // New floating overlay elements
-        this.preflightToggle = document.getElementById('preflightToggle');
+        this.preflightToggle = document.getElementById('preflightControl');
         this.preflightOverlay = document.getElementById('preflightOverlay');
         this.preflightIssues = document.getElementById('preflightIssues');
-    this.preflightSummary = document.getElementById('preflightSummary');
-    this.preflightMinimizeBtn = document.getElementById('preflightMinimizeBtn');
+        this.preflightSummary = document.getElementById('preflightSummary');
+        this.preflightMinimizeBtn = document.getElementById('preflightMinimizeBtn');
         
     // Initialize toggle state (load persisted)
     const persisted = localStorage.getItem('preflightExpanded');
@@ -510,41 +510,32 @@ class PreflightCheck {
     }
 
     initToggle() {
-        if (!this.preflightToggle) return;
+        if (!this.preflightMinimizeBtn) return;
         const toggleAction = () => {
             this.isExpanded = !this.isExpanded;
             localStorage.setItem('preflightExpanded', this.isExpanded);
             this.updateToggleState();
         };
-        if (this.preflightMinimizeBtn) {
-            this.preflightMinimizeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleAction();
-            });
-        } else {
-            this.preflightToggle.addEventListener('click', toggleAction);
-        }
-        // Also toggle by clicking summary badges
-        if (this.preflightSummary) {
-            this.preflightSummary.addEventListener('click', (e) => {
-                if (e.target.closest('#preflightMinimizeBtn')) return;
-                toggleAction();
-            });
-        }
+        
+        this.preflightMinimizeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleAction();
+        });
+        
         this.updateToggleState();
     }
 
     updateToggleState() {
-        if (!this.preflightToggle || !this.preflightOverlay) return;
+        if (!this.preflightOverlay) return;
         if (this.isExpanded) {
-            this.preflightToggle.classList.add('expanded');
+            if (this.preflightToggle) this.preflightToggle.classList.add('expanded');
+            this.preflightOverlay.classList.remove('hidden');
             if (this.preflightSummary) this.preflightSummary.classList.add('is-hidden');
-            if (this.preflightIssues) this.preflightIssues.classList.remove('is-hidden');
             if (this.preflightMinimizeBtn) this.preflightMinimizeBtn.textContent = '−';
         } else {
-            this.preflightToggle.classList.remove('expanded');
+            if (this.preflightToggle) this.preflightToggle.classList.remove('expanded');
+            this.preflightOverlay.classList.add('hidden');
             if (this.preflightSummary) this.preflightSummary.classList.remove('is-hidden');
-            if (this.preflightIssues) this.preflightIssues.classList.add('is-hidden');
             if (this.preflightMinimizeBtn) this.preflightMinimizeBtn.textContent = '+';
         }
     }
@@ -554,8 +545,6 @@ class PreflightCheck {
         const summaryWarnings = document.getElementById('summaryWarnings');
         
         if (!summaryErrors || !summaryWarnings) return;
-        
-        // Use all warnings since unused tech warning is removed
         const filteredWarnings = this.warnings;
         
         // Convert unmet tech requirements to errors

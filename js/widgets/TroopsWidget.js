@@ -1,7 +1,7 @@
 // Troops widget for managing military units
 class TroopsWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('troops', 'New Troop Unit', x, y, 280, 300);
+        super('troops', 'New Troop Unit', x, y, 280); // Remove fixed height
         this.troopData = {
             name: 'New Troop Unit',
             type: 'infantry',
@@ -13,7 +13,11 @@ class TroopsWidget extends Widget {
     }
 
     createContent(contentElement) {
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Meta section
+        const metaSection = this.createSection('meta', 'Unit Information');
+        metaSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Unit Name</label>
                 <input type="text" id="${this.id}-name" value="${this.troopData.name}" placeholder="Enter unit name">
@@ -34,7 +38,12 @@ class TroopsWidget extends Widget {
                 <label>Unit Size</label>
                 <input type="number" id="${this.id}-size" value="${this.troopData.size}" min="1" max="10000">
             </div>
-            
+        `;
+        sectionsContainer.appendChild(metaSection.section);
+        
+        // Create Equipment section
+        const equipmentSection = this.createSection('equipment', 'Equipment');
+        equipmentSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Equipment</label>
                 <button class="add-component-btn" id="${this.id}-add-equipment">Add Equipment</button>
@@ -43,11 +52,17 @@ class TroopsWidget extends Widget {
             <div class="component-list" id="${this.id}-equipment-list">
                 <!-- Equipment will be added here -->
             </div>
-            
+        `;
+        sectionsContainer.appendChild(equipmentSection.section);
+        
+        // Create Stats section
+        const statsSection = this.createSection('stats', 'Statistics');
+        statsSection.contentContainer.innerHTML = `
             <div class="widget-stats" id="${this.id}-stats">
                 <!-- Stats will be calculated here -->
             </div>
         `;
+        sectionsContainer.appendChild(statsSection.section);
         
         this.setupTroopEventListeners();
         this.updateStats();
@@ -166,7 +181,9 @@ class TroopsWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('output', 'component', 'Troop Data', 1, 0.5);
+        this.addNode('output', 'component', 'Troop Data', 1, 0.5, {
+            sectionId: 'stats'
+        });
     }
 
     getSerializedData() {

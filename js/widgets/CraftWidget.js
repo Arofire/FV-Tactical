@@ -1,7 +1,7 @@
 // Craft design widget - similar to ship but for smaller vessels
 class CraftWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('craft', 'New Craft', x, y, 300, 350);
+        super('craft', 'New Craft', x, y, 300); // Remove fixed height for auto-sizing
         this.craftData = {
             name: 'New Craft',
             type: 'fighter',
@@ -13,7 +13,11 @@ class CraftWidget extends Widget {
     }
 
     createContent(contentElement) {
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Meta section
+        const metaSection = this.createSection('meta', 'Craft Information');
+        metaSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Craft Name</label>
                 <input type="text" id="${this.id}-name" value="${this.craftData.name}" placeholder="Enter craft name">
@@ -36,7 +40,12 @@ class CraftWidget extends Widget {
                     Ignore Tech Requirements
                 </label>
             </div>
-            
+        `;
+        sectionsContainer.appendChild(metaSection.section);
+        
+        // Create Components section
+        const componentsSection = this.createSection('components', 'Components');
+        componentsSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Add Component</label>
                 <div style="display: flex; gap: 8px;">
@@ -52,11 +61,17 @@ class CraftWidget extends Widget {
             <div class="component-list" id="${this.id}-component-list">
                 <!-- Components will be added here -->
             </div>
-            
+        `;
+        sectionsContainer.appendChild(componentsSection.section);
+        
+        // Create Stats section
+        const statsSection = this.createSection('stats', 'Statistics');
+        statsSection.contentContainer.innerHTML = `
             <div class="widget-stats" id="${this.id}-stats">
                 <!-- Stats will be calculated here -->
             </div>
         `;
+        sectionsContainer.appendChild(statsSection.section);
         
         this.setupCraftEventListeners();
         this.updateStats();
@@ -177,8 +192,12 @@ class CraftWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('input', 'power', 'Power', 0, 0.3);
-        this.addNode('output', 'component', 'Craft Data', 1, 0.3);
+        this.addNode('input', 'power', 'Power', 0, 0.3, {
+            sectionId: 'components'
+        });
+        this.addNode('output', 'component', 'Craft Data', 1, 0.3, {
+            sectionId: 'stats'
+        });
     }
 
     getSerializedData() {

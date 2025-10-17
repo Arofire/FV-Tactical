@@ -1,7 +1,7 @@
 // Ship design widget
 class ShipWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('ship', 'New Ship Class', x, y, 400, 600);
+        super('ship', 'New Ship Class', x, y, 400); // Remove fixed height for auto-sizing
         
         this.defaultRoles = [
             'corvette', 'frigate', 'destroyer', 'cruiser', 'battleship', 
@@ -251,10 +251,14 @@ class ShipWidget extends Widget {
     }
 
     createContent(contentElement) {
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Meta section
+        const metaSection = this.createSection('meta', 'Meta Information');
         const roleOptions = this.generateRoleOptionsHTML(this.shipData.role);
         const roleInputValue = this.getRoleInputValue();
-
-        contentElement.innerHTML = `
+        
+        metaSection.contentContainer.innerHTML = `
             <div class="ship-meta-header widget-sticky-header" id="${this.id}-meta-header">
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-operational" ${this.shipData.operational ? 'checked' : ''}> Operational</label>
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-tech" ${this.shipData.ignoreTechRequirements ? 'checked' : ''}> Ignore Tech</label>
@@ -267,6 +271,12 @@ class ShipWidget extends Widget {
                 <label>Class Name</label>
                 <input type="text" id="${this.id}-name" value="${this.shipData.name}" placeholder="Enter ship class name">
             </div>
+        `;
+        sectionsContainer.appendChild(metaSection.section);
+        
+        // Create Role section
+        const roleSection = this.createSection('role', 'Role');
+        roleSection.contentContainer.innerHTML = `
             <div class="input-group role-group" id="${this.id}-role-group">
                 <label>Role</label>
                 <div class="role-controls">
@@ -281,8 +291,13 @@ class ShipWidget extends Widget {
                 <label>Class Notes</label>
                 <textarea id="${this.id}-class-notes" placeholder="Design notes, doctrine, or operational directives...">${this.shipData.designNotes}</textarea>
             </div>
+        `;
+        sectionsContainer.appendChild(roleSection.section);
+        
+        // Create Foundations section
+        const foundationsSection = this.createSection('foundations', 'Foundations');
+        foundationsSection.contentContainer.innerHTML = `
             <div class="section-block foundations-section" id="${this.id}-foundations-section">
-                <h4>Foundations</h4>
                 <div class="foundations-grid">
                     ${this.foundationKeys.map(key => `
                         <label class="foundation-item">
@@ -293,8 +308,13 @@ class ShipWidget extends Widget {
                 </div>
                 <div class="foundations-note" id="${this.id}-foundations-note"></div>
             </div>
+        `;
+        sectionsContainer.appendChild(foundationsSection.section);
+        
+        // Create Composition section
+        const compositionSection = this.createSection('composition', 'Composition');
+        compositionSection.contentContainer.innerHTML = `
             <div class="section-block composition-section" id="${this.id}-composition-section">
-                <h4>Composition</h4>
                 <div class="composition-grid">
                     ${this.hullTypes.map(hullType => `
                         <div class="composition-item">
@@ -309,6 +329,7 @@ class ShipWidget extends Widget {
                 <div class="composition-note" id="${this.id}-composition-note"></div>
             </div>
         `;
+        sectionsContainer.appendChild(compositionSection.section);
         
         this.setupEventListeners();
         this.updateNodes();
@@ -320,22 +341,18 @@ class ShipWidget extends Widget {
         if (!this.element) return;
 
         const anchorConfigs = [
-            { id: 'ship-meta', selector: `#${this.id}-meta-header` },
-            { id: 'ship-name', selector: `#${this.id}-name-group` },
-            { id: 'ship-role', selector: `#${this.id}-role-group` },
-            { id: 'ship-notes', selector: `#${this.id}-notes-group` },
-            { id: 'ship-foundations', selector: `#${this.id}-foundations-section` },
-            { id: 'ship-composition', selector: `#${this.id}-composition-section` }
+            { id: 'ship-meta', selector: `#${this.id}-meta` },
+            { id: 'ship-role', selector: `#${this.id}-role` },
+            { id: 'ship-foundations', selector: `#${this.id}-foundations` },
+            { id: 'ship-composition', selector: `#${this.id}-composition` }
         ];
 
-        anchorConfigs.forEach(({ id, selector, closest }) => {
+        anchorConfigs.forEach(({ id, selector }) => {
             const element = this.element.querySelector(selector);
             if (element) {
-                const anchorElement = closest ? (element.closest(closest) || element) : element;
-                this.addLayoutAnchor(id, anchorElement, { selector, closest });
+                this.addLayoutAnchor(id, element, { selector });
             }
         });
-
     }
 
     setupEventListeners() {
@@ -603,30 +620,35 @@ class ShipWidget extends Widget {
             // Parent input: connects from another ship class
             this.addNode('input', 'ship-class', 'Class', 0, 0.3, {
                 anchorId: 'ship-meta',
+                sectionId: 'meta',
                 minSpacing: 36
             });
 
             // Child outputs
             this.addNode('output', 'outfit', 'Outfit', 1, 0.45, {
                 anchorId: 'ship-composition',
+                sectionId: 'composition',
                 anchorOffset: -30,
                 minSpacing: 32
             });
 
             this.addNode('output', 'loadout', 'Loadout', 1, 0.6, {
                 anchorId: 'ship-composition',
+                sectionId: 'composition',
                 anchorOffset: 30,
                 minSpacing: 32
             });
 
             this.addNode('output', 'statistics', 'Statistics', 1, 0.3, {
                 anchorId: 'ship-meta',
+                sectionId: 'meta',
                 anchorOffset: 20,
                 minSpacing: 32
             });
 
             this.addNode('output', 'ship-class', 'Subclass', 1, 0.8, {
-                anchorId: 'ship-notes',
+                anchorId: 'ship-role',
+                sectionId: 'role',
                 anchorOffset: 40,
                 minSpacing: 32
             });

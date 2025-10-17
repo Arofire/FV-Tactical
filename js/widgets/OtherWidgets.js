@@ -1,7 +1,7 @@
 // Missiles widget for designing missile systems
 class MissilesWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('missiles', 'New Missile', x, y, 280, 250);
+        super('missiles', 'New Missile', x, y, 280); // Remove fixed height
         this.missileData = {
             name: 'New Missile',
             warhead: null,
@@ -13,7 +13,11 @@ class MissilesWidget extends Widget {
     }
 
     createContent(contentElement) {
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Design section
+        const designSection = this.createSection('design', 'Missile Design');
+        designSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Missile Name</label>
                 <input type="text" id="${this.id}-name" value="${this.missileData.name}">
@@ -32,8 +36,16 @@ class MissilesWidget extends Widget {
                     Ignore Tech Requirements
                 </label>
             </div>
+        `;
+        sectionsContainer.appendChild(designSection.section);
+        
+        // Create Stats section
+        const statsSection = this.createSection('stats', 'Statistics');
+        statsSection.contentContainer.innerHTML = `
             <div class="widget-stats" id="${this.id}-stats"></div>
         `;
+        sectionsContainer.appendChild(statsSection.section);
+        
         this.setupMissileListeners();
     }
 
@@ -55,7 +67,9 @@ class MissilesWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('output', 'weapon', 'Missile Data', 1, 0.5);
+        this.addNode('output', 'weapon', 'Missile Data', 1, 0.5, {
+            sectionId: 'stats'
+        });
     }
 
     getSerializedData() { return this.missileData; }
@@ -65,7 +79,7 @@ class MissilesWidget extends Widget {
 // Loadouts widget for equipment configurations
 class LoadoutsWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('loadouts', 'New Loadout', x, y, 280, 250);
+        super('loadouts', 'New Loadout', x, y, 280); // Remove fixed height
         this.loadoutData = {
             name: 'New Loadout',
             items: []
@@ -74,7 +88,11 @@ class LoadoutsWidget extends Widget {
     }
 
     createContent(contentElement) {
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Configuration section
+        const configSection = this.createSection('config', 'Configuration');
+        configSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Loadout Name</label>
                 <input type="text" id="${this.id}-name" value="${this.loadoutData.name}">
@@ -82,6 +100,8 @@ class LoadoutsWidget extends Widget {
             <button class="add-component-btn" id="${this.id}-add-item">Add Item</button>
             <div class="component-list" id="${this.id}-items-list"></div>
         `;
+        sectionsContainer.appendChild(configSection.section);
+        
         this.setupLoadoutListeners();
     }
 
@@ -103,8 +123,12 @@ class LoadoutsWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('input', 'magazine', 'Magazine Input', 0, 0.5);
-        this.addNode('output', 'data', 'Loadout Data', 1, 0.5);
+        this.addNode('input', 'magazine', 'Magazine Input', 0, 0.5, {
+            sectionId: 'config'
+        });
+        this.addNode('output', 'data', 'Loadout Data', 1, 0.5, {
+            sectionId: 'config'
+        });
     }
 
     getSerializedData() { return this.loadoutData; }
@@ -114,7 +138,7 @@ class LoadoutsWidget extends Widget {
 // Powerplants widget for power generation
 class PowerplantsWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('powerplants', 'New Powerplant', x, y, 280, 250);
+        super('powerplants', 'New Powerplant', x, y, 280); // Remove fixed height
         this.powerplantData = {
             name: 'New Powerplant',
             reactorType: 'fusion',
@@ -125,7 +149,11 @@ class PowerplantsWidget extends Widget {
     }
 
     createContent(contentElement) {
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Design section
+        const designSection = this.createSection('design', 'Powerplant Design');
+        designSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Powerplant Name</label>
                 <input type="text" id="${this.id}-name" value="${this.powerplantData.name}">
@@ -144,6 +172,12 @@ class PowerplantsWidget extends Widget {
                     Ignore Tech Requirements
                 </label>
             </div>
+        `;
+        sectionsContainer.appendChild(designSection.section);
+        
+        // Create Stats section
+        const statsSection = this.createSection('stats', 'Performance');
+        statsSection.contentContainer.innerHTML = `
             <div class="widget-stats" id="${this.id}-stats">
                 <div class="stat-row">
                     <span class="stat-label">Power Output:</span>
@@ -151,6 +185,8 @@ class PowerplantsWidget extends Widget {
                 </div>
             </div>
         `;
+        sectionsContainer.appendChild(statsSection.section);
+        
         this.setupPowerplantListeners();
     }
 
@@ -172,7 +208,9 @@ class PowerplantsWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('output', 'power', 'Power Output', 1, 0.5);
+        this.addNode('output', 'power', 'Power Output', 1, 0.5, {
+            sectionId: 'stats'
+        });
     }
 
     getSerializedData() { return this.powerplantData; }
@@ -182,7 +220,7 @@ class PowerplantsWidget extends Widget {
 // Factories widget for production management
 class FactoriesWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('factories', 'New Factory', x, y, 280, 250);
+        super('factories', 'New Factory', x, y, 280); // Remove fixed height
         this.factoryData = {
             name: 'New Factory',
             productionLines: [],
@@ -192,7 +230,11 @@ class FactoriesWidget extends Widget {
     }
 
     createContent(contentElement) {
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Configuration section
+        const configSection = this.createSection('config', 'Factory Configuration');
+        configSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Factory Name</label>
                 <input type="text" id="${this.id}-name" value="${this.factoryData.name}">
@@ -202,8 +244,16 @@ class FactoriesWidget extends Widget {
                 <input type="range" id="${this.id}-efficiency" min="50" max="150" value="${this.factoryData.efficiency}">
                 <span>${this.factoryData.efficiency}%</span>
             </div>
+        `;
+        sectionsContainer.appendChild(configSection.section);
+        
+        // Create Production section
+        const productionSection = this.createSection('production', 'Production Lines');
+        productionSection.contentContainer.innerHTML = `
             <div class="component-list" id="${this.id}-production-list"></div>
         `;
+        sectionsContainer.appendChild(productionSection.section);
+        
         this.setupFactoryListeners();
     }
 
@@ -225,8 +275,12 @@ class FactoriesWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('input', 'component', 'Components', 0, 0.5);
-        this.addNode('output', 'component', 'Products', 1, 0.5);
+        this.addNode('input', 'component', 'Components', 0, 0.5, {
+            sectionId: 'production'
+        });
+        this.addNode('output', 'component', 'Products', 1, 0.5, {
+            sectionId: 'production'
+        });
     }
 
     getSerializedData() { return this.factoryData; }
@@ -236,7 +290,7 @@ class FactoriesWidget extends Widget {
 // Shipyards widget for ship construction
 class ShipyardsWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('shipyards', 'New Shipyard', x, y, 280, 250);
+        super('shipyards', 'New Shipyard', x, y, 280); // Remove fixed height
         this.shipyardData = {
             name: 'New Shipyard',
             capabilities: [],
@@ -246,7 +300,11 @@ class ShipyardsWidget extends Widget {
     }
 
     createContent(contentElement) {
-        contentElement.innerHTML = `
+        const sectionsContainer = contentElement.querySelector('.widget-sections');
+        
+        // Create Configuration section
+        const configSection = this.createSection('config', 'Shipyard Configuration');
+        configSection.contentContainer.innerHTML = `
             <div class="input-group">
                 <label>Shipyard Name</label>
                 <input type="text" id="${this.id}-name" value="${this.shipyardData.name}">
@@ -260,6 +318,12 @@ class ShipyardsWidget extends Widget {
                     <option value="capital">Capital Ships</option>
                 </select>
             </div>
+        `;
+        sectionsContainer.appendChild(configSection.section);
+        
+        // Create Production section
+        const productionSection = this.createSection('production', 'Construction');
+        productionSection.contentContainer.innerHTML = `
             <div class="widget-stats" id="${this.id}-stats">
                 <div class="stat-row">
                     <span class="stat-label">Queue:</span>
@@ -267,6 +331,8 @@ class ShipyardsWidget extends Widget {
                 </div>
             </div>
         `;
+        sectionsContainer.appendChild(productionSection.section);
+        
         this.setupShipyardListeners();
     }
 
@@ -288,9 +354,15 @@ class ShipyardsWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('input', 'component', 'Ship Designs', 0, 0.3);
-        this.addNode('input', 'component', 'Materials', 0, 0.7);
-        this.addNode('output', 'component', 'Completed Ships', 1, 0.5);
+        this.addNode('input', 'component', 'Ship Designs', 0, 0.3, {
+            sectionId: 'config'
+        });
+        this.addNode('input', 'component', 'Materials', 0, 0.7, {
+            sectionId: 'production'
+        });
+        this.addNode('output', 'component', 'Completed Ships', 1, 0.5, {
+            sectionId: 'production'
+        });
     }
 
     getSerializedData() { return this.shipyardData; }

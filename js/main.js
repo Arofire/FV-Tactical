@@ -60,6 +60,15 @@ class FVTacticalApp {
 
         // Initialize minimap (after DOM elements exist)
         this.initMinimap();
+        
+        // Add resize listener to update minimap when screen size changes
+        window.addEventListener('resize', () => {
+            // Debounce resize events to avoid excessive updates
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = setTimeout(() => {
+                this.updateMinimap();
+            }, 100);
+        });
     }
 
     setupPanelToggles() {
@@ -80,6 +89,7 @@ class FVTacticalApp {
     setupWorkspaceUtilities() {
         const resetBtn = document.getElementById('resetViewBtn');
         const cascadeBtn = document.getElementById('toggleCascadeDrag');
+        const minimapBtn = document.getElementById('minimapToggle');
         const workspace = document.getElementById('workspace');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => this.fitToContent());
@@ -101,6 +111,23 @@ class FVTacticalApp {
                 }
             });
             cascadeBtn.title = 'Cascade drag: OFF';
+        }
+
+        if (minimapBtn) {
+            minimapBtn.addEventListener('click', () => {
+                const enabled = minimapBtn.getAttribute('data-enabled') === 'true';
+                const next = !enabled;
+                minimapBtn.setAttribute('data-enabled', String(next));
+                minimapBtn.title = next ? 'Hide minimap' : 'Show minimap';
+                minimapBtn.style.background = next ? '#4a90e2' : '';
+                
+                // Toggle minimap visibility
+                const minimap = document.getElementById('minimap');
+                if (minimap) {
+                    minimap.style.display = next ? 'block' : 'none';
+                }
+            });
+            minimapBtn.title = 'Hide minimap';
         }
         // Removed workspace double-click to avoid accidental zoom/scale changes when adding widgets.
     }
@@ -361,8 +388,6 @@ class FVTacticalApp {
             this.widgetManager.addWidget(widget);
             widget.select();
             this.preflightCheck.runCheck();
-            // Ensure new widget is visible (only adjust if outside viewport)
-            this.ensureWidgetVisible(widget);
             return widget; // Return widget for auto-connection system
         }
     }
@@ -885,9 +910,9 @@ class FVTacticalApp {
         this.isDraggingWorkspace = false;
         this.dragStart = { x: 0, y: 0 };
         
-        // Add pan functionality (drag empty canvas background)
+        // Add pan functionality (drag empty canvas background - left click only)
         canvas.addEventListener('mousedown', (e) => {
-            if (e.target === canvas) {
+            if (e.target === canvas && e.button === 0) { // left button only
                 this.isDraggingWorkspace = true;
                 this.dragStart.x = e.clientX;
                 this.dragStart.y = e.clientY;
@@ -896,16 +921,6 @@ class FVTacticalApp {
             }
         });
 
-        // Middle mouse panning anywhere (even over widgets)
-        workspace.addEventListener('mousedown', (e) => {
-            if (e.button === 1) { // middle button
-                this.isDraggingWorkspace = true;
-                this.dragStart.x = e.clientX;
-                this.dragStart.y = e.clientY;
-                document.body.style.cursor = 'grabbing';
-                e.preventDefault();
-            }
-        });
         
         document.addEventListener('mousemove', (e) => {
             if (this.isDraggingWorkspace) {
@@ -930,6 +945,8 @@ class FVTacticalApp {
                 this.isDraggingWorkspace = false;
                 canvas.style.cursor = '';
                 document.body.style.cursor = '';
+                // Do a full minimap update after dragging ends
+                this.updateMinimap(true);
             }
         });
         
@@ -980,10 +997,17 @@ class FVTacticalApp {
         const vw = workspace.clientWidth;
         const vh = workspace.clientHeight;
         const scale = this.workspaceTransform.scale;
-        const minTranslateX = Math.min(0, vw - bounds.maxX * scale);
-        const maxTranslateX = 0;
-        const minTranslateY = Math.min(0, vh - bounds.maxY * scale);
-        const maxTranslateY = 0;
+        
+        // Allow generous margin for easier navigation, especially vertically
+        const horizontalMargin = 200; // pixels of margin for horizontal
+        const verticalMargin = 400; // pixels of margin for vertical (more generous)
+        
+        const minTranslateX = Math.min(horizontalMargin, vw - bounds.maxX * scale);
+        const maxTranslateX = horizontalMargin;
+        const minTranslateY = Math.min(verticalMargin, vh - bounds.maxY * scale);
+        const maxTranslateY = verticalMargin;
+        
+        // Apply constraints
         if (this.workspaceTransform.translateX < minTranslateX) this.workspaceTransform.translateX = minTranslateX;
         if (this.workspaceTransform.translateX > maxTranslateX) this.workspaceTransform.translateX = maxTranslateX;
         if (this.workspaceTransform.translateY < minTranslateY) this.workspaceTransform.translateY = minTranslateY;
@@ -992,6 +1016,7 @@ class FVTacticalApp {
 
     updateWorkspaceTransform() {
         // Apply boundary constraints only if there are widgets (prevents artificial boundary when empty)
+        // Also allow some leeway for easier navigation
         if (this.widgetManager && this.widgetManager.widgets.size > 0) {
             this.constrainWorkspaceTransform();
         }
@@ -1014,8 +1039,8 @@ class FVTacticalApp {
         // apparent jumps when programmatic recenter/fit/focus occurs. The
         // coordinate readout will refresh on the next real mousemove event.
 
-        // Update minimap viewport
-        this.updateMinimap();
+        // Update minimap viewport (optimize during dragging)
+        this.updateMinimap(!this.isDraggingWorkspace);
     }
 
     updateCursorCoords(screenPos) {
@@ -1083,83 +1108,103 @@ class FVTacticalApp {
     }
 
     minimapCenterTo(minimapX, minimapY) {
-        const canvas = document.getElementById('canvas');
         const workspace = document.getElementById('workspace');
-        if (!canvas || !workspace) return;
-        const canvasWidth = canvas.offsetWidth;
-        const canvasHeight = canvas.offsetHeight;
-        const scaleX = this.minimapEl.clientWidth / canvasWidth;
-        const scaleY = this.minimapEl.clientHeight / canvasHeight;
+        if (!workspace || !this.minimapScale || !this.minimapOffset) return;
+        
         // Clamp to minimap bounds
         minimapX = Math.max(0, Math.min(minimapX, this.minimapEl.clientWidth));
         minimapY = Math.max(0, Math.min(minimapY, this.minimapEl.clientHeight));
-        const worldX = minimapX / scaleX;
-        const worldY = minimapY / scaleY;
+        
+        // Convert minimap coordinates to world coordinates
+        // Account for centering offset and uniform scale
+        const worldX = (minimapX - this.minimapOffset.x) / this.minimapScale;
+        const worldY = (minimapY - this.minimapOffset.y) / this.minimapScale;
+        
         const viewScale = this.workspaceTransform.scale;
         // Center viewport on chosen world point
-        let tx = workspace.clientWidth / 2 - worldX * viewScale;
-        let ty = workspace.clientHeight / 2 - worldY * viewScale;
-        // Clamp translation to canvas bounds so blank space is never exposed
-        const minTranslateX = Math.min(0, workspace.clientWidth - canvasWidth * viewScale);
-        const maxTranslateX = 0;
-        const minTranslateY = Math.min(0, workspace.clientHeight - canvasHeight * viewScale);
-        const maxTranslateY = 0;
-        if (tx < minTranslateX) tx = minTranslateX;
-        if (tx > maxTranslateX) tx = maxTranslateX;
-        if (ty < minTranslateY) ty = minTranslateY;
-        if (ty > maxTranslateY) ty = maxTranslateY;
+        const tx = workspace.clientWidth / 2 - worldX * viewScale;
+        const ty = workspace.clientHeight / 2 - worldY * viewScale;
+        
         this.workspaceTransform.translateX = tx;
         this.workspaceTransform.translateY = ty;
         this.updateWorkspaceTransform();
     }
 
-    updateMinimap() {
+    updateMinimap(updateWidgets = true) {
         if (!this.minimapEl || !this.minimapViewportEl) return;
-        const canvas = document.getElementById('canvas');
         const workspace = document.getElementById('workspace');
-        if (!canvas || !workspace) return;
+        const canvas = document.getElementById('canvas');
+        if (!workspace || !canvas) return;
 
+        // Use canvas dimensions to represent the entire workspace area
         const canvasWidth = canvas.offsetWidth;
         const canvasHeight = canvas.offsetHeight;
-        const scaleX = this.minimapEl.clientWidth / canvasWidth;
-        const scaleY = this.minimapEl.clientHeight / canvasHeight;
+        const minimapWidth = this.minimapEl.clientWidth;
+        const minimapHeight = this.minimapEl.clientHeight;
+        
+        // Calculate scale to maintain aspect ratio and fit within minimap
+        const scaleX = minimapWidth / canvasWidth;
+        const scaleY = minimapHeight / canvasHeight;
+        const scale = Math.min(scaleX, scaleY); // Use uniform scale to preserve aspect ratio
+        
+        // Calculate actual minimap content size (may be smaller than minimap element)
+        const minimapContentWidth = canvasWidth * scale;
+        const minimapContentHeight = canvasHeight * scale;
+        
+        // Center the content within the minimap element
+        const offsetX = (minimapWidth - minimapContentWidth) / 2;
+        const offsetY = (minimapHeight - minimapContentHeight) / 2;
 
-        // Map existing widgets
-        const existing = new Set();
-        for (const widget of this.widgetManager.widgets.values()) {
-            existing.add(widget.id);
-            let item = this.minimapEl.querySelector(`.minimap-item[data-id="${widget.id}"]`);
-            if (!item) {
-                item = document.createElement('div');
-                item.className = 'minimap-item';
-                item.dataset.id = widget.id;
-                this.minimapEl.appendChild(item);
+        // Only update widgets if requested (skip during dragging for performance)
+        if (updateWidgets) {
+            // Map existing widgets using uniform scale
+            const existing = new Set();
+            for (const widget of this.widgetManager.widgets.values()) {
+                existing.add(widget.id);
+                let item = this.minimapEl.querySelector(`.minimap-item[data-id="${widget.id}"]`);
+                if (!item) {
+                    item = document.createElement('div');
+                    item.className = 'minimap-item';
+                    item.dataset.id = widget.id;
+                    this.minimapEl.appendChild(item);
+                }
+                
+                // Get actual rendered dimensions from the DOM element
+                const actualWidth = widget.element ? widget.element.offsetWidth : widget.width;
+                const actualHeight = widget.element ? widget.element.offsetHeight : widget.height;
+                
+                // Position widgets with uniform scale and centering offset
+                item.style.left = (offsetX + widget.x * scale) + 'px';
+                item.style.top = (offsetY + widget.y * scale) + 'px';
+                item.style.width = Math.max(2, actualWidth * scale) + 'px';
+                item.style.height = Math.max(2, actualHeight * scale) + 'px';
             }
-            item.style.left = (widget.x * scaleX) + 'px';
-            item.style.top = (widget.y * scaleY) + 'px';
-            item.style.width = Math.max(2, widget.width * scaleX) + 'px';
-            item.style.height = Math.max(2, widget.height * scaleY) + 'px';
+
+            // Remove stale items
+            this.minimapEl.querySelectorAll('.minimap-item').forEach(el => {
+                if (!existing.has(el.dataset.id)) el.remove();
+            });
         }
 
-        // Remove stale items
-        this.minimapEl.querySelectorAll('.minimap-item').forEach(el => {
-            if (!existing.has(el.dataset.id)) el.remove();
-        });
-
-        // Update viewport rectangle (visible region)
-        const t = this.workspaceTransform || { translateX:0, translateY:0, scale:1 };
-        const viewMinX = -t.translateX / t.scale;
-        const viewMinY = -t.translateY / t.scale;
-        const viewWidth = workspace.clientWidth / t.scale;
-        const viewHeight = workspace.clientHeight / t.scale;
-        const maxViewportLeft = canvasWidth - viewWidth;
-        const maxViewportTop = canvasHeight - viewHeight;
-        const clampedMinX = Math.max(0, Math.min(viewMinX, maxViewportLeft));
-        const clampedMinY = Math.max(0, Math.min(viewMinY, maxViewportTop));
-        this.minimapViewportEl.style.left = (clampedMinX * scaleX) + 'px';
-        this.minimapViewportEl.style.top = (clampedMinY * scaleY) + 'px';
-        this.minimapViewportEl.style.width = Math.max(8, Math.min(viewWidth, canvasWidth) * scaleX) + 'px';
-        this.minimapViewportEl.style.height = Math.max(8, Math.min(viewHeight, canvasHeight) * scaleY) + 'px';
+        // Always update viewport rectangle to show currently visible area
+        const t = this.workspaceTransform || { translateX: 0, translateY: 0, scale: 1 };
+        
+        // Calculate viewport position and size in world coordinates
+        const viewportLeft = -t.translateX / t.scale;
+        const viewportTop = -t.translateY / t.scale;
+        const viewportWidth = workspace.clientWidth / t.scale;
+        const viewportHeight = workspace.clientHeight / t.scale;
+        
+        // Position and size the viewport indicator with uniform scale and centering
+        this.minimapViewportEl.style.left = (offsetX + viewportLeft * scale) + 'px';
+        this.minimapViewportEl.style.top = (offsetY + viewportTop * scale) + 'px';
+        this.minimapViewportEl.style.width = (viewportWidth * scale) + 'px';
+        this.minimapViewportEl.style.height = (viewportHeight * scale) + 'px';
+        
+        // Store canvas bounds and scale for minimap interaction (always update these)
+        this.minimapCanvasBounds = { width: canvasWidth, height: canvasHeight };
+        this.minimapScale = scale;
+        this.minimapOffset = { x: offsetX, y: offsetY };
     }
 }
 
