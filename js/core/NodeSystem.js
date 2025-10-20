@@ -6,6 +6,8 @@ class NodeSystem {
         this.tempConnection = null;
         this.isDragging = false;
         this.dragStartNode = null;
+        this.connectionSelectionMenu = null;
+        this.connectionSelectionMenuDismissHandler = null;
         
         this.setupEventListeners();
     }
@@ -35,6 +37,7 @@ class NodeSystem {
     startConnection(nodeId, event) {
         const node = this.getNodeById(nodeId);
         if (!node) return;
+        this.destroyConnectionSelectionMenu();
         
         this.isDragging = true;
         this.dragStartNode = nodeId;
@@ -65,13 +68,13 @@ class NodeSystem {
     }
 
     updateTempConnection(event) {
-        if (!this.tempConnection) return;
-        
-        const canvas = document.getElementById('canvas');
-        const canvasRect = canvas.getBoundingClientRect();
-        const endX = event.clientX - canvasRect.left;
-        const endY = event.clientY - canvasRect.top;
-        
+    if (!this.tempConnection) return;
+
+    const endPoint = this.clientToWorld(event.clientX, event.clientY);
+        if (!endPoint) return;
+        const endX = endPoint.x;
+        const endY = endPoint.y;
+
         const path = this.createBezierPath(
             this.tempConnection.startPos.x,
             this.tempConnection.startPos.y,
@@ -86,6 +89,7 @@ class NodeSystem {
         if (!this.isDragging || !this.tempConnection) return;
         
         this.isDragging = false;
+        const sourceNodeId = this.dragStartNode;
         
         // Find target node under mouse
         const targetElement = document.elementFromPoint(event.clientX, event.clientY);
@@ -93,13 +97,13 @@ class NodeSystem {
         
         if (targetNodeId && targetNodeId.startsWith('widget-') && 
             targetElement.classList.contains('node') &&
-            this.canConnect(this.dragStartNode, targetNodeId)) {
+            this.canConnect(sourceNodeId, targetNodeId)) {
             
-            // Create actual connection
-            this.createConnection(this.dragStartNode, targetNodeId);
+            // Create actual connection honoring input/output direction
+            this.connectNodesRespectingDirection(sourceNodeId, targetNodeId);
         } else {
             // Connection ended in empty space - create compatible widget
-            this.createWidgetFromConnection(event);
+            this.createWidgetFromConnection(sourceNodeId, event);
         }
         
         // Clean up temporary connection
@@ -144,7 +148,14 @@ class NodeSystem {
             'statistics': ['statistics'],
             'outfit': ['outfit'],
             'ship-class': ['ship-class'],
-            'information': ['information']
+            'information': ['information'],
+            'core': ['core'],
+            'berth': ['berth'],
+            'outfit-hull': ['outfit-hull'],
+            'loadout-hull': ['loadout-hull'],
+            'staff': ['staff'],
+            'troop': ['troop'],
+            'craft': ['craft']
         };
         
         return compatibilityMap[type1]?.includes(type2) || 
@@ -153,7 +164,13 @@ class NodeSystem {
 
     createConnection(sourceNodeId, targetNodeId) {
         const connectionId = this.getConnectionId(sourceNodeId, targetNodeId);
-        
+        const sourceNode = this.getNodeById(sourceNodeId);
+        const targetNode = this.getNodeById(targetNodeId);
+
+        // Ensure inputs only maintain a single parent connection
+        this.ensureSingleInputConnection(sourceNodeId, sourceNode);
+        this.ensureSingleInputConnection(targetNodeId, targetNode);
+
         const connection = {
             id: connectionId,
             sourceNodeId: sourceNodeId,
@@ -164,11 +181,11 @@ class NodeSystem {
         this.connections.set(connectionId, connection);
         
         // Update node connection tracking
-        const sourceNode = this.getNodeById(sourceNodeId);
-        const targetNode = this.getNodeById(targetNodeId);
         
-        if (sourceNode) sourceNode.connections.add(connectionId);
-        if (targetNode) targetNode.connections.add(connectionId);
+    if (sourceNode) sourceNode.connections.add(connectionId);
+    if (targetNode) targetNode.connections.add(connectionId);
+        this.notifyWidgetNodeChanged(sourceNode);
+        this.notifyWidgetNodeChanged(targetNode);
         
         // Create visual connection
         this.createConnectionElement(connection);
@@ -302,6 +319,9 @@ class NodeSystem {
         this.updateNodeConnectionState(connection.sourceNodeId);
         this.updateNodeConnectionState(connection.targetNodeId);
         
+    this.notifyWidgetNodeChanged(sourceNode);
+    this.notifyWidgetNodeChanged(targetNode);
+
         // Trigger validation
         if (window.preflightCheck) {
             window.preflightCheck.runCheck();
@@ -344,6 +364,7 @@ class NodeSystem {
     }
 
     showConnectionContextMenu(connectionId, event) {
+        this.destroyConnectionSelectionMenu();
         // Remove existing menu
         const existingMenu = document.querySelector('.connection-menu');
         if (existingMenu) existingMenu.remove();
@@ -430,32 +451,165 @@ class NodeSystem {
         }
     }
 
-    createWidgetFromConnection(event) {
-        const sourceNode = this.getNodeById(this.dragStartNode);
+    createWidgetFromConnection(sourceNodeId, event) {
+        const sourceNode = this.getNodeById(sourceNodeId);
         if (!sourceNode) return;
         
         // Determine compatible widget type based on source node type
         const compatibleWidgets = this.getCompatibleWidgetTypes(sourceNode.nodeType, sourceNode.type);
         if (compatibleWidgets.length === 0) return;
-        
-        // Calculate position for new widget
-        const canvas = document.getElementById('canvas');
-        const canvasRect = canvas.getBoundingClientRect();
-        const x = event.clientX - canvasRect.left - 150; // Offset to center widget
-        const y = event.clientY - canvasRect.top - 100;
-        
-        // Create the first compatible widget type
-        const widgetType = compatibleWidgets[0];
-        const newWidget = window.app.createWidget(widgetType, x, y);
-        
-        if (newWidget) {
-            // Find compatible node in new widget and connect
-            setTimeout(() => {
-                const compatibleNodeId = this.findCompatibleNode(newWidget, sourceNode);
-                if (compatibleNodeId && this.canConnect(this.dragStartNode, compatibleNodeId)) {
-                    this.createConnection(this.dragStartNode, compatibleNodeId);
-                }
-            }, 100); // Small delay to ensure widget is fully initialized
+        this.showConnectionSelectionMenu(sourceNode, sourceNodeId, compatibleWidgets, event);
+    }
+
+    clientToWorld(clientX, clientY) {
+        const workspace = document.getElementById('workspace');
+        if (!workspace) return null;
+        const rect = workspace.getBoundingClientRect();
+        const transform = window.app?.workspaceTransform || { scale: 1, translateX: 0, translateY: 0 };
+        const screenX = clientX - rect.left;
+        const screenY = clientY - rect.top;
+        const worldX = (screenX / transform.scale) - transform.translateX;
+        const worldY = (screenY / transform.scale) - transform.translateY;
+        return { x: worldX, y: worldY };
+    }
+
+    destroyConnectionSelectionMenu() {
+        if (this.connectionSelectionMenu) {
+            this.connectionSelectionMenu.remove();
+            this.connectionSelectionMenu = null;
+        }
+        if (this.connectionSelectionMenuDismissHandler) {
+            document.removeEventListener('click', this.connectionSelectionMenuDismissHandler);
+            this.connectionSelectionMenuDismissHandler = null;
+        }
+    }
+
+    showConnectionSelectionMenu(sourceNode, sourceNodeId, compatibleWidgets, event) {
+        this.destroyConnectionSelectionMenu();
+
+        const menu = document.createElement('div');
+        menu.className = 'connection-selection-menu';
+        menu.style.position = 'fixed';
+        menu.style.left = `${event.clientX}px`;
+        menu.style.top = `${event.clientY}px`;
+        menu.style.background = '#2d2d2d';
+        menu.style.border = '1px solid #555';
+        menu.style.borderRadius = '4px';
+        menu.style.padding = '4px 0';
+        menu.style.minWidth = '200px';
+        menu.style.zIndex = '10010';
+        menu.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+
+        menu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        const worldTarget = this.clientToWorld(event.clientX, event.clientY);
+        const targetWorld = worldTarget ? {
+            x: worldTarget.x - 150,
+            y: worldTarget.y - 100
+        } : { x: 0, y: 0 };
+
+        const widgetLabels = {
+            ship: 'Ship Design',
+            craft: 'Craft Design',
+            troops: 'Troop Unit',
+            missiles: 'Missile Design',
+            outfit: 'Ship Outfit',
+            loadouts: 'Equipment Loadout',
+            powerplants: 'Powerplant',
+            factories: 'Factory',
+            shipyards: 'Shipyard',
+            shipCore: 'Ship Core',
+            shipBerth: 'Ship Berths',
+            shipHulls: 'Hull Plan',
+            statistics: 'Statistics Hub',
+            reroute: 'Reroute Node',
+            power: 'Power',
+            data: 'Data'
+        };
+
+        compatibleWidgets.forEach((widgetType) => {
+            const label = widgetLabels[widgetType] || widgetType;
+            const item = document.createElement('div');
+            item.className = 'connection-selection-menu-item';
+            item.textContent = label;
+            item.style.padding = '8px 16px';
+            item.style.cursor = 'pointer';
+            item.style.fontSize = '14px';
+            item.style.color = '#e0e0e0';
+            item.style.transition = 'background 0.2s';
+            item.addEventListener('mouseenter', () => {
+                item.style.background = '#4a4a4a';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.background = 'transparent';
+            });
+            item.addEventListener('click', () => {
+                this.handleConnectionSelection(sourceNode, sourceNodeId, widgetType, targetWorld);
+            });
+            menu.appendChild(item);
+        });
+
+        document.body.appendChild(menu);
+        this.connectionSelectionMenu = menu;
+
+        this.connectionSelectionMenuDismissHandler = (dismissEvent) => {
+            if (menu.contains(dismissEvent.target)) return;
+            this.destroyConnectionSelectionMenu();
+        };
+        setTimeout(() => {
+            document.addEventListener('click', this.connectionSelectionMenuDismissHandler);
+        }, 0);
+    }
+
+    handleConnectionSelection(sourceNode, sourceNodeId, widgetType, targetWorld) {
+        this.destroyConnectionSelectionMenu();
+        const newWidget = window.app.createWidget(widgetType, targetWorld.x, targetWorld.y);
+        if (!newWidget) return;
+
+        if (widgetType === 'reroute' && typeof newWidget.configureForNodeType === 'function') {
+            newWidget.configureForNodeType(sourceNode.nodeType);
+        }
+
+        setTimeout(() => {
+            const compatibleNodeId = this.findCompatibleNode(newWidget, sourceNode);
+            if (compatibleNodeId && this.canConnect(sourceNodeId, compatibleNodeId)) {
+                this.connectNodesRespectingDirection(sourceNodeId, compatibleNodeId);
+            }
+        }, 100);
+    }
+
+    connectNodesRespectingDirection(nodeIdA, nodeIdB) {
+        const nodeA = this.getNodeById(nodeIdA);
+        const nodeB = this.getNodeById(nodeIdB);
+        if (!nodeA || !nodeB) return;
+
+        if (nodeA.type === 'output' && nodeB.type === 'input') {
+            this.createConnection(nodeIdA, nodeIdB);
+        } else if (nodeA.type === 'input' && nodeB.type === 'output') {
+            this.createConnection(nodeIdB, nodeIdA);
+        } else {
+            this.createConnection(nodeIdA, nodeIdB);
+        }
+    }
+
+    ensureSingleInputConnection(nodeId, cachedNode = null) {
+        const node = cachedNode || this.getNodeById(nodeId);
+        if (!node || node.type !== 'input' || !node.connections) return;
+        if (node.allowMultipleConnections) return;
+
+        const existingConnections = Array.from(node.connections);
+        for (const connectionId of existingConnections) {
+            this.removeConnection(connectionId);
+        }
+    }
+
+    notifyWidgetNodeChanged(nodeInfo) {
+        if (!nodeInfo) return;
+        const widget = window.widgetManager?.getWidget(nodeInfo.widgetId);
+        if (widget?.handleNodeConnectionChange) {
+            widget.handleNodeConnectionChange(nodeInfo.id);
         }
     }
     
@@ -463,48 +617,78 @@ class NodeSystem {
         // Define compatible widget types for different node types
         const compatibilityMap = {
             'power': {
-                'input': ['powerplants'], // Power input needs power output
-                'output': ['ship', 'craft'] // Power output can connect to ships/craft
+                'input': ['powerplants'],
+                'output': ['ship', 'craft']
             },
             'weapon': {
-                'input': ['missiles'], // Weapon input needs missiles
-                'output': ['ship', 'craft'] // Weapon output can connect to ships/craft
+                'input': ['missiles'],
+                'output': ['loadouts']
             },
             'component': {
-                'input': ['factories'], // Component input needs factories
-                'output': ['ship', 'craft', 'troops'] // Component output can connect to various widgets
+                'input': ['factories'],
+                'output': ['ship', 'craft', 'troops']
             },
             'magazine': {
-                'input': ['loadouts'], // Magazine input needs loadouts
-                'output': ['ship', 'craft'] // Magazine output can connect to ships/craft
+                'input': ['loadouts'],
+                'output': ['ship', 'craft']
             },
             'loadout': {
-                'input': ['loadouts'], // Loadout input needs loadout widgets
-                'output': ['ship', 'craft'] // Loadout output can connect to ships/craft
+                'input': ['ship'],
+                'output': []
             },
             'powerplant': {
-                'input': ['powerplants'], // Powerplant input needs powerplant widgets
-                'output': ['ship', 'craft'] // Powerplant output can connect to ships/craft
+                'input': ['powerplants'],
+                'output': ['ship', 'craft']
             },
             'data': {
-                'input': ['ship', 'craft', 'troops'], // Data input can come from various widgets
-                'output': ['factories', 'shipyards'] // Data output can go to production widgets
+                'input': ['ship', 'craft', 'troops'],
+                'output': ['factories', 'shipyards']
             },
             'outfit': {
-                'input': ['ship', 'craft'],
-                'output': ['outfit']
+                'input': ['ship'],
+                'output': []
             },
             'statistics': {
-                'input': ['ship', 'craft'],
+                'input': ['ship', 'outfit'],
                 'output': ['statistics']
             },
             'ship-class': {
                 'input': ['ship'],
                 'output': ['ship']
+            },
+            'core': {
+                'input': ['shipCore'],
+                'output': ['outfit']
+            },
+            'berth': {
+                'input': ['outfit'],
+                'output': ['shipBerth']
+            },
+            'outfit-hull': {
+                'input': ['outfit'],
+                'output': ['shipHulls']
+            },
+            'loadout-hull': {
+                'input': ['loadouts'],
+                'output': ['shipHulls']
+            },
+            'staff': {
+                'input': ['shipBerth'],
+                'output': ['shipHulls']
+            },
+            'troop': {
+                'input': ['troops'],
+                'output': ['shipBerth']
+            },
+            'craft': {
+                'input': ['craft'],
+                'output': ['loadouts']
             }
         };
-        
-        return compatibilityMap[nodeType]?.[nodeDirection] || [];
+
+        const base = compatibilityMap[nodeType]?.[nodeDirection] || [];
+        const results = Array.from(new Set([...base, 'reroute']));
+        return results;
     }
     
     findCompatibleNode(widget, sourceNode) {
@@ -561,9 +745,17 @@ class NodeSystem {
     toJSON() {
         const connectionsData = [];
         for (const connection of this.connections.values()) {
+            const sourceNode = this.getNodeById(connection.sourceNodeId);
+            const targetNode = this.getNodeById(connection.targetNodeId);
             connectionsData.push({
                 sourceNodeId: connection.sourceNodeId,
-                targetNodeId: connection.targetNodeId
+                targetNodeId: connection.targetNodeId,
+                sourceWidgetId: sourceNode?.widgetId || null,
+                targetWidgetId: targetNode?.widgetId || null,
+                sourceNodeType: sourceNode?.nodeType || null,
+                targetNodeType: targetNode?.nodeType || null,
+                sourceDirection: sourceNode?.type || null,
+                targetDirection: targetNode?.type || null
             });
         }
         return connectionsData;
@@ -575,8 +767,33 @@ class NodeSystem {
         
         // Recreate connections
         for (const connectionData of connectionsData) {
-            if (this.canConnect(connectionData.sourceNodeId, connectionData.targetNodeId)) {
-                this.createConnection(connectionData.sourceNodeId, connectionData.targetNodeId);
+            let sourceId = connectionData.sourceNodeId;
+            let targetId = connectionData.targetNodeId;
+
+            if (!this.getNodeById(sourceId) && connectionData.sourceWidgetId && connectionData.sourceNodeType) {
+                const fallbackSource = this.findNodeByMetadata(
+                    connectionData.sourceWidgetId,
+                    connectionData.sourceNodeType,
+                    connectionData.sourceDirection
+                );
+                if (fallbackSource) {
+                    sourceId = fallbackSource;
+                }
+            }
+
+            if (!this.getNodeById(targetId) && connectionData.targetWidgetId && connectionData.targetNodeType) {
+                const fallbackTarget = this.findNodeByMetadata(
+                    connectionData.targetWidgetId,
+                    connectionData.targetNodeType,
+                    connectionData.targetDirection
+                );
+                if (fallbackTarget) {
+                    targetId = fallbackTarget;
+                }
+            }
+
+            if (sourceId && targetId && this.canConnect(sourceId, targetId)) {
+                this.createConnection(sourceId, targetId);
             }
         }
     }
@@ -585,5 +802,17 @@ class NodeSystem {
         for (const connectionId of Array.from(this.connections.keys())) {
             this.removeConnection(connectionId);
         }
+    }
+
+    findNodeByMetadata(widgetId, nodeType, direction) {
+        if (!widgetId || !nodeType) return null;
+        const widget = window.widgetManager?.getWidget(widgetId);
+        if (!widget) return null;
+        for (const [nodeId, node] of widget.nodes.entries()) {
+            if (node.nodeType === nodeType && (!direction || node.type === direction)) {
+                return nodeId;
+            }
+        }
+        return null;
     }
 }

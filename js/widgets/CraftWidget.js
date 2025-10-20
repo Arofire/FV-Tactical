@@ -192,12 +192,12 @@ class CraftWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('input', 'power', 'Power', 0, 0.3, {
-            sectionId: 'components'
+        this.clearNodes();
+        this.addNode('output', 'craft', 'Craft', 1, 0.4, {
+            sectionId: 'meta',
+            anchorId: `${this.id}-meta`
         });
-        this.addNode('output', 'component', 'Craft Data', 1, 0.3, {
-            sectionId: 'stats'
-        });
+        this.reflowNodes();
     }
 
     getSerializedData() {

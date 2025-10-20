@@ -1097,25 +1097,48 @@ class OutfitWidget extends Widget {
     }
 
     createNodes() {
-        if (this.nodes.size > 0) {
-            this.reflowNodes();
-            return;
-        }
-        this.addNode('input', 'ship-class', 'Class', 0, 0.25, {
+        this.clearNodes();
+
+        this.addNode('input', 'outfit', 'Class', 0, 0.2, {
             anchorId: 'outfit-meta',
             sectionId: 'meta',
             minSpacing: 32
         });
-        this.addNode('input', 'powerplant', 'Powerplant', 0, 0.45, {
+
+        this.createExpandableNodeGroup('core-links', {
+            baseLabel: 'Core',
+            labelFormatter: (index) => index === 1 ? 'Core' : `Core ${index}`,
+            direction: 'input',
+            nodeType: 'core',
+            sectionId: 'meta',
+            anchorId: 'outfit-meta',
+            anchorOffset: 32,
+            minSpacing: 32,
+            relativeX: 0,
+            relativeY: 0.4,
+            maxFree: 2
+        });
+
+        this.addNode('output', 'statistics', 'Stats', 1, 0.2, {
+            anchorId: 'outfit-meta',
+            sectionId: 'meta',
+            minSpacing: 32,
+            anchorOffset: 48
+        });
+
+        this.addNode('output', 'berth', 'Berth', 1, 0.5, {
             anchorId: 'outfit-systems',
             sectionId: 'systems',
             minSpacing: 32
         });
-        this.addNode('output', 'information', 'Information', 1, 0.4, {
-            anchorId: 'outfit-weapons',
-            sectionId: 'weapons',
+
+        this.addNode('output', 'outfit-hull', 'Hull', 1, 0.35, {
+            anchorId: 'outfit-meta',
+            sectionId: 'meta',
+            anchorOffset: 80,
             minSpacing: 32
         });
+
         this.reflowNodes();
     }
 

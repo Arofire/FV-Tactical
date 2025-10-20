@@ -1,6 +1,11 @@
 class StatisticsWidget extends Widget {
-    constructor(shipWidget, x = 900, y = 100) {
-        super('statistics', 'Statistics', x, y, 340); // Remove fixed height
+    constructor(shipWidget = null, x = 900, y = 100) {
+        if (typeof shipWidget === 'number') {
+            y = typeof x === 'number' ? x : 100;
+            x = shipWidget;
+            shipWidget = null;
+        }
+        super('statistics', 'Statistics', x, y, 340);
         this.shipWidget = shipWidget;
         this.stats = {
             endurance: 0,
@@ -21,26 +26,26 @@ class StatisticsWidget extends Widget {
 
     createContent(contentElement) {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
-        
-        // Create Statistics section
+
         const statsSection = this.createSection('stats', 'Ship Statistics');
         const statFields = [
-            ['endurance','Endurance'],
-            ['developmentPoints','Development Points'],
-            ['shipyardMonths','Shipyard Months'],
-            ['thrustRatio','Thrust Ratio'],
-            ['burns','Burns'],
-            ['cargo','Cargo Capacity'],
-            ['remass','Remass'],
-            ['hFuel','H-Fuel'],
-            ['hangarBays','Hangar Bays'],
-            ['quantumRating','Quantum Rating'],
-            ['qcm','QCM'],
-            ['troopCapacity','Troop Capacity']
+            ['endurance', 'Endurance'],
+            ['developmentPoints', 'Development Points'],
+            ['shipyardMonths', 'Shipyard Months'],
+            ['thrustRatio', 'Thrust Ratio'],
+            ['burns', 'Burns'],
+            ['cargo', 'Cargo Capacity'],
+            ['remass', 'Remass'],
+            ['hFuel', 'H-Fuel'],
+            ['hangarBays', 'Hangar Bays'],
+            ['quantumRating', 'Quantum Rating'],
+            ['qcm', 'QCM'],
+            ['troopCapacity', 'Troop Capacity']
         ];
+
         statsSection.contentContainer.innerHTML = `
             <div class="stats-grid">
-                ${statFields.map(([key,label]) => `
+                ${statFields.map(([key, label]) => `
                     <div class="stat-input">
                         <label>${label}</label>
                         <input type="number" id="${this.id}-stat-${key}" value="${this.stats[key]}" min="0">
@@ -49,35 +54,133 @@ class StatisticsWidget extends Widget {
             </div>
         `;
         sectionsContainer.appendChild(statsSection.section);
-        
-        this.setupEventListeners();
+
+        const connectionsSection = this.createSection('sources', 'Linked Sources');
+        connectionsSection.contentContainer.innerHTML = `
+            <div class="component-list" id="${this.id}-source-list">
+                <div class="component-item placeholder" data-placeholder="true">No statistics connections</div>
+            </div>
+        `;
+        sectionsContainer.appendChild(connectionsSection.section);
+
+        this.refreshStatInputs();
+        this.updateSources();
     }
 
-    setupEventListeners() {
-        super.setupEventListeners();
-        Object.keys(this.stats).forEach(key => {
+    bindStatInputs() {
+        Object.keys(this.stats).forEach((key) => {
             const input = document.getElementById(`${this.id}-stat-${key}`);
             if (input) {
-                input.addEventListener('input', e => {
-                    const val = parseFloat(e.target.value) || 0;
-                    this.stats[key] = val;
+                input.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    this.stats[key] = Number.isFinite(val) ? val : 0;
                     this.syncToShip();
                 });
             }
         });
     }
 
+    setupEventListeners() {
+        super.setupEventListeners();
+        this.bindStatInputs();
+    }
+
+    createNodes() {
+        this.clearNodes();
+        this.addNode('input', 'statistics', 'Statistics In', 0, 0.5, {
+            sectionId: 'stats',
+            allowMultipleConnections: true
+        });
+        this.addNode('output', 'statistics', 'Statistics Out', 1, 0.5, {
+            sectionId: 'stats',
+            allowMultipleConnections: true
+        });
+        this.reflowNodes();
+    }
+
+    handleNodeConnectionChange(nodeId) {
+        super.handleNodeConnectionChange(nodeId);
+        this.updateSources();
+    }
+
+    updateSources() {
+        const list = document.getElementById(`${this.id}-source-list`);
+        if (!list || !window.nodeSystem) return;
+
+        list.innerHTML = '';
+        const connectedWidgets = new Map();
+
+        for (const node of this.nodes.values()) {
+            if (node.nodeType !== 'statistics' || node.type !== 'input') continue;
+            if (!node.connections) continue;
+            for (const connectionId of node.connections) {
+                const connection = window.nodeSystem.connections.get(connectionId);
+                if (!connection) continue;
+                const otherNodeId = connection.sourceNodeId === node.id
+                    ? connection.targetNodeId
+                    : connection.sourceNodeId;
+                const otherNode = window.nodeSystem.getNodeById(otherNodeId);
+                if (!otherNode) continue;
+                const widget = window.widgetManager?.getWidget(otherNode.widgetId);
+                if (widget) {
+                    connectedWidgets.set(widget.id, widget);
+                }
+            }
+        }
+
+        if (connectedWidgets.size === 0) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'component-item placeholder';
+            placeholder.dataset.placeholder = 'true';
+            placeholder.textContent = 'No statistics connections';
+            list.appendChild(placeholder);
+            return;
+        }
+
+        let primaryShip = null;
+
+        connectedWidgets.forEach((widget) => {
+            const item = document.createElement('div');
+            item.className = 'component-item';
+            item.textContent = widget.title || widget.type;
+            list.appendChild(item);
+
+            if (!primaryShip && widget.type === 'ship') {
+                primaryShip = widget;
+            }
+        });
+
+        if (primaryShip) {
+            this.shipWidget = primaryShip;
+            this.syncToShip();
+        }
+    }
+
     syncToShip() {
         if (!this.shipWidget) return;
+        this.shipWidget.shipData = this.shipWidget.shipData || {};
         this.shipWidget.shipData.statistics = { ...this.stats };
     }
 
+    refreshStatInputs() {
+        Object.keys(this.stats).forEach((key) => {
+            const input = document.getElementById(`${this.id}-stat-${key}`);
+            if (input) {
+                input.value = this.stats[key];
+            }
+        });
+    }
+
     getSerializedData() {
-        return { ...super.getSerializedData(), stats: this.stats };
+        return { stats: { ...this.stats } };
     }
 
     loadSerializedData(data) {
-        super.loadSerializedData(data);
-        if (data.stats) this.stats = { ...this.stats, ...data.stats };
+        if (data.stats) {
+            this.stats = { ...this.stats, ...data.stats };
+            this.refreshStatInputs();
+        }
+        this.syncToShip();
+        this.updateSources();
     }
 }

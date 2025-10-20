@@ -5,12 +5,13 @@ class PreflightCheck {
         this.widgetManager = widgetManager;
         this.nodeSystem = nodeSystem;
         
-        this.warnings = [];
+    this.alerts = [];
+    this.warnings = [];
         this.errors = [];
         this.techRequirements = [];
         
         // Track issues by widget ID
-        this.widgetIssues = new Map(); // widgetId -> { warnings: [], errors: [], techRequirements: [] }
+    this.widgetIssues = new Map(); // widgetId -> { alerts: [], warnings: [], errors: [], techRequirements: [] }
         
         // New floating overlay elements
         this.preflightToggle = document.getElementById('preflightControl');
@@ -30,7 +31,8 @@ class PreflightCheck {
     }
 
     runCheck() {
-        this.warnings = [];
+    this.alerts = [];
+    this.warnings = [];
         this.errors = [];
         this.techRequirements = [];
         this.widgetIssues.clear();
@@ -71,6 +73,9 @@ class PreflightCheck {
             case 'missiles':
                 this.checkMissilesWidget(widget);
                 break;
+            case 'outfit':
+                this.checkOutfitWidget(widget);
+                break;
             case 'loadouts':
                 this.checkLoadoutsWidget(widget);
                 break;
@@ -82,6 +87,15 @@ class PreflightCheck {
                 break;
             case 'shipyards':
                 this.checkShipyardsWidget(widget);
+                break;
+            case 'shipCore':
+                this.checkShipCoreWidget(widget);
+                break;
+            case 'shipBerth':
+                this.checkShipBerthWidget(widget);
+                break;
+            case 'shipHulls':
+                this.checkShipHullsWidget(widget);
                 break;
         }
     }
@@ -164,12 +178,16 @@ class PreflightCheck {
             : Object.values(hull || {}).reduce((sum, count) => sum + count, 0);
 
         // Connection expectations for new node layout
-        if (!this.hasConnectedNode(widget, 'outfit', 'output')) {
-            this.addWarning(`Ship "${widget.title}" should connect to an Outfit widget`, widget.id);
+        const outfitConnections = this.countNodeConnections(widget, 'outfit', 'output');
+        if (outfitConnections === 0) {
+            this.addWarning(`Ship "${widget.title}" requires an Outfit connection`, widget.id);
         }
 
-        if (!this.hasConnectedNode(widget, 'loadout', 'output')) {
-            this.addWarning(`Ship "${widget.title}" should connect to a Loadout widget`, widget.id);
+        const loadoutConnections = this.countNodeConnections(widget, 'loadout', 'output');
+        const magazineHulls = (hull?.magazine || 0);
+        const hangarHulls = (hull?.hangar || 0);
+        if ((magazineHulls + hangarHulls) > 0 && loadoutConnections === 0) {
+            this.addWarning(`Ship "${widget.title}" has magazine or hangar hulls without a Loadout connection`, widget.id);
         }
 
         const parentShip = this.getShipParent(widget);
@@ -231,15 +249,29 @@ class PreflightCheck {
     }
 
     hasConnectedNode(widget, nodeType, nodeDirection) {
-        if (!this.nodeSystem || !widget.nodes) return false;
-        
-        for (const [nodeId, node] of widget.nodes) {
+        return this.countNodeConnections(widget, nodeType, nodeDirection) > 0;
+    }
+
+    countNodeConnections(widget, nodeType, nodeDirection) {
+        if (!widget?.nodes) return 0;
+        let total = 0;
+        for (const node of widget.nodes.values()) {
             if (node.nodeType === nodeType && node.type === nodeDirection) {
-                // Check if this node has any connections
-                return node.connections && node.connections.size > 0;
+                total += node.connections ? node.connections.size : 0;
             }
         }
-        return false;
+        return total;
+    }
+
+    getParentWidgetByType(widget, type) {
+        if (!widget?.parents || widget.parents.size === 0 || !this.widgetManager) return null;
+        for (const parentId of widget.parents) {
+            const parentWidget = this.widgetManager.getWidget(parentId);
+            if (parentWidget && parentWidget.type === type) {
+                return parentWidget;
+            }
+        }
+        return null;
     }
 
     checkCraftWidget(widget) {
@@ -270,6 +302,11 @@ class PreflightCheck {
         if (totalMass > 200) {
             this.addWarning(`Craft "${widget.title}" is heavy for a small craft (${totalMass} mass units)`, widget.id);
         }
+
+        const craftLinks = this.countNodeConnections(widget, 'craft', 'output');
+        if (craftLinks === 0) {
+            this.addAlert(`Craft "${widget.title}" is not assigned to any loadout`, widget.id);
+        }
     }
 
     checkTroopsWidget(widget) {
@@ -294,6 +331,11 @@ class PreflightCheck {
                 }
             }
         }
+
+        const troopLinks = this.countNodeConnections(widget, 'troop', 'output');
+        if (troopLinks === 0) {
+            this.addAlert(`Troop unit "${widget.title}" is not assigned to any berth plan`, widget.id);
+        }
     }
 
     checkMissilesWidget(widget) {
@@ -317,6 +359,90 @@ class PreflightCheck {
                 }
             }
         }
+
+        const weaponLinks = this.countNodeConnections(widget, 'weapon', 'output');
+        if (weaponLinks === 0) {
+            this.addAlert(`Missile design "${widget.title}" is not assigned to any loadout`, widget.id);
+        }
+    }
+
+    checkOutfitWidget(widget) {
+        const classLinks = this.countNodeConnections(widget, 'outfit', 'input');
+        if (classLinks === 0) {
+            this.addError(`Outfit "${widget.title}" must connect to a Ship Class`, widget.id);
+        }
+
+        const coreLinks = this.countNodeConnections(widget, 'core', 'input');
+        if (coreLinks === 0) {
+            this.addError(`Outfit "${widget.title}" requires at least one Ship Core`, widget.id);
+        }
+
+        const berthLinks = this.countNodeConnections(widget, 'berth', 'output');
+        if (berthLinks === 0) {
+            this.addWarning(`Outfit "${widget.title}" is not providing any Berth plans`, widget.id);
+        }
+
+        const hullLinks = this.countNodeConnections(widget, 'outfit-hull', 'output');
+        if (hullLinks === 0) {
+            this.addAlert(`Outfit "${widget.title}" is not assigned to any Hull plan`, widget.id);
+        }
+    }
+
+    checkShipCoreWidget(widget) {
+        const coreLinks = this.countNodeConnections(widget, 'core', 'output');
+        if (coreLinks === 0) {
+            this.addAlert(`Ship core "${widget.title}" is unused`, widget.id);
+        }
+    }
+
+    checkShipBerthWidget(widget) {
+        const outfitLinks = this.countNodeConnections(widget, 'berth', 'input');
+        if (outfitLinks === 0) {
+            this.addAlert(`Berth plan "${widget.title}" is not linked to an Outfit`, widget.id);
+        }
+
+        const troopLinks = this.countNodeConnections(widget, 'troop', 'input');
+        if (troopLinks === 0) {
+            this.addAlert(`Berth plan "${widget.title}" has unused berth capacity`, widget.id);
+        }
+
+        const staffLinks = this.countNodeConnections(widget, 'staff', 'output');
+        if (staffLinks === 0) {
+            this.addAlert(`Berth plan "${widget.title}" does not produce a staff plan`, widget.id);
+        }
+    }
+
+    checkShipHullsWidget(widget) {
+        const outfitLinks = this.countNodeConnections(widget, 'outfit-hull', 'input');
+        if (outfitLinks === 0) {
+            this.addError(`Hull plan "${widget.title}" requires an Outfit connection`, widget.id);
+        }
+
+        const loadoutLinks = this.countNodeConnections(widget, 'loadout-hull', 'input');
+        const staffLinks = this.countNodeConnections(widget, 'staff', 'input');
+
+        const outfitWidget = this.getParentWidgetByType(widget, 'outfit');
+        const shipWidget = outfitWidget ? this.getShipParent(outfitWidget) : null;
+
+        if (shipWidget) {
+            const hulls = shipWidget.shipData?.hullComposition || {};
+            const magazineHulls = hulls.magazine || 0;
+            const hangarHulls = hulls.hangar || 0;
+            if ((magazineHulls + hangarHulls) > 0 && loadoutLinks === 0) {
+                this.addAlert(`Hull plan "${widget.title}" has magazine or hangar capacity without a Loadout connection`, widget.id);
+            }
+        }
+
+        if (outfitWidget) {
+            const modules = outfitWidget.outfitData?.systemsData?.modules || [];
+            const hasBerthingSystems = modules.some(module => {
+                const key = (module?.moduleId || module?.name || '').toString().toLowerCase();
+                return key.includes('berth');
+            });
+            if (hasBerthingSystems && staffLinks === 0) {
+                this.addAlert(`Hull plan "${widget.title}" has berthing systems but no Staff plan connection`, widget.id);
+            }
+        }
     }
 
     checkLoadoutsWidget(widget) {
@@ -334,6 +460,26 @@ class PreflightCheck {
             if (weaponCount > 0 && ammoCount === 0) {
                 this.addWarning(`Loadout "${widget.title}" has weapons but no ammunition`, widget.id);
             }
+        }
+
+        const classLinks = this.countNodeConnections(widget, 'loadout', 'input');
+        if (classLinks === 0) {
+            this.addAlert(`Loadout "${widget.title}" is not linked to a ship class`, widget.id);
+        }
+
+        const craftLinks = this.countNodeConnections(widget, 'craft', 'input');
+        if (craftLinks === 0) {
+            this.addAlert(`Loadout "${widget.title}" has unused hangar bays`, widget.id);
+        }
+
+        const weaponLinks = this.countNodeConnections(widget, 'weapon', 'input');
+        if (weaponLinks === 0) {
+            this.addAlert(`Loadout "${widget.title}" has unused magazines`, widget.id);
+        }
+
+        const hullLinks = this.countNodeConnections(widget, 'loadout-hull', 'output');
+        if (hullLinks === 0) {
+            this.addAlert(`Loadout "${widget.title}" is not assigned to a hull plan`, widget.id);
         }
     }
 
@@ -455,6 +601,11 @@ class PreflightCheck {
         }
     }
 
+    addAlert(message, sourceId) {
+        this.alerts.push({ message, sourceId, type: 'alert' });
+        this.addToWidgetIssues(sourceId, 'alerts', { message, type: 'alert' });
+    }
+
     addWarning(message, sourceId) {
         this.warnings.push({ message, sourceId, type: 'warning' });
         this.addToWidgetIssues(sourceId, 'warnings', { message, type: 'warning' });
@@ -474,7 +625,7 @@ class PreflightCheck {
         if (!sourceId || sourceId === 'empire' || sourceId.startsWith('connection-')) return;
         
         if (!this.widgetIssues.has(sourceId)) {
-            this.widgetIssues.set(sourceId, { warnings: [], errors: [], techRequirements: [] });
+            this.widgetIssues.set(sourceId, { alerts: [], warnings: [], errors: [], techRequirements: [] });
         }
         
         this.widgetIssues.get(sourceId)[category].push(issue);
@@ -491,6 +642,7 @@ class PreflightCheck {
             const widget = this.widgetManager.getWidget(widgetId);
             if (widget) {
                 const allIssues = [
+                    ...issues.alerts,
                     ...issues.errors,
                     ...issues.warnings,
                     ...issues.techRequirements
@@ -498,7 +650,8 @@ class PreflightCheck {
                 widget.updatePreflightIndicator(
                     issues.warnings.length,
                     issues.errors.length + issues.techRequirements.length,
-                    allIssues
+                    allIssues,
+                    issues.alerts.length
                 );
             }
         }
@@ -543,6 +696,7 @@ class PreflightCheck {
     updateSummaryBadges() {
         const summaryErrors = document.getElementById('summaryErrors');
         const summaryWarnings = document.getElementById('summaryWarnings');
+        const summaryAlerts = document.getElementById('summaryAlerts');
         
         if (!summaryErrors || !summaryWarnings) return;
         const filteredWarnings = this.warnings;
@@ -550,6 +704,15 @@ class PreflightCheck {
         // Convert unmet tech requirements to errors
         const techErrors = this.techRequirements.length > 0 ? this.techRequirements : [];
         const totalErrors = this.errors.length + techErrors.length;
+
+        if (summaryAlerts) {
+            if (this.alerts.length > 0) {
+                summaryAlerts.textContent = this.alerts.length;
+                summaryAlerts.style.display = 'inline-block';
+            } else {
+                summaryAlerts.style.display = 'none';
+            }
+        }
         
         // Update warning badge
         if (filteredWarnings.length > 0) {
@@ -574,6 +737,16 @@ class PreflightCheck {
         // Create current issues list with unique IDs
         const currentIssues = new Map();
         
+        // Add alerts
+        this.alerts.forEach(alert => {
+            const id = `alert_${alert.message}_${alert.sourceId}`;
+            currentIssues.set(id, {
+                type: 'alert',
+                message: alert.message,
+                sourceId: alert.sourceId
+            });
+        });
+
         // Add warnings
         this.warnings.forEach(warning => {
             const id = `warning_${warning.message}_${warning.sourceId}`;
@@ -681,9 +854,14 @@ class PreflightCheck {
         if (summaryErrors && summaryWarnings) {
             const totalErrors = this.errors.length + this.techRequirements.length;
             const totalWarnings = this.warnings.length;
+            const summaryAlerts = document.getElementById('summaryAlerts');
             
             summaryErrors.textContent = totalErrors;
             summaryWarnings.textContent = totalWarnings;
+            if (summaryAlerts) {
+                summaryAlerts.textContent = this.alerts.length;
+                summaryAlerts.style.display = this.alerts.length > 0 ? 'inline' : 'none';
+            }
             
             // Hide badges if count is 0
             summaryErrors.style.display = totalErrors > 0 ? 'inline' : 'none';
@@ -693,6 +871,7 @@ class PreflightCheck {
 
     getSummary() {
         return {
+            alertCount: this.alerts.length,
             errorCount: this.errors.length,
             warningCount: this.warnings.length,
             techRequirementCount: this.techRequirements.length,

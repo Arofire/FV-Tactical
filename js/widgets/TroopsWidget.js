@@ -181,9 +181,12 @@ class TroopsWidget extends Widget {
     }
 
     createNodes() {
-        this.addNode('output', 'component', 'Troop Data', 1, 0.5, {
-            sectionId: 'stats'
+        this.clearNodes();
+        this.addNode('output', 'troop', 'Troop', 1, 0.4, {
+            sectionId: 'meta',
+            anchorId: `${this.id}-meta`
         });
+        this.reflowNodes();
     }
 
     getSerializedData() {

@@ -22,6 +22,9 @@ class Widget {
         
     this.nodes = new Map(); // input/output nodes for connections
     this.connections = new Set(); // connections to other widgets
+    this.expandableNodeGroups = new Map(); // dynamic node groups by id
+    this.nodeGroupMembership = new Map(); // nodeId -> groupId mapping
+    this.nodeCounters = new Map(); // deterministic node id counters
     // Hierarchy relationships
     this.parents = new Set();
     this.children = new Set();
@@ -60,9 +63,9 @@ class Widget {
         const controls = document.createElement('div');
         controls.className = 'widget-controls';
         
-        const pinBtn = document.createElement('button');
-        pinBtn.className = 'widget-control-btn pin';
-        pinBtn.innerHTML = '📌';
+    const pinBtn = document.createElement('button');
+    pinBtn.className = 'widget-control-btn pin';
+    pinBtn.innerHTML = '🖈';
         pinBtn.title = 'Pin widget';
         pinBtn.onclick = (e) => {
             e.stopPropagation();
@@ -247,8 +250,26 @@ class Widget {
         // Example: this.addNode('input', 'power', 'Power Input', 0, 0.5);
     }
 
+    clearNodes() {
+        for (const nodeId of Array.from(this.nodes.keys())) {
+            this.removeNode(nodeId);
+        }
+        this.expandableNodeGroups.clear();
+        this.nodeGroupMembership.clear();
+        this.nodeCounters.clear();
+    }
+
     addNode(type, nodeType, label, relativeX, relativeY, options = {}) {
-        const nodeId = `${this.id}-${nodeType}-${Date.now()}`;
+        const counterKey = `${type}:${nodeType}`;
+        let nodeId = options.nodeId;
+        if (!nodeId) {
+            const nextIndex = (this.nodeCounters.get(counterKey) || 0) + 1;
+            this.nodeCounters.set(counterKey, nextIndex);
+            nodeId = `${this.id}-${counterKey}-${nextIndex}`;
+        } else {
+            const nextIndex = (this.nodeCounters.get(counterKey) || 0) + 1;
+            this.nodeCounters.set(counterKey, nextIndex);
+        }
         const node = {
             id: nodeId,
             type: type, // 'input' or 'output'
@@ -260,7 +281,9 @@ class Widget {
             anchorId: options.anchorId || null,
             minSpacing: options.minSpacing || 28,
             anchorOffset: options.anchorOffset || 0,
-            sectionId: options.sectionId || null // Which section to place the node in
+            sectionId: options.sectionId || null, // Which section to place the node in
+            allowMultipleConnections: !!options.allowMultipleConnections,
+            groupId: options.groupId || null
         };
         
         this.nodes.set(nodeId, node);
@@ -381,6 +404,111 @@ class Widget {
         }
         
         this.nodes.delete(nodeId);
+        if (node.groupId) {
+            const group = this.expandableNodeGroups.get(node.groupId);
+            if (group) {
+                group.nodes = group.nodes.filter(id => id !== nodeId);
+            }
+            this.nodeGroupMembership.delete(nodeId);
+        }
+    }
+
+    handleNodeConnectionChange(nodeId) {
+        const groupId = this.nodeGroupMembership.get(nodeId);
+        if (!groupId) return;
+        this.updateExpandableGroup(groupId);
+    }
+
+    createExpandableNodeGroup(groupId, config = {}) {
+        const groupConfig = {
+            baseLabel: config.baseLabel || 'Connection',
+            labelFormatter: typeof config.labelFormatter === 'function'
+                ? config.labelFormatter
+                : (index) => `${config.baseLabel || 'Connection'} ${index}`,
+            direction: config.direction || 'input',
+            nodeType: config.nodeType,
+            sectionId: config.sectionId || null,
+            anchorId: config.anchorId || null,
+            anchorOffset: config.anchorOffset || 0,
+            minSpacing: config.minSpacing || 28,
+            minAvailable: typeof config.minAvailable === 'number' ? config.minAvailable : 1,
+            maxFree: typeof config.maxFree === 'number' ? config.maxFree : 2,
+            allowMultipleConnections: !!config.allowMultipleConnections,
+            relativeX: typeof config.relativeX === 'number' ? config.relativeX : (config.direction === 'output' ? 1 : 0),
+            relativeY: typeof config.relativeY === 'number' ? config.relativeY : 0.5,
+            nodes: []
+        };
+        this.expandableNodeGroups.set(groupId, groupConfig);
+        const initial = Math.max(config.initialNodes || 1, 1);
+        for (let i = 0; i < initial; i++) {
+            this.addExpandableGroupNode(groupId);
+        }
+        this.updateExpandableGroup(groupId);
+    }
+
+    addExpandableGroupNode(groupId) {
+        const group = this.expandableNodeGroups.get(groupId);
+        if (!group) return null;
+        const index = group.nodes.length + 1;
+        const label = group.labelFormatter(index);
+        const nodeId = this.addNode(
+            group.direction,
+            group.nodeType,
+            label,
+            group.relativeX,
+            group.relativeY,
+            {
+                sectionId: group.sectionId,
+                anchorId: group.anchorId,
+                anchorOffset: group.anchorOffset,
+                minSpacing: group.minSpacing,
+                allowMultipleConnections: group.allowMultipleConnections,
+                groupId
+            }
+        );
+        group.nodes.push(nodeId);
+        this.nodeGroupMembership.set(nodeId, groupId);
+        this.reflowNodes();
+        return nodeId;
+    }
+
+    updateExpandableGroup(groupId) {
+        const group = this.expandableNodeGroups.get(groupId);
+        if (!group) return;
+
+        group.nodes = group.nodes.filter(nodeId => this.nodes.has(nodeId));
+        let freeNodes = group.nodes.filter(nodeId => {
+            const node = this.nodes.get(nodeId);
+            return node && node.connections.size === 0;
+        });
+
+        if (freeNodes.length < group.minAvailable) {
+            this.addExpandableGroupNode(groupId);
+            return;
+        }
+
+        while (freeNodes.length > group.maxFree && group.nodes.length > group.minAvailable) {
+            const nodeId = freeNodes.pop();
+            const node = this.nodes.get(nodeId);
+            if (!node || node.connections.size > 0) {
+                continue;
+            }
+            this.removeNode(nodeId);
+        }
+        this.reflowNodes();
+    }
+
+    clampToCanvasBounds() {
+        const canvas = document.getElementById('canvas');
+        if (!canvas) return;
+        const canvasWidth = canvas.offsetWidth;
+        const canvasHeight = canvas.offsetHeight;
+        const widgetWidth = this.element?.offsetWidth || this.width || 0;
+        const widgetHeight = this.element?.offsetHeight || this.height || 0;
+        const maxX = Math.max(0, canvasWidth - widgetWidth);
+        const maxY = Math.max(0, canvasHeight - widgetHeight);
+        this.x = Math.max(0, Math.min(this.x, maxX));
+        this.y = Math.max(0, Math.min(this.y, maxY));
     }
 
     setPosition(x, y, options = {}) {
@@ -390,9 +518,10 @@ class Widget {
         if (markManual) {
             this.manualPosition = true;
         }
+        this.clampToCanvasBounds();
         if (this.element) {
-            this.element.style.left = x + 'px';
-            this.element.style.top = y + 'px';
+            this.element.style.left = this.x + 'px';
+            this.element.style.top = this.y + 'px';
         }
         if (updateConnections && window.nodeSystem) {
             window.nodeSystem.updateConnections();
@@ -555,10 +684,14 @@ class Widget {
         const oldY = this.y;
         this.x = e.clientX - this.dragOffset.x;
         this.y = e.clientY - this.dragOffset.y;
-        
-        // No constraints - infinite workspace
-        this.element.style.left = this.x + 'px';
-        this.element.style.top = this.y + 'px';
+
+        // Constrain movement to the canvas bounds
+        this.clampToCanvasBounds();
+
+        if (this.element) {
+            this.element.style.left = this.x + 'px';
+            this.element.style.top = this.y + 'px';
+        }
         
         // Update node connections now (will re-run if cascade applies)
         window.nodeSystem.updateConnections();
@@ -576,8 +709,11 @@ class Widget {
                     if (childWidget) {
                         childWidget.x += dx;
                         childWidget.y += dy;
-                        childWidget.element.style.left = childWidget.x + 'px';
-                        childWidget.element.style.top = childWidget.y + 'px';
+                        childWidget.clampToCanvasBounds();
+                        if (childWidget.element) {
+                            childWidget.element.style.left = childWidget.x + 'px';
+                            childWidget.element.style.top = childWidget.y + 'px';
+                        }
                         childWidget.children.forEach(grand => stack.push(grand));
                     }
                 }
@@ -674,24 +810,24 @@ class Widget {
         }
     }
 
-    updatePreflightIndicator(warnings = 0, errors = 0, issues = []) {
+    updatePreflightIndicator(warnings = 0, errors = 0, issues = [], alerts = 0) {
         const indicator = document.getElementById(`${this.id}-preflight`);
         if (!indicator) return;
-        
-        if (warnings === 0 && errors === 0) {
+
+        if (warnings === 0 && errors === 0 && alerts === 0) {
             indicator.style.display = 'none';
             return;
         }
         
         indicator.style.display = 'flex';
         indicator.innerHTML = '';
-        
-        if (errors > 0) {
-            const errorBadge = document.createElement('span');
-            errorBadge.className = 'preflight-badge error';
-            errorBadge.textContent = errors;
-            errorBadge.title = `${errors} error${errors > 1 ? 's' : ''}`;
-            indicator.appendChild(errorBadge);
+
+        if (alerts > 0) {
+            const alertBadge = document.createElement('span');
+            alertBadge.className = 'preflight-badge alert';
+            alertBadge.textContent = alerts;
+            alertBadge.title = `${alerts} alert${alerts > 1 ? 's' : ''}`;
+            indicator.appendChild(alertBadge);
         }
         
         if (warnings > 0) {
@@ -700,6 +836,14 @@ class Widget {
             warningBadge.textContent = warnings;
             warningBadge.title = `${warnings} warning${warnings > 1 ? 's' : ''}`;
             indicator.appendChild(warningBadge);
+        }
+
+        if (errors > 0) {
+            const errorBadge = document.createElement('span');
+            errorBadge.className = 'preflight-badge error';
+            errorBadge.textContent = errors;
+            errorBadge.title = `${errors} error${errors > 1 ? 's' : ''}`;
+            indicator.appendChild(errorBadge);
         }
         
         if (issues.length > 0) {
@@ -726,7 +870,7 @@ class Widget {
         this.pinned = true;
         const pinBtn = this.element.querySelector('.pin');
         if (pinBtn) {
-            pinBtn.innerHTML = '📍';
+            pinBtn.innerHTML = '🖈';
             pinBtn.title = 'Unpin widget';
         }
         
@@ -743,7 +887,7 @@ class Widget {
         this.pinned = false;
         const pinBtn = this.element.querySelector('.pin');
         if (pinBtn) {
-            pinBtn.innerHTML = '📌';
+            pinBtn.innerHTML = '🖈';
             pinBtn.title = 'Pin widget';
         }
         
@@ -796,6 +940,17 @@ class Widget {
         if (!node) return null;
         const nodeElement = document.getElementById(nodeId);
         if (nodeElement) {
+            const workspace = document.getElementById('workspace');
+            const transform = window.app?.workspaceTransform || { scale: 1, translateX: 0, translateY: 0 };
+            if (workspace) {
+                const workspaceRect = workspace.getBoundingClientRect();
+                const rect = nodeElement.getBoundingClientRect();
+                const centerScreenX = rect.left - workspaceRect.left + rect.width / 2;
+                const centerScreenY = rect.top - workspaceRect.top + rect.height / 2;
+                const worldX = (centerScreenX / transform.scale) - transform.translateX;
+                const worldY = (centerScreenY / transform.scale) - transform.translateY;
+                return { x: worldX, y: worldY };
+            }
             const centerX = this.x + nodeElement.offsetLeft + nodeElement.offsetWidth / 2;
             const centerY = this.y + nodeElement.offsetTop + nodeElement.offsetHeight / 2;
             return { x: centerX, y: centerY };
@@ -813,14 +968,24 @@ class Widget {
 
     // Serialization
     toJSON() {
+        const elementWidth = this.element ? this.element.offsetWidth : null;
+        const elementHeight = this.element ? this.element.offsetHeight : null;
+        const inlineWidth = this.element?.style?.width;
+        const inlineHeight = this.element?.style?.height;
+        const width = typeof elementWidth === 'number' && elementWidth > 0 ? elementWidth : this.width;
+        const height = typeof elementHeight === 'number' && elementHeight > 0 ? elementHeight : this.height;
+        this.width = width;
+        this.height = height;
         return {
             type: this.type,
             title: this.title,
             id: this.id,
             x: this.x,
             y: this.y,
-            width: this.width,
-            height: this.height,
+            width,
+            height,
+            explicitWidth: !!inlineWidth,
+            explicitHeight: !!inlineHeight,
             minimized: this.minimized,
             parents: Array.from(this.parents),
             children: Array.from(this.children),
@@ -837,17 +1002,35 @@ class Widget {
     fromJSON(data) {
         this.x = data.x || this.x;
         this.y = data.y || this.y;
-    this.width = data.width || this.width;
-    this.height = data.height || this.height;
+    const hasExplicitWidth = data.explicitWidth ?? true;
+    const hasExplicitHeight = data.explicitHeight ?? false;
+    if (typeof data.width === 'number') {
+        this.width = data.width;
+    }
+    if (typeof data.height === 'number') {
+        this.height = data.height;
+    }
     this.minimized = data.minimized || false;
     this.manualPosition = true;
         if (data.parents) this.parents = new Set(data.parents);
         if (data.children) this.children = new Set(data.children);
         
+        this.clampToCanvasBounds();
+
         this.element.style.left = this.x + 'px';
         this.element.style.top = this.y + 'px';
-        this.element.style.width = this.width + 'px';
-        this.element.style.height = this.height + 'px';
+        if (hasExplicitWidth && typeof this.width === 'number' && this.width > 0) {
+            this.element.style.width = this.width + 'px';
+        } else {
+            this.element.style.width = '';
+            this.width = this.element.offsetWidth || this.width;
+        }
+        if (hasExplicitHeight && typeof this.height === 'number' && this.height > 0) {
+            this.element.style.height = this.height + 'px';
+        } else {
+            this.element.style.height = '';
+            this.height = this.element.offsetHeight || this.height;
+        }
         
         if (this.minimized) {
             this.element.classList.add('minimized');

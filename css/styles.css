@@ -31,10 +31,10 @@ body {
 }
 
 .left-panel {
-    width: 360px;
+    /* width: 360px; */
     display: flex;
     gap: 8px;
-    pointer-events: all;
+    /* pointer-events: all; */
     /* border-right: 2px solid #555; */
 }
 
@@ -221,6 +221,10 @@ body {
     background: #ff4444;
 }
 
+.preflight-badge.alert {
+    background: #4080f0;
+}
+
 /* Main Workspace */
 .workspace {
     position: relative;
@@ -232,20 +236,6 @@ body {
     z-index: 50; /* Behind panels */
 }
 
-/* Workspace Background Grid - covers entire workspace */
-.workspace::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        radial-gradient(circle, #333 1px, transparent 1px);
-    background-size: 20px 20px;
-    pointer-events: none;
-    z-index: -1;
-}
 
 /* Empire Bar */
 .empire-bar {
@@ -309,6 +299,7 @@ body {
     user-select: none;
     opacity: 0.7;
     transition: opacity 0.3s ease;
+    z-index: 200;
 }
 
 .empty-canvas-text.hidden {
@@ -317,14 +308,19 @@ body {
 
 /* Canvas - Infinite workspace */
 .canvas {
-    flex: 1;
-    position: relative;
+    flex: none; /* Prevent flexbox from shrinking the canvas height */
+    position: absolute; /* Remove from document flow so overlays remain visible */
+    top: 0;
+    left: 0;
     overflow: visible;
     /* Temporarily reduced workspace size */
     width: 6000px;
     height: 4000px;
     /* Use top-left origin so math for world <-> screen coords is straightforward */
     transform-origin: 0 0;
+    background-color: #1a1a1a;
+    background-image: radial-gradient(circle, #333 1px, transparent 1px);
+    background-size: 20px 20px;
 }
 
 /* Connection SVG Overlay */
@@ -337,7 +333,7 @@ body {
     height: 4000px; /* keep in sync with .canvas dimensions */
     /* Let pointer events fall through to widgets; individual paths can still capture events */
     pointer-events: none;
-    z-index: 50;
+    z-index: 5;
     overflow: visible; /* ensure curves near edges are visible */
 }
 
@@ -500,7 +496,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    /* padding-right: 4px; */
+    padding-right: 8px;
+    padding-bottom: 8px;
     max-height: 360px;
     overflow-y: auto;
     overflow: hidden;
@@ -531,6 +528,12 @@ body {
     border-color: #ff4444; 
     background: rgba(255,68,68,0.07); 
     color: #ff9999; 
+}
+
+.preflight-issue-item.alert {
+    border-color: #4080f0;
+    background: rgba(64,128,240,0.07);
+    color: #a8c4ff;
 }
 
 .preflight-issue-item.removing {
@@ -567,9 +570,10 @@ body {
     gap: 8px;
     padding: 0;
     padding-bottom: 10px;
-    padding-right: 10px;
+    margin-right: 10px;
+    /* padding-right: 10px; */
     border-bottom: 1px solid #444;
-    background: #333;
+    /* background: #333; */
     overflow: hidden; /* Prevent horizontal scrollbar */
     flex-shrink: 0; /* Prevent controls from shrinking */
 }
@@ -585,7 +589,7 @@ body {
     font-size: 11px;
     line-height: 1.2;
     transition: background 0.2s ease;
-    white-space: nowrap; /* Keep labels on one line */
+    /* white-space: nowrap; */ /* Keep labels on one line */
 }
 
 .tech-control-btn:hover {
@@ -613,6 +617,7 @@ body {
   left: 16px;
   top: 12px;
   display: flex;
+  margin-top: 8px;
   gap: 8px;
   z-index: 180;
   pointer-events: auto;

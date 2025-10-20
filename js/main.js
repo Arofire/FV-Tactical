@@ -87,13 +87,8 @@ class FVTacticalApp {
     }
 
     setupWorkspaceUtilities() {
-        const resetBtn = document.getElementById('resetViewBtn');
         const cascadeBtn = document.getElementById('toggleCascadeDrag');
-        const minimapBtn = document.getElementById('minimapToggle');
-        const workspace = document.getElementById('workspace');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.fitToContent());
-        }
+    const minimapBtn = document.getElementById('minimapToggle');
 
         if (cascadeBtn) {
             cascadeBtn.addEventListener('click', () => {
@@ -130,44 +125,6 @@ class FVTacticalApp {
             minimapBtn.title = 'Hide minimap';
         }
         // Removed workspace double-click to avoid accidental zoom/scale changes when adding widgets.
-    }
-
-    fitToContent(padding = 80) {
-        const bounds = this.getWorkspaceBounds();
-        const workspace = document.getElementById('workspace');
-        if (!bounds || !workspace) return;
-        const viewportWidth = workspace.clientWidth;
-        const viewportHeight = workspace.clientHeight;
-        const contentWidth = bounds.maxX - bounds.minX;
-        const contentHeight = bounds.maxY - bounds.minY;
-        if (contentWidth <= 0 || contentHeight <= 0) {
-            // If no measurable content, avoid unexpected zoom/translate flicker
-            if (this.workspaceTransform.scale !== 1) {
-                this.resetView();
-            }
-            return;
-        }
-        const scaleX = (viewportWidth - padding) / contentWidth;
-        const scaleY = (viewportHeight - padding) / contentHeight;
-        const targetScale = Math.max(0.1, Math.min(2.5, Math.min(scaleX, scaleY)));
-        this.workspaceTransform.scale = targetScale;
-        // Center
-        const centerX = (bounds.minX + bounds.maxX) / 2;
-        const centerY = (bounds.minY + bounds.maxY) / 2;
-        this.workspaceTransform.translateX = viewportWidth / 2 - centerX * targetScale;
-        this.workspaceTransform.translateY = viewportHeight / 2 - centerY * targetScale;
-        this.updateWorkspaceTransform();
-    }
-
-    resetView() {
-        const workspace = document.getElementById('workspace');
-        if (!workspace) return;
-        const viewportWidth = workspace.clientWidth;
-        const viewportHeight = workspace.clientHeight;
-        this.workspaceTransform.scale = 1;
-        this.workspaceTransform.translateX = viewportWidth / 2 - 400; // Assume nominal center region
-        this.workspaceTransform.translateY = viewportHeight / 2 - 300;
-        this.updateWorkspaceTransform();
     }
 
     setupTechTreeControls() {
@@ -286,7 +243,7 @@ class FVTacticalApp {
             canvas.addEventListener('dblclick', (e) => {
                 if (e.target === canvas) {
                     e.preventDefault();
-                    e.stopPropagation(); // Prevent workspace-level dblclick handlers from firing (fitToContent)
+                    e.stopPropagation(); // Prevent workspace-level dblclick handlers from firing
                     this.showContextMenu(e.clientX, e.clientY);
                 }
             });
@@ -365,6 +322,12 @@ class FVTacticalApp {
                 case 'loadouts':
                     widget = new LoadoutsWidget(x, y);
                     break;
+                case 'statistics':
+                    widget = new StatisticsWidget(null, x, y);
+                    break;
+                case 'reroute':
+                    widget = new RerouteWidget(x, y);
+                    break;
                 case 'powerplants':
                     widget = new PowerplantsWidget(x, y);
                     break;
@@ -373,6 +336,15 @@ class FVTacticalApp {
                     break;
                 case 'shipyards':
                     widget = new ShipyardsWidget(x, y);
+                    break;
+                case 'shipCore':
+                    widget = new ShipCoreWidget(x, y);
+                    break;
+                case 'shipBerth':
+                    widget = new ShipBerthWidget(x, y);
+                    break;
+                case 'shipHulls':
+                    widget = new ShipHullsWidget(x, y);
                     break;
                 default:
                     console.warn('Unknown widget type:', type);
@@ -685,6 +657,11 @@ class FVTacticalApp {
                 case 'powerplants': widget = new PowerplantsWidget(); break;
                 case 'factories': widget = new FactoriesWidget(); break;
                 case 'shipyards': widget = new ShipyardsWidget(); break;
+                case 'shipCore': widget = new ShipCoreWidget(); break;
+                case 'shipBerth': widget = new ShipBerthWidget(); break;
+                case 'shipHulls': widget = new ShipHullsWidget(); break;
+                case 'statistics': widget = new StatisticsWidget(); break;
+                case 'reroute': widget = new RerouteWidget(); break;
             }
             
             if (widget) {
@@ -822,9 +799,12 @@ class FVTacticalApp {
             { type: 'missiles', label: '🚀 Missile Design' },
             { type: 'outfit', label: '🧰 Ship Outfit' },
             { type: 'loadouts', label: '📦 Equipment Loadout' },
-            { type: 'powerplants', label: '⚡ Powerplant' },
+            { type: 'shipCore', label: '⚡ Ship Core' },
+            { type: 'shipBerth', label: '🛏 Ship Berths' },
+            { type: 'shipHulls', label: 'Hull Plan' },
+            { type: 'statistics', label: '📊 Statistics Hub' },
             { type: 'factories', label: '🏭 Factory' },
-            { type: 'shipyards', label: '🔧 Shipyard' }
+            { type: 'shipyards', label: 'Shipyard' }
         ];
         
         widgetTypes.forEach(({ type, label }) => {
@@ -921,6 +901,17 @@ class FVTacticalApp {
             }
         });
 
+        // Middle mouse panning anywhere (even over widgets)
+        workspace.addEventListener('mousedown', (e) => {
+            if (e.button === 1) { // middle button
+                this.isDraggingWorkspace = true;
+                this.dragStart.x = e.clientX;
+                this.dragStart.y = e.clientY;
+                document.body.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+        });
+
         
         document.addEventListener('mousemove', (e) => {
             if (this.isDraggingWorkspace) {
@@ -998,14 +989,13 @@ class FVTacticalApp {
         const vh = workspace.clientHeight;
         const scale = this.workspaceTransform.scale;
         
-        // Allow generous margin for easier navigation, especially vertically
-        const horizontalMargin = 200; // pixels of margin for horizontal
-        const verticalMargin = 400; // pixels of margin for vertical (more generous)
-        
-        const minTranslateX = Math.min(horizontalMargin, vw - bounds.maxX * scale);
-        const maxTranslateX = horizontalMargin;
-        const minTranslateY = Math.min(verticalMargin, vh - bounds.maxY * scale);
-        const maxTranslateY = verticalMargin;
+    // Prevent showing empty space beyond canvas edges. The most positive offset
+    // aligns the canvas origin with the viewport edge; the most negative offset
+    // keeps the far edge of the canvas anchored to the opposite viewport edge.
+    const maxTranslateX = 0;
+    const maxTranslateY = 0;
+    const minTranslateX = Math.min(0, vw - bounds.maxX * scale);
+    const minTranslateY = Math.min(0, vh - bounds.maxY * scale);
         
         // Apply constraints
         if (this.workspaceTransform.translateX < minTranslateX) this.workspaceTransform.translateX = minTranslateX;
@@ -1015,11 +1005,9 @@ class FVTacticalApp {
     }
 
     updateWorkspaceTransform() {
-        // Apply boundary constraints only if there are widgets (prevents artificial boundary when empty)
-        // Also allow some leeway for easier navigation
-        if (this.widgetManager && this.widgetManager.widgets.size > 0) {
-            this.constrainWorkspaceTransform();
-        }
+        // Always apply boundary constraints to keep navigation within the canvas bounds
+        // This ensures the entire 6000x4000 canvas area is accessible
+        this.constrainWorkspaceTransform();
         
         const canvas = document.getElementById('canvas');
         const svg = document.getElementById('connectionSvg');

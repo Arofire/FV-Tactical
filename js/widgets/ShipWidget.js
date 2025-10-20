@@ -26,7 +26,8 @@ class ShipWidget extends Widget {
                 hangar: 0,
                 bunker: 0,
                 system: 0,
-                powerplant: 0
+                powerplant: 0,
+                emplacement: 0
             },
             // Ten foundational tech requirement flags (placeholders)
             foundations: {
@@ -53,7 +54,23 @@ class ShipWidget extends Widget {
                 thresholds: { warning: 0, critical: 0, maximum: 0 },
                 dissipation: 0
             },
-            ignoreTechRequirements: false
+            ignoreTechRequirements: false,
+            hardpoints: {
+                perEmplacement: 4,
+                utility: 0,
+                secondary: 0,
+                primary: 0,
+                main: 0,
+                totalValue: 0,
+                UHP: 0,
+                SHP: 0,
+                PHP: 0,
+                MHP: 0
+            },
+            resources: {
+                cargo: 0,
+                remass: 0
+            }
         };
 
         this.roleMode = 'dropdown';
@@ -63,9 +80,21 @@ class ShipWidget extends Widget {
             this.roleMode = 'custom';
         }
         
+        this.militaryHullTypes = [
+            { key: 'magazine', label: 'Magazine' },
+            { key: 'hangar', label: 'Hangar' },
+            { key: 'system', label: 'System' },
+            { key: 'powerplant', label: 'Powerplant' },
+            { key: 'emplacement', label: 'Emplacement' }
+        ];
+        this.civilHullTypes = [
+            { key: 'containment', label: 'Containment' },
+            { key: 'remass', label: 'Remass' },
+            { key: 'bunker', label: 'Bunker' }
+        ];
         this.hullTypes = [
-            'containment', 'remass', 'magazine', 'hangar', 
-            'bunker', 'system', 'powerplant'
+            ...this.militaryHullTypes.map(({ key }) => key),
+            ...this.civilHullTypes.map(({ key }) => key)
         ];
         // Order & keys for foundations checkboxes
         this.foundationKeys = [
@@ -253,13 +282,13 @@ class ShipWidget extends Widget {
     createContent(contentElement) {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         
-        // Create Meta section
-        const metaSection = this.createSection('meta', 'Meta Information');
+        // Create Information section (merged meta and role)
+        const informationSection = this.createSection('information', 'Information');
         const roleOptions = this.generateRoleOptionsHTML(this.shipData.role);
         const roleInputValue = this.getRoleInputValue();
         
-        metaSection.contentContainer.innerHTML = `
-            <div class="ship-meta-header widget-sticky-header" id="${this.id}-meta-header">
+        informationSection.contentContainer.innerHTML = `
+            <div class="ship-information-header widget-sticky-header" id="${this.id}-information-header">
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-operational" ${this.shipData.operational ? 'checked' : ''}> Operational</label>
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-tech" ${this.shipData.ignoreTechRequirements ? 'checked' : ''}> Ignore Tech</label>
                 <div class="ship-dvp">
@@ -271,20 +300,14 @@ class ShipWidget extends Widget {
                 <label>Class Name</label>
                 <input type="text" id="${this.id}-name" value="${this.shipData.name}" placeholder="Enter ship class name">
             </div>
-        `;
-        sectionsContainer.appendChild(metaSection.section);
-        
-        // Create Role section
-        const roleSection = this.createSection('role', 'Role');
-        roleSection.contentContainer.innerHTML = `
-            <div class="input-group role-group" id="${this.id}-role-group">
+            <div class="input-group information-group" id="${this.id}-role-group">
                 <label>Role</label>
                 <div class="role-controls">
                     <select id="${this.id}-role-select" class="role-select" ${this.roleMode === 'custom' ? 'style="display:none;"' : ''}>
                         ${roleOptions}
                     </select>
                     <input type="text" id="${this.id}-role-custom" class="role-input" placeholder="Enter custom role" value="${roleInputValue}" ${this.roleMode === 'dropdown' ? 'style="display:none;"' : ''}>
-                    <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '✏️' : '🌳'}</button>
+                    <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '🖉' : '🌳'}</button>
                 </div>
             </div>
             <div class="input-group" id="${this.id}-notes-group">
@@ -292,7 +315,7 @@ class ShipWidget extends Widget {
                 <textarea id="${this.id}-class-notes" placeholder="Design notes, doctrine, or operational directives...">${this.shipData.designNotes}</textarea>
             </div>
         `;
-        sectionsContainer.appendChild(roleSection.section);
+        sectionsContainer.appendChild(informationSection.section);
         
         // Create Foundations section
         const foundationsSection = this.createSection('foundations', 'Foundations');
@@ -313,20 +336,83 @@ class ShipWidget extends Widget {
         
         // Create Composition section
         const compositionSection = this.createSection('composition', 'Composition');
+        const militaryHullInputs = this.militaryHullTypes.map(({ key, label }) => `
+            <div class="composition-item">
+                <label>${label}</label>
+                <input type="number" class="hull-spin" data-hull="${key}" id="${this.id}-hull-${key}" min="0" step="1" value="${this.shipData.hullComposition[key] ?? 0}">
+            </div>
+        `).join('');
+        const civilHullInputs = this.civilHullTypes.map(({ key, label }) => `
+            <div class="composition-item">
+                <label>${label}</label>
+                <input type="number" class="hull-spin" data-hull="${key}" id="${this.id}-hull-${key}" min="0" step="1" value="${this.shipData.hullComposition[key] ?? 0}">
+            </div>
+        `).join('');
+        const hardpointRatio = this.shipData.hardpoints?.perEmplacement ?? 4;
+        const cargoValue = this.shipData.resources?.cargo ?? 0;
+        const remassValue = this.shipData.resources?.remass ?? 0;
         compositionSection.contentContainer.innerHTML = `
             <div class="section-block composition-section" id="${this.id}-composition-section">
-                <div class="composition-grid">
-                    ${this.hullTypes.map(hullType => `
-                        <div class="composition-item">
-                            <label>${hullType.charAt(0).toUpperCase() + hullType.slice(1)}</label>
-                            <input type="number" class="hull-spin" data-hull="${hullType}" id="${this.id}-hull-${hullType}" min="0" step="1" value="${this.shipData.hullComposition[hullType]}">
+                <div class="composition-group military-hulls">
+                    <div class="composition-grid">
+                        ${militaryHullInputs}
+                    </div>
+                </div>
+                <div class="hardpoints-area" id="${this.id}-hardpoints-area">
+                    <div class="hardpoint-summary">
+                        <div class="hardpoint-value">
+                            <span class="label">Utility Hardpoints</span>
+                            <span class="value" id="${this.id}-utility-hardpoints">0</span>
                         </div>
-                    `).join('')}
+                        <div class="hardpoint-value">
+                            <span class="label">Emplacement Ratio</span>
+                            <span class="value" id="${this.id}-emplacement-ratio">1:${hardpointRatio}</span>
+                        </div>
+                        <div class="hardpoint-value">
+                            <span class="label">Hardpoint Value</span>
+                            <span class="value" id="${this.id}-hardpoint-value">0</span>
+                        </div>
+                    </div>
+                    <div class="hardpoint-sliders">
+                        <div class="hardpoint-item">
+                            <div class="hardpoint-label">
+                                <span class="code">SHP</span>
+                                <span class="value" id="${this.id}-shp-count">0</span>
+                            </div>
+                            <input type="range" class="hardpoint-slider" id="${this.id}-shp-slider" min="0" max="1" value="0" step="1" disabled>
+                        </div>
+                        <div class="hardpoint-item">
+                            <div class="hardpoint-label">
+                                <span class="code">PHP</span>
+                                <span class="value" id="${this.id}-php-count">0</span>
+                            </div>
+                            <input type="range" class="hardpoint-slider" id="${this.id}-php-slider" min="0" max="1" value="0" step="1" disabled>
+                        </div>
+                        <div class="hardpoint-item">
+                            <div class="hardpoint-label">
+                                <span class="code">MHP</span>
+                                <span class="value" id="${this.id}-mhp-count">0</span>
+                            </div>
+                            <input type="range" class="hardpoint-slider" id="${this.id}-mhp-slider" min="0" max="1" value="0" step="1" disabled>
+                        </div>
+                    </div>
                 </div>
-                <div class="composition-total">
-                    Total Hulls: <span id="${this.id}-hull-total">${this.getTotalHulls()}</span>
+                <div class="composition-group civil-hulls">
+                    <div class="composition-grid">
+                        ${civilHullInputs}
+                    </div>
                 </div>
-                <div class="composition-note" id="${this.id}-composition-note"></div>
+                <div class="cargo-remass-control" id="${this.id}-cargo-remass-control">
+                    <div class="cargo-endurance">
+                        <span class="label">Endurance</span>
+                        <span class="value" id="${this.id}-cargo-value">${cargoValue}</span>
+                    </div>
+                    <input type="range" class="cargo-remass-slider" id="${this.id}-cargo-remass-slider" min="0" max="0" value="${cargoValue}" step="1">
+                    <div class="remass-burns">
+                        <span class="label">Burns</span>
+                        <span class="value" id="${this.id}-remass-value">${remassValue}</span>
+                    </div>
+                </div>
             </div>
         `;
         sectionsContainer.appendChild(compositionSection.section);
@@ -341,8 +427,7 @@ class ShipWidget extends Widget {
         if (!this.element) return;
 
         const anchorConfigs = [
-            { id: 'ship-meta', selector: `#${this.id}-meta` },
-            { id: 'ship-role', selector: `#${this.id}-role` },
+            { id: 'ship-information', selector: `#${this.id}-information` },
             { id: 'ship-foundations', selector: `#${this.id}-foundations` },
             { id: 'ship-composition', selector: `#${this.id}-composition` }
         ];
@@ -435,7 +520,7 @@ class ShipWidget extends Widget {
             }
             if (this.roleToggleButton) {
                 if (mode === 'dropdown') {
-                    this.roleToggleButton.textContent = '✏️';
+                    this.roleToggleButton.textContent = '🖉';
                     this.roleToggleButton.title = 'Use custom role';
                 } else {
                     this.roleToggleButton.textContent = '🌳';
@@ -488,7 +573,7 @@ class ShipWidget extends Widget {
             if (cb) {
                 cb.addEventListener('change', (e) => {
                     this.shipData.foundations[key] = e.target.checked;
-                        this.notifyShipChildrenToRefresh();
+                    this.notifyShipChildrenToRefresh();
                 });
             }
         });
@@ -499,62 +584,209 @@ class ShipWidget extends Widget {
                 const parsed = Math.max(0, parseInt(value, 10) || 0);
                 this.shipData.hullComposition[hullType] = parsed;
                 input.value = parsed;
-                this.updateHullDisplay();
+
+                if (hullType === 'containment' || hullType === 'remass') {
+                    const currentCargo = this.shipData.resources?.cargo ?? 0;
+                    this.updateCargoRemassAllocation(currentCargo);
+                }
+
                 this.createNodes();
                 this.updateStats();
-                    this.notifyShipChildrenToRefresh();
+                this.notifyShipChildrenToRefresh();
             };
             input.addEventListener('input', (e) => updateHull(e.target.value));
             input.addEventListener('change', (e) => updateHull(e.target.value));
         });
+
+        const cargoRemassSlider = document.getElementById(`${this.id}-cargo-remass-slider`);
+        if (cargoRemassSlider) {
+            const handleSliderChange = (value) => {
+                const cargoValue = Math.max(0, parseInt(value, 10) || 0);
+                this.updateCargoRemassAllocation(cargoValue);
+                this.createNodes();
+                this.updateStats();
+                this.notifyShipChildrenToRefresh();
+            };
+            cargoRemassSlider.addEventListener('input', (e) => handleSliderChange(e.target.value));
+            cargoRemassSlider.addEventListener('change', (e) => handleSliderChange(e.target.value));
+        }
     }
     
     updateHullDisplay() {
         this.hullTypes.forEach(hullType => {
             const countElement = document.getElementById(`${this.id}-hull-${hullType}`);
             if (countElement) {
-                countElement.value = this.shipData.hullComposition[hullType];
+                countElement.value = this.shipData.hullComposition[hullType] ?? 0;
             }
         });
         
-        const totalElement = document.getElementById(`${this.id}-hull-total`);
-        if (totalElement) {
-            const total = this.getTotalHulls();
-            if (this.lockedHullTotal != null) {
-                totalElement.textContent = `${total} / ${this.lockedHullTotal}`;
-                const totalWrapper = totalElement.parentElement;
-                if (totalWrapper) {
-                    totalWrapper.classList.toggle('mismatch', total !== this.lockedHullTotal);
-                }
-            } else {
-                totalElement.textContent = total;
-                const totalWrapper = totalElement.parentElement;
-                if (totalWrapper) {
-                    totalWrapper.classList.remove('mismatch');
-                }
-            }
+        // Composition totals and notes are no longer displayed; locking logic remains internal.
+    }
+
+    // Split hardpoint value evenly and cascade leftovers toward cheaper mounts.
+    calculateHardpointDistribution(totalValue) {
+        const order = [
+            { key: 'mhp', cost: 8 },
+            { key: 'php', cost: 4 },
+            { key: 'shp', cost: 2 }
+        ];
+        const baseShare = Math.floor(totalValue / 3);
+        const buckets = [baseShare, baseShare, totalValue - (baseShare * 2)];
+        const distribution = { mhp: 0, php: 0, shp: 0 };
+        let carry = 0;
+
+        order.forEach(({ key, cost }, index) => {
+            const available = (buckets[index] ?? 0) + carry;
+            const count = Math.floor(available / cost);
+            distribution[key] = count;
+            const used = count * cost;
+            carry = available - used;
+        });
+
+    return { distribution, leftover: carry };
+    }
+
+    // Recompute derived hardpoint counts and refresh supporting UI controls.
+    updateHardpointStats() {
+        if (!this.shipData.hardpoints) {
+            this.shipData.hardpoints = {
+                perEmplacement: 4,
+                utility: 0,
+                secondary: 0,
+                primary: 0,
+                main: 0,
+                totalValue: 0,
+                UHP: 0,
+                SHP: 0,
+                PHP: 0,
+                MHP: 0
+            };
         }
 
-        const compositionNote = document.getElementById(`${this.id}-composition-note`);
-        if (compositionNote) {
-            if (this.lockedHullTotal != null) {
-                const total = this.getTotalHulls();
-                const delta = total - this.lockedHullTotal;
-                if (delta === 0) {
-                    compositionNote.textContent = `Locked to parent total of ${this.lockedHullTotal} hulls.`;
-                    compositionNote.classList.remove('warning');
-                } else if (delta > 0) {
-                    compositionNote.textContent = `${delta} hull${delta === 1 ? '' : 's'} above parent total.`;
-                    compositionNote.classList.add('warning');
-                } else {
-                    const deficit = Math.abs(delta);
-                    compositionNote.textContent = `${deficit} hull${deficit === 1 ? '' : 's'} below parent total.`;
-                    compositionNote.classList.add('warning');
-                }
-            } else {
-                compositionNote.textContent = '';
-                compositionNote.classList.remove('warning');
+        const magazine = this.shipData.hullComposition.magazine ?? 0;
+        const hangar = this.shipData.hullComposition.hangar ?? 0;
+        const system = this.shipData.hullComposition.system ?? 0;
+        const powerplant = this.shipData.hullComposition.powerplant ?? 0;
+        const emplacement = this.shipData.hullComposition.emplacement ?? 0;
+        const perEmplacement = Math.max(0, this.shipData.hardpoints.perEmplacement ?? 4);
+
+        const utilityCount = magazine + hangar + system + powerplant;
+        const totalValue = emplacement * perEmplacement;
+        const { distribution } = this.calculateHardpointDistribution(totalValue);
+
+        this.shipData.hardpoints.utility = utilityCount;
+        this.shipData.hardpoints.secondary = distribution.shp;
+        this.shipData.hardpoints.primary = distribution.php;
+        this.shipData.hardpoints.main = distribution.mhp;
+        this.shipData.hardpoints.totalValue = totalValue;
+        this.shipData.hardpoints.UHP = utilityCount;
+        this.shipData.hardpoints.SHP = distribution.shp;
+        this.shipData.hardpoints.PHP = distribution.php;
+        this.shipData.hardpoints.MHP = distribution.mhp;
+
+        const utilityElement = document.getElementById(`${this.id}-utility-hardpoints`);
+        if (utilityElement) {
+            utilityElement.textContent = utilityCount;
+        }
+
+        const ratioElement = document.getElementById(`${this.id}-emplacement-ratio`);
+        if (ratioElement) {
+            ratioElement.textContent = `1:${perEmplacement}`;
+        }
+
+        const valueElement = document.getElementById(`${this.id}-hardpoint-value`);
+        if (valueElement) {
+            valueElement.textContent = totalValue;
+        }
+
+        const sliderConfigs = [
+            { key: 'shp', elementId: `${this.id}-shp-slider`, count: distribution.shp, displayId: `${this.id}-shp-count` },
+            { key: 'php', elementId: `${this.id}-php-slider`, count: distribution.php, displayId: `${this.id}-php-count` },
+            { key: 'mhp', elementId: `${this.id}-mhp-slider`, count: distribution.mhp, displayId: `${this.id}-mhp-count` }
+        ];
+
+        sliderConfigs.forEach(({ elementId, count, displayId }) => {
+            const slider = document.getElementById(elementId);
+            if (slider) {
+                slider.max = Math.max(count, 1);
+                slider.value = count;
             }
+            const display = document.getElementById(displayId);
+            if (display) {
+                display.textContent = count;
+            }
+        });
+    }
+
+    getCivilHullSlots() {
+        const containment = this.shipData.hullComposition.containment ?? 0;
+        const remass = this.shipData.hullComposition.remass ?? 0;
+        return containment + remass;
+    }
+
+    // Translate cargo slider value into updated hull counts while preserving total slots.
+    updateCargoRemassAllocation(rawCargoValue) {
+        if (!this.shipData.resources) {
+            this.shipData.resources = { cargo: 0, remass: 0 };
+        }
+
+        const totalSlots = this.getCivilHullSlots();
+        if (totalSlots <= 0) {
+            this.shipData.resources.cargo = 0;
+            this.shipData.resources.remass = 0;
+            return;
+        }
+
+        const capacity = totalSlots * 50;
+        const cargo = Math.max(0, Math.min(rawCargoValue, capacity));
+        const remass = capacity - cargo;
+
+        this.shipData.resources.cargo = cargo;
+        this.shipData.resources.remass = remass;
+
+        const fullContainment = Math.min(totalSlots, Math.floor(cargo / 50));
+        this.shipData.hullComposition.containment = fullContainment;
+        this.shipData.hullComposition.remass = totalSlots - fullContainment;
+    }
+
+    // Sync the cargo/remass slider and readouts with current allocation and capacity.
+    updateCargoRemassUI() {
+        if (!this.shipData.resources) {
+            this.shipData.resources = { cargo: 0, remass: 0 };
+        }
+
+        const slider = document.getElementById(`${this.id}-cargo-remass-slider`);
+        const cargoValueElement = document.getElementById(`${this.id}-cargo-value`);
+        const remassValueElement = document.getElementById(`${this.id}-remass-value`);
+
+        const totalSlots = this.getCivilHullSlots();
+        const capacity = totalSlots * 50;
+
+        let cargo = this.shipData.resources.cargo ?? 0;
+        cargo = Math.max(0, Math.min(cargo, capacity));
+        let remass = this.shipData.resources.remass ?? (capacity - cargo);
+        remass = Math.max(0, capacity - cargo);
+
+        if (capacity === 0) {
+            cargo = 0;
+            remass = 0;
+        }
+
+        this.shipData.resources.cargo = cargo;
+        this.shipData.resources.remass = remass;
+
+        if (slider) {
+            slider.max = capacity;
+            slider.value = cargo;
+            slider.disabled = capacity === 0;
+        }
+
+        if (cargoValueElement) {
+            cargoValueElement.textContent = cargo;
+        }
+
+        if (remassValueElement) {
+            remassValueElement.textContent = remass;
         }
     }
 
@@ -562,6 +794,8 @@ class ShipWidget extends Widget {
 
     updateStats() {
         this.updateHullDisplay();
+        this.updateHardpointStats();
+        this.updateCargoRemassUI();
     }
 
     syncFormFromData() {
@@ -616,53 +850,48 @@ class ShipWidget extends Widget {
     updateNodes() { /* DOM node list removed in linear layout; retained for potential future use */ }
 
     createNodes() {
-        if (this.nodes.size === 0) {
-            // Parent input: connects from another ship class
-            this.addNode('input', 'ship-class', 'Class', 0, 0.3, {
-                anchorId: 'ship-meta',
-                sectionId: 'meta',
-                minSpacing: 36
-            });
+        this.clearNodes();
 
-            // Child outputs
-            this.addNode('output', 'outfit', 'Outfit', 1, 0.45, {
-                anchorId: 'ship-composition',
-                sectionId: 'composition',
-                anchorOffset: -30,
-                minSpacing: 32
-            });
+        this.addNode('input', 'ship-class', 'Class', 0, 0.25, {
+            anchorId: 'ship-information',
+            sectionId: 'information',
+            minSpacing: 36
+        });
 
-            this.addNode('output', 'loadout', 'Loadout', 1, 0.6, {
-                anchorId: 'ship-composition',
-                sectionId: 'composition',
-                anchorOffset: 30,
-                minSpacing: 32
-            });
+        this.addNode('output', 'statistics', 'Stats', 1, 0.25, {
+            anchorId: 'ship-information',
+            sectionId: 'information',
+            anchorOffset: 20,
+            minSpacing: 32
+        });
 
-            this.addNode('output', 'statistics', 'Statistics', 1, 0.3, {
-                anchorId: 'ship-meta',
-                sectionId: 'meta',
-                anchorOffset: 20,
-                minSpacing: 32
-            });
+        this.addNode('output', 'ship-class', 'Subclass', 1, 0.55, {
+            anchorId: 'ship-information',
+            sectionId: 'information',
+            anchorOffset: 40,
+            minSpacing: 32
+        });
 
-            this.addNode('output', 'ship-class', 'Subclass', 1, 0.8, {
-                anchorId: 'ship-role',
-                sectionId: 'role',
-                anchorOffset: 40,
-                minSpacing: 32
-            });
-        }
+        this.addNode('output', 'outfit', 'Outfit', 1, 0.4, {
+            anchorId: 'ship-composition',
+            sectionId: 'composition',
+            anchorOffset: -30,
+            minSpacing: 32
+        });
+
+        this.addNode('output', 'loadout', 'Loadout', 1, 0.65, {
+            anchorId: 'ship-composition',
+            sectionId: 'composition',
+            anchorOffset: 30,
+            minSpacing: 32
+        });
 
         this.reflowNodes();
         this.updateNodes();
     }
     
     clearNodes() {
-        // Remove all existing nodes
-        for (const nodeId of Array.from(this.nodes.keys())) {
-            this.removeNode(nodeId);
-        }
+        super.clearNodes();
     }
 
     getSerializedData() {
@@ -676,6 +905,41 @@ class ShipWidget extends Widget {
         super.loadSerializedData(data);
         if (data.shipData) {
             this.shipData = { ...this.shipData, ...data.shipData };
+            this.shipData.hullComposition = {
+                containment: 0,
+                remass: 0,
+                magazine: 0,
+                hangar: 0,
+                bunker: 0,
+                system: 0,
+                powerplant: 0,
+                emplacement: 0,
+                ...(this.shipData.hullComposition || {})
+            };
+            this.shipData.hardpoints = {
+                perEmplacement: 4,
+                utility: 0,
+                secondary: 0,
+                primary: 0,
+                main: 0,
+                totalValue: 0,
+                UHP: 0,
+                SHP: 0,
+                PHP: 0,
+                MHP: 0,
+                ...(this.shipData.hardpoints || {})
+            };
+            this.shipData.resources = {
+                cargo: 0,
+                remass: 0,
+                ...(this.shipData.resources || {})
+            };
+            if (!data.shipData.resources) {
+                const containmentCapacity = (this.shipData.hullComposition.containment ?? 0) * 50;
+                const remassCapacity = (this.shipData.hullComposition.remass ?? 0) * 50;
+                this.shipData.resources.cargo = containmentCapacity;
+                this.shipData.resources.remass = remassCapacity;
+            }
             this.ensureRoleAvailable(this.shipData.role);
             this.roleMode = this.shipData.customRole ? 'custom' : 'dropdown';
             this.syncFormFromData();
