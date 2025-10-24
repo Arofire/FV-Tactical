@@ -12,7 +12,7 @@ class ShipyardsWidget extends Widget {
     createContent(contentElement) {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         const configSection = this.createSection('config', 'Shipyard Configuration');
-        configSection.contentContainer.innerHTML = `
+        this.setSectionContent(configSection, `
             <div class="input-group">
                 <label>Shipyard Name</label>
                 <input type="text" id="${this.id}-name" value="${this.shipyardData.name}">
@@ -26,18 +26,18 @@ class ShipyardsWidget extends Widget {
                     <option value="capital">Capital Ships</option>
                 </select>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(configSection.section);
 
         const productionSection = this.createSection('production', 'Construction');
-        productionSection.contentContainer.innerHTML = `
+        this.setSectionContent(productionSection, `
             <div class="widget-stats" id="${this.id}-stats">
                 <div class="stat-row">
                     <span class="stat-label">Queue:</span>
                     <span class="stat-value">${this.shipyardData.constructionQueue.length} ships</span>
                 </div>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(productionSection.section);
 
         this.setupShipyardListeners();

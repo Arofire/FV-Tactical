@@ -104,6 +104,7 @@ class ShipWidget extends Widget {
         
         this.lockedHullTotal = null;
         this.isSubclass = false;
+        this._preflightTimer = null;
 
         this.init();
     }
@@ -172,6 +173,27 @@ class ShipWidget extends Widget {
         }
     }
 
+    queuePreflightCheck(delay = 100) {
+        if (this._preflightTimer) {
+            clearTimeout(this._preflightTimer);
+        }
+        this._preflightTimer = window.setTimeout(() => {
+            this._preflightTimer = null;
+            if (window.preflightCheck) {
+                window.preflightCheck.runCheck();
+            } else if (window.app?.runPreflightCheck) {
+                window.app.runPreflightCheck();
+            }
+            if (this.minimized && typeof this.refreshSummary === 'function') {
+                try {
+                    this.refreshSummary();
+                } catch (error) {
+                    /* ignore summary refresh failures */
+                }
+            }
+        }, delay);
+    }
+
     getParentShipWidget() {
         if (!this.parents || this.parents.size === 0) return null;
         if (!window.widgetManager) return null;
@@ -206,16 +228,6 @@ class ShipWidget extends Widget {
                 }
             }
         });
-        const noteEl = document.getElementById(`${this.id}-foundations-note`);
-        if (!noteEl) return;
-        if (isLocked) {
-            const parentName = parentWidget?.shipData?.name || 'Parent Ship';
-            noteEl.textContent = `Inherited from ${parentName}.`;
-            noteEl.classList.add('locked');
-        } else {
-            noteEl.textContent = '';
-            noteEl.classList.remove('locked');
-        }
     }
 
     updateSubclassState() {
@@ -231,31 +243,46 @@ class ShipWidget extends Widget {
             this.setFoundationsLocked(false);
         }
         this.updateHullDisplay();
+        this.queuePreflightCheck();
+    }
+
+    handleNodeConnectionChange(nodeId) {
+        super.handleNodeConnectionChange(nodeId);
+        const node = this.nodes.get(nodeId);
+        if (node && node.nodeType === 'ship-class') {
+            this.updateSubclassState();
+        }
+        this.queuePreflightCheck();
     }
 
     notifyShipChildrenToRefresh() {
-        if (!this.children || this.children.size === 0 || !window.widgetManager) return;
-        this.children.forEach(childId => {
-            const childWidget = window.widgetManager.getWidget(childId);
-            if (childWidget && childWidget.type === 'ship' && typeof childWidget.updateSubclassState === 'function') {
-                childWidget.updateSubclassState();
-            }
-        });
+        if (this.children && this.children.size > 0 && window.widgetManager) {
+            this.children.forEach(childId => {
+                const childWidget = window.widgetManager.getWidget(childId);
+                if (childWidget && childWidget.type === 'ship' && typeof childWidget.updateSubclassState === 'function') {
+                    childWidget.updateSubclassState();
+                }
+            });
+        }
+        this.queuePreflightCheck();
     }
 
     onParentLinked(parentWidget) {
         if (parentWidget?.type === 'ship') {
             this.updateSubclassState();
+            this.queuePreflightCheck();
         }
     }
 
     onParentUnlinked(parentWidget) {
         if (parentWidget?.type === 'ship') {
             this.updateSubclassState();
+            this.queuePreflightCheck();
         }
     }
 
     getTotalHulls() {
+        this.queuePreflightCheck();
         return Object.values(this.shipData.hullComposition).reduce((sum, count) => sum + count, 0);
     }
 
@@ -287,7 +314,7 @@ class ShipWidget extends Widget {
         const roleOptions = this.generateRoleOptionsHTML(this.shipData.role);
         const roleInputValue = this.getRoleInputValue();
         
-        informationSection.contentContainer.innerHTML = `
+        this.setSectionContent(informationSection, `
             <div class="ship-information-header widget-sticky-header" id="${this.id}-information-header">
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-operational" ${this.shipData.operational ? 'checked' : ''}> Operational</label>
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-tech" ${this.shipData.ignoreTechRequirements ? 'checked' : ''}> Ignore Tech</label>
@@ -314,28 +341,31 @@ class ShipWidget extends Widget {
                 <label>Class Notes</label>
                 <textarea id="${this.id}-class-notes" placeholder="Design notes, doctrine, or operational directives...">${this.shipData.designNotes}</textarea>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(informationSection.section);
         
         // Create Foundations section
         const foundationsSection = this.createSection('foundations', 'Foundations');
-        foundationsSection.contentContainer.innerHTML = `
-            <div class="section-block foundations-section" id="${this.id}-foundations-section">
-                <div class="foundations-grid">
-                    ${this.foundationKeys.map(key => `
-                        <label class="foundation-item">
-                            <input type="checkbox" id="${this.id}-foundation-${key}" ${this.shipData.foundations[key] ? 'checked' : ''}>
-                            ${key.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase())}
-                        </label>
-                    `).join('')}
-                </div>
-                <div class="foundations-note" id="${this.id}-foundations-note"></div>
+        const foundationsContent = foundationsSection.contentContainer;
+        foundationsContent.classList.add('foundations-section');
+        foundationsContent.id = `${this.id}-foundations-section`;
+        this.setSectionContent(foundationsSection, `
+            <div class="foundations-grid">
+                ${this.foundationKeys.map(key => `
+                    <label class="foundation-item">
+                        <input type="checkbox" id="${this.id}-foundation-${key}" ${this.shipData.foundations[key] ? 'checked' : ''}>
+                        ${key.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase())}
+                    </label>
+                `).join('')}
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(foundationsSection.section);
         
         // Create Composition section
         const compositionSection = this.createSection('composition', 'Composition');
+        const compositionContent = compositionSection.contentContainer;
+        compositionContent.classList.add('composition-section');
+        compositionContent.id = `${this.id}-composition-section`;
         const militaryHullInputs = this.militaryHullTypes.map(({ key, label }) => `
             <div class="composition-item">
                 <label>${label}</label>
@@ -351,70 +381,68 @@ class ShipWidget extends Widget {
         const hardpointRatio = this.shipData.hardpoints?.perEmplacement ?? 4;
         const cargoValue = this.shipData.resources?.cargo ?? 0;
         const remassValue = this.shipData.resources?.remass ?? 0;
-        compositionSection.contentContainer.innerHTML = `
-            <div class="section-block composition-section" id="${this.id}-composition-section">
-                <div class="composition-group military-hulls">
-                    <div class="composition-grid">
-                        ${militaryHullInputs}
+        this.setSectionContent(compositionSection, `
+            <div class="composition-group military-hulls">
+                <div class="composition-grid">
+                    ${militaryHullInputs}
+                </div>
+            </div>
+            <div class="hardpoints-area" id="${this.id}-hardpoints-area">
+                <div class="hardpoint-summary">
+                    <div class="hardpoint-value">
+                        <span class="label">Utility Hardpoints</span>
+                        <span class="value" id="${this.id}-utility-hardpoints">0</span>
+                    </div>
+                    <div class="hardpoint-value">
+                        <span class="label">Emplacement Ratio</span>
+                        <span class="value" id="${this.id}-emplacement-ratio">1:${hardpointRatio}</span>
+                    </div>
+                    <div class="hardpoint-value">
+                        <span class="label">Hardpoint Value</span>
+                        <span class="value" id="${this.id}-hardpoint-value">0</span>
                     </div>
                 </div>
-                <div class="hardpoints-area" id="${this.id}-hardpoints-area">
-                    <div class="hardpoint-summary">
-                        <div class="hardpoint-value">
-                            <span class="label">Utility Hardpoints</span>
-                            <span class="value" id="${this.id}-utility-hardpoints">0</span>
+                <div class="hardpoint-sliders">
+                    <div class="hardpoint-item">
+                        <div class="hardpoint-label">
+                            <span class="code">SHP</span>
+                            <span class="value" id="${this.id}-shp-count">0</span>
                         </div>
-                        <div class="hardpoint-value">
-                            <span class="label">Emplacement Ratio</span>
-                            <span class="value" id="${this.id}-emplacement-ratio">1:${hardpointRatio}</span>
-                        </div>
-                        <div class="hardpoint-value">
-                            <span class="label">Hardpoint Value</span>
-                            <span class="value" id="${this.id}-hardpoint-value">0</span>
-                        </div>
+                        <input type="range" class="hardpoint-slider" id="${this.id}-shp-slider" min="0" max="1" value="0" step="1" disabled>
                     </div>
-                    <div class="hardpoint-sliders">
-                        <div class="hardpoint-item">
-                            <div class="hardpoint-label">
-                                <span class="code">SHP</span>
-                                <span class="value" id="${this.id}-shp-count">0</span>
-                            </div>
-                            <input type="range" class="hardpoint-slider" id="${this.id}-shp-slider" min="0" max="1" value="0" step="1" disabled>
+                    <div class="hardpoint-item">
+                        <div class="hardpoint-label">
+                            <span class="code">PHP</span>
+                            <span class="value" id="${this.id}-php-count">0</span>
                         </div>
-                        <div class="hardpoint-item">
-                            <div class="hardpoint-label">
-                                <span class="code">PHP</span>
-                                <span class="value" id="${this.id}-php-count">0</span>
-                            </div>
-                            <input type="range" class="hardpoint-slider" id="${this.id}-php-slider" min="0" max="1" value="0" step="1" disabled>
+                        <input type="range" class="hardpoint-slider" id="${this.id}-php-slider" min="0" max="1" value="0" step="1" disabled>
+                    </div>
+                    <div class="hardpoint-item">
+                        <div class="hardpoint-label">
+                            <span class="code">MHP</span>
+                            <span class="value" id="${this.id}-mhp-count">0</span>
                         </div>
-                        <div class="hardpoint-item">
-                            <div class="hardpoint-label">
-                                <span class="code">MHP</span>
-                                <span class="value" id="${this.id}-mhp-count">0</span>
-                            </div>
-                            <input type="range" class="hardpoint-slider" id="${this.id}-mhp-slider" min="0" max="1" value="0" step="1" disabled>
-                        </div>
-                    </div>
-                </div>
-                <div class="composition-group civil-hulls">
-                    <div class="composition-grid">
-                        ${civilHullInputs}
-                    </div>
-                </div>
-                <div class="cargo-remass-control" id="${this.id}-cargo-remass-control">
-                    <div class="cargo-endurance">
-                        <span class="label">Endurance</span>
-                        <span class="value" id="${this.id}-cargo-value">${cargoValue}</span>
-                    </div>
-                    <input type="range" class="cargo-remass-slider" id="${this.id}-cargo-remass-slider" min="0" max="0" value="${cargoValue}" step="1">
-                    <div class="remass-burns">
-                        <span class="label">Burns</span>
-                        <span class="value" id="${this.id}-remass-value">${remassValue}</span>
+                        <input type="range" class="hardpoint-slider" id="${this.id}-mhp-slider" min="0" max="1" value="0" step="1" disabled>
                     </div>
                 </div>
             </div>
-        `;
+            <div class="composition-group civil-hulls">
+                <div class="composition-grid">
+                    ${civilHullInputs}
+                </div>
+            </div>
+            <div class="cargo-remass-control" id="${this.id}-cargo-remass-control">
+                <div class="cargo-endurance">
+                    <span class="label">Endurance</span>
+                    <span class="value" id="${this.id}-cargo-value">${cargoValue}</span>
+                </div>
+                <input type="range" class="cargo-remass-slider" id="${this.id}-cargo-remass-slider" min="0" max="0" value="${cargoValue}" step="1">
+                <div class="remass-burns">
+                    <span class="label">Burns</span>
+                    <span class="value" id="${this.id}-remass-value">${remassValue}</span>
+                </div>
+            </div>
+        `);
         sectionsContainer.appendChild(compositionSection.section);
         
         this.setupEventListeners();
@@ -463,21 +491,25 @@ class ShipWidget extends Widget {
             nameInput.addEventListener('input', (e) => {
                 this.shipData.name = e.target.value;
                 this.updateTitle(this.shipData.name);
+                this.queuePreflightCheck();
             });
         }
         if (notesInput) {
             notesInput.addEventListener('input', (e) => {
                 this.shipData.designNotes = e.target.value;
+                this.queuePreflightCheck();
             });
         }
         if (ignoreTechCheckbox) {
             ignoreTechCheckbox.addEventListener('change', (e) => {
                 this.shipData.ignoreTechRequirements = e.target.checked;
+                this.queuePreflightCheck();
             });
         }
         if (operationalCheckbox) {
             operationalCheckbox.addEventListener('change', (e) => {
                 this.shipData.operational = e.target.checked;
+                this.queuePreflightCheck();
             });
         }
         if (dvpInput) {
@@ -495,6 +527,7 @@ class ShipWidget extends Widget {
                 if (this.shipData.developmentCost !== null) {
                     e.target.value = this.shipData.developmentCost;
                 }
+                this.queuePreflightCheck();
             });
         }
 
@@ -535,6 +568,7 @@ class ShipWidget extends Widget {
                 this.shipData.role = e.target.value;
                 this.shipData.customRole = '';
                 this.roleMode = 'dropdown';
+                this.queuePreflightCheck();
             });
         }
 
@@ -543,9 +577,11 @@ class ShipWidget extends Widget {
                 const value = e.target.value;
                 this.shipData.customRole = value;
                 this.shipData.role = value;
+                this.queuePreflightCheck();
             });
             customRoleInput.addEventListener('change', (e) => {
                 this.ensureRoleAvailable(e.target.value);
+                this.queuePreflightCheck();
             });
         }
 
@@ -562,6 +598,7 @@ class ShipWidget extends Widget {
                     this.shipData.customRole = '';
                     this.applyRoleMode('dropdown');
                 }
+                this.queuePreflightCheck();
             });
         }
 
@@ -590,7 +627,7 @@ class ShipWidget extends Widget {
                     this.updateCargoRemassAllocation(currentCargo);
                 }
 
-                this.createNodes();
+                this.reflowNodes();
                 this.updateStats();
                 this.notifyShipChildrenToRefresh();
             };
@@ -603,7 +640,7 @@ class ShipWidget extends Widget {
             const handleSliderChange = (value) => {
                 const cargoValue = Math.max(0, parseInt(value, 10) || 0);
                 this.updateCargoRemassAllocation(cargoValue);
-                this.createNodes();
+                this.reflowNodes();
                 this.updateStats();
                 this.notifyShipChildrenToRefresh();
             };
@@ -796,6 +833,7 @@ class ShipWidget extends Widget {
         this.updateHullDisplay();
         this.updateHardpointStats();
         this.updateCargoRemassUI();
+        this.queuePreflightCheck();
     }
 
     syncFormFromData() {
@@ -850,36 +888,72 @@ class ShipWidget extends Widget {
     updateNodes() { /* DOM node list removed in linear layout; retained for potential future use */ }
 
     createNodes() {
-        this.clearNodes();
+        const ensureNode = (type, nodeType, label, relativeX, relativeY, options = {}) => {
+            const nodeId = options.nodeId;
+            if (nodeId && this.nodes.has(nodeId)) {
+                const existing = this.nodes.get(nodeId);
+                existing.type = type;
+                existing.nodeType = nodeType;
+                existing.label = label;
+                existing.relativeX = relativeX;
+                existing.relativeY = relativeY;
+                if ('anchorId' in options) existing.anchorId = options.anchorId;
+                if ('sectionId' in options) existing.sectionId = options.sectionId;
+                if ('anchorOffset' in options) existing.anchorOffset = options.anchorOffset;
+                if ('minSpacing' in options) existing.minSpacing = options.minSpacing;
+                if ('allowMultipleConnections' in options) {
+                    existing.allowMultipleConnections = !!options.allowMultipleConnections;
+                }
+                const labelElement = this.element?.querySelector(`.node-label[data-node-id="${nodeId}"]`);
+                if (labelElement) {
+                    labelElement.textContent = label;
+                }
+                return nodeId;
+            }
+            return this.addNode(type, nodeType, label, relativeX, relativeY, options);
+        };
 
-        this.addNode('input', 'ship-class', 'Class', 0, 0.25, {
+        const nodeIds = {
+            classInput: `${this.id}-node-input-ship-class`,
+            statsOutput: `${this.id}-node-output-statistics`,
+            subclassOutput: `${this.id}-node-output-ship-class`,
+            outfitOutput: `${this.id}-node-output-outfit`,
+            loadoutOutput: `${this.id}-node-output-loadout`
+        };
+
+        ensureNode('input', 'ship-class', 'Class', 0, 0.25, {
+            nodeId: nodeIds.classInput,
             anchorId: 'ship-information',
             sectionId: 'information',
             minSpacing: 36
         });
 
-        this.addNode('output', 'statistics', 'Stats', 1, 0.25, {
+        ensureNode('output', 'statistics', 'Stats', 1, 0.25, {
+            nodeId: nodeIds.statsOutput,
             anchorId: 'ship-information',
             sectionId: 'information',
             anchorOffset: 20,
             minSpacing: 32
         });
 
-        this.addNode('output', 'ship-class', 'Subclass', 1, 0.55, {
+        ensureNode('output', 'ship-class', 'Subclass', 1, 0.55, {
+            nodeId: nodeIds.subclassOutput,
             anchorId: 'ship-information',
             sectionId: 'information',
             anchorOffset: 40,
             minSpacing: 32
         });
 
-        this.addNode('output', 'outfit', 'Outfit', 1, 0.4, {
+        ensureNode('output', 'outfit', 'Outfit', 1, 0.4, {
+            nodeId: nodeIds.outfitOutput,
             anchorId: 'ship-composition',
             sectionId: 'composition',
             anchorOffset: -30,
             minSpacing: 32
         });
 
-        this.addNode('output', 'loadout', 'Loadout', 1, 0.65, {
+        ensureNode('output', 'loadout', 'Loadout', 1, 0.65, {
+            nodeId: nodeIds.loadoutOutput,
             anchorId: 'ship-composition',
             sectionId: 'composition',
             anchorOffset: 30,
@@ -892,6 +966,14 @@ class ShipWidget extends Widget {
     
     clearNodes() {
         super.clearNodes();
+    }
+
+    close() {
+        if (this._preflightTimer) {
+            clearTimeout(this._preflightTimer);
+            this._preflightTimer = null;
+        }
+        super.close();
     }
 
     getSerializedData() {

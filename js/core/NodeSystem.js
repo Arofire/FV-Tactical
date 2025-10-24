@@ -487,18 +487,10 @@ class NodeSystem {
     showConnectionSelectionMenu(sourceNode, sourceNodeId, compatibleWidgets, event) {
         this.destroyConnectionSelectionMenu();
 
-        const menu = document.createElement('div');
-        menu.className = 'connection-selection-menu';
-        menu.style.position = 'fixed';
-        menu.style.left = `${event.clientX}px`;
-        menu.style.top = `${event.clientY}px`;
-        menu.style.background = '#2d2d2d';
-        menu.style.border = '1px solid #555';
-        menu.style.borderRadius = '4px';
-        menu.style.padding = '4px 0';
-        menu.style.minWidth = '200px';
-        menu.style.zIndex = '10010';
-        menu.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+    const menu = document.createElement('div');
+    menu.className = 'connection-selection-menu';
+    menu.style.left = `${event.clientX}px`;
+    menu.style.top = `${event.clientY}px`;
 
         menu.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -534,17 +526,6 @@ class NodeSystem {
             const item = document.createElement('div');
             item.className = 'connection-selection-menu-item';
             item.textContent = label;
-            item.style.padding = '8px 16px';
-            item.style.cursor = 'pointer';
-            item.style.fontSize = '14px';
-            item.style.color = '#e0e0e0';
-            item.style.transition = 'background 0.2s';
-            item.addEventListener('mouseenter', () => {
-                item.style.background = '#4a4a4a';
-            });
-            item.addEventListener('mouseleave', () => {
-                item.style.background = 'transparent';
-            });
             item.addEventListener('click', () => {
                 this.handleConnectionSelection(sourceNode, sourceNodeId, widgetType, targetWorld);
             });

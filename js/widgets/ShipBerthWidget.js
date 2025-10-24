@@ -11,7 +11,7 @@ class ShipBerthWidget extends Widget {
     createContent(contentElement) {
         const sections = contentElement.querySelector('.widget-sections');
         const infoSection = this.createSection('info', 'Berth Details');
-        infoSection.contentContainer.innerHTML = `
+        this.setSectionContent(infoSection, `
             <div class="input-group">
                 <label>Plan Name</label>
                 <input type="text" id="${this.id}-label" value="${this.berthData.label}">
@@ -20,7 +20,7 @@ class ShipBerthWidget extends Widget {
                 <label>Notes</label>
                 <textarea id="${this.id}-notes" placeholder="Berthing considerations...">${this.berthData.notes}</textarea>
             </div>
-        `;
+        `);
         sections.appendChild(infoSection.section);
 
         const labelInput = document.getElementById(`${this.id}-label`);

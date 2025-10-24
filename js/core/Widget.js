@@ -17,7 +17,6 @@ class Widget {
         
         this.element = null;
         this.isDragging = false;
-        this.isResizing = false;
         this.dragOffset = { x: 0, y: 0 };
         
     this.nodes = new Map(); // input/output nodes for connections
@@ -30,6 +29,8 @@ class Widget {
     this.children = new Set();
     // Feature flags
     this.enableCascadeDrag = window.app?.cascadeDragEnabled || false;
+        // Layout mode
+        this.layoutMode = 'legacy';
         
         // Defer creation until subclass has initialized its specific data.
         // Subclasses must call this.init() after setting their data objects.
@@ -40,8 +41,8 @@ class Widget {
     }
 
     create() {
-        this.element = document.createElement('div');
-        this.element.className = `widget ${this.type}-widget`;
+    this.element = document.createElement('div');
+    this.element.className = `widget ${this.type}-widget`;
         this.element.id = this.id;
         this.element.style.left = this.x + 'px';
         this.element.style.top = this.y + 'px';
@@ -62,24 +63,26 @@ class Widget {
         
         const controls = document.createElement('div');
         controls.className = 'widget-controls';
-        
-    const pinBtn = document.createElement('button');
-    pinBtn.className = 'widget-control-btn pin';
-    pinBtn.innerHTML = '🖈';
+
+        const minimizeBtn = document.createElement('button');
+        minimizeBtn.className = 'widget-control-btn minimize';
+        minimizeBtn.innerHTML = '▾';
+        minimizeBtn.title = 'Minimize widget';
+        minimizeBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.toggleMinimize();
+        };
+        this.minimizeButton = minimizeBtn;
+
+        const pinBtn = document.createElement('button');
+        pinBtn.className = 'widget-control-btn pin';
+        pinBtn.innerHTML = '🖈';
         pinBtn.title = 'Pin widget';
         pinBtn.onclick = (e) => {
             e.stopPropagation();
             this.togglePin();
         };
-        
-        const minimizeBtn = document.createElement('button');
-        minimizeBtn.className = 'widget-control-btn minimize';
-        minimizeBtn.innerHTML = '−';
-        minimizeBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.toggleMinimize();
-        };
-        
+
         const closeBtn = document.createElement('button');
         closeBtn.className = 'widget-control-btn close';
         closeBtn.innerHTML = '×';
@@ -95,36 +98,76 @@ class Widget {
         preflightIndicator.style.display = 'none'; // Hidden by default
         
         controls.appendChild(preflightIndicator);
-        controls.appendChild(pinBtn);
         controls.appendChild(minimizeBtn);
+        controls.appendChild(pinBtn);
         controls.appendChild(closeBtn);
         header.appendChild(titleElement);
         header.appendChild(controls);
         
-        // Create content area with three-column layout
         const content = document.createElement('div');
         content.className = 'widget-content';
-        
-        // Create the main sections container
-        const sectionsContainer = document.createElement('div');
-        sectionsContainer.className = 'widget-sections';
-        content.appendChild(sectionsContainer);
-        
-        // Create resize handle
-        const resizeHandle = document.createElement('div');
-        resizeHandle.className = 'widget-resize-handle';
-        
-        // Create nodes container
-        const nodesContainer = document.createElement('div');
-        nodesContainer.className = 'widget-nodes';
-        
+        this.contentElement = content;
+
+        let sectionsContainer;
+
+        if (this.usesThreeColumnLayout()) {
+            this.element.classList.add('widget-three-column');
+
+            const columnsWrapper = document.createElement('div');
+            columnsWrapper.className = 'widget-columns';
+
+            const inputColumn = document.createElement('div');
+            inputColumn.className = 'widget-node-column inputs';
+
+            sectionsContainer = document.createElement('div');
+            sectionsContainer.className = 'widget-sections';
+
+            const summaryContainer = document.createElement('div');
+            summaryContainer.className = 'widget-summary';
+            summaryContainer.setAttribute('aria-live', 'polite');
+            summaryContainer.hidden = true;
+            this.summaryElement = summaryContainer;
+
+            const outputColumn = document.createElement('div');
+            outputColumn.className = 'widget-node-column outputs';
+
+            columnsWrapper.appendChild(inputColumn);
+            columnsWrapper.appendChild(sectionsContainer);
+            columnsWrapper.appendChild(outputColumn);
+
+            content.appendChild(columnsWrapper);
+
+            this.nodeColumnElements = {
+                input: inputColumn,
+                output: outputColumn
+            };
+        } else {
+            sectionsContainer = document.createElement('div');
+            sectionsContainer.className = 'widget-sections';
+            content.appendChild(sectionsContainer);
+
+            const nodesContainer = document.createElement('div');
+            nodesContainer.className = 'widget-nodes';
+            this.nodesContainer = nodesContainer;
+            this._legacyNodesContainer = nodesContainer;
+        }
+
+        this.sectionsContainer = sectionsContainer;
+
         this.element.appendChild(header);
         this.element.appendChild(content);
-        this.element.appendChild(resizeHandle);
-        this.element.appendChild(nodesContainer);
+
+        if (this._legacyNodesContainer) {
+            this.element.appendChild(this._legacyNodesContainer);
+            delete this._legacyNodesContainer;
+        }
         
         // Populate content (to be overridden by subclasses)
         this.createContent(content);
+
+        if (this.summaryElement && this.sectionsContainer && this.summaryElement.parentElement !== this.sectionsContainer) {
+            this.sectionsContainer.appendChild(this.summaryElement);
+        }
         if (this.registerLayoutAnchors) {
             this.registerLayoutAnchors();
         }
@@ -148,15 +191,23 @@ class Widget {
         this.setupEventListeners();
     }
 
+    usesThreeColumnLayout() {
+        return this.layoutMode === 'three-column';
+    }
+
     createContent(contentElement) {
         // To be overridden by subclasses
         contentElement.innerHTML = '<p>Base widget content</p>';
     }
 
-    // Helper method to create a three-column section
+    // Helper method to create a section
     createSection(sectionId, sectionTitle, options = {}) {
         const section = document.createElement('div');
+        const isSingleColumnLayout = this.usesThreeColumnLayout();
         section.className = 'widget-section';
+        if (!isSingleColumnLayout) {
+            section.classList.add('with-columns');
+        }
         section.id = `${this.id}-${sectionId}`;
         
         if (options.errorState) {
@@ -164,41 +215,92 @@ class Widget {
         } else if (options.warningState) {
             section.classList.add('section-warning');
         }
-        
-        // Create the three columns
+
+        let titleElement = null;
+
+        if (isSingleColumnLayout) {
+            if (sectionTitle) {
+                titleElement = document.createElement('h4');
+                titleElement.className = 'section-title';
+                titleElement.textContent = sectionTitle;
+                section.appendChild(titleElement);
+            }
+
+            return {
+                section,
+                leftColumn: null,
+                bodyColumn: section,
+                rightColumn: null,
+                contentContainer: section,
+                titleElement
+            };
+        }
+
+        // Legacy three-column section structure
         const leftColumn = document.createElement('div');
         leftColumn.className = 'section-left-column';
-        
+
         const bodyColumn = document.createElement('div');
         bodyColumn.className = 'section-body-column';
-        
+
         const rightColumn = document.createElement('div');
         rightColumn.className = 'section-right-column';
-        
-        // Add title to body column
+
         if (sectionTitle) {
-            const title = document.createElement('h4');
-            title.className = 'section-title';
-            title.textContent = sectionTitle;
-            bodyColumn.appendChild(title);
+            titleElement = document.createElement('h4');
+            titleElement.className = 'section-title';
+            titleElement.textContent = sectionTitle;
+            bodyColumn.appendChild(titleElement);
         }
-        
-        // Add content container to body column
-        const contentContainer = document.createElement('div');
-        contentContainer.className = 'section-content';
-        bodyColumn.appendChild(contentContainer);
-        
+
         section.appendChild(leftColumn);
         section.appendChild(bodyColumn);
         section.appendChild(rightColumn);
-        
+
         return {
             section,
             leftColumn,
             bodyColumn,
             rightColumn,
-            contentContainer
+            contentContainer: bodyColumn,
+            titleElement
         };
+    }
+
+    setSectionContent(sectionRef, content) {
+        if (!sectionRef) return;
+
+        const container = sectionRef.contentContainer || sectionRef.section;
+        const titleElement = sectionRef.titleElement && sectionRef.titleElement.parentElement === container
+            ? sectionRef.titleElement
+            : null;
+
+        let node = titleElement ? titleElement.nextSibling : container.firstChild;
+        while (node) {
+            const next = node.nextSibling;
+            container.removeChild(node);
+            node = next;
+        }
+
+        if (content == null) {
+            return;
+        }
+
+        const appendContent = (value) => {
+            if (typeof value === 'string') {
+                if (value.trim().length > 0) {
+                    container.insertAdjacentHTML('beforeend', value);
+                }
+            } else if (value instanceof Node) {
+                container.appendChild(value);
+            }
+        };
+
+        if (Array.isArray(content)) {
+            content.forEach(appendContent);
+        } else {
+            appendContent(content);
+        }
     }
 
     // Helper methods to set section states
@@ -301,21 +403,27 @@ class Widget {
         labelElement.textContent = node.label;
         labelElement.setAttribute('data-node-id', node.id);
         
+    const useThreeColumn = this.usesThreeColumnLayout() && this.nodeColumnElements;
+
         // Find the appropriate column for this node
         let targetColumn;
-        if (node.sectionId) {
-            // Place in specific section's column
+        if (useThreeColumn) {
+            targetColumn = node.type === 'input'
+                ? this.nodeColumnElements.input
+                : this.nodeColumnElements.output;
+        } else if (node.sectionId) {
+            // Place in specific section's column (legacy layout)
             const section = this.element.querySelector(`#${this.id}-${node.sectionId}`);
             if (section) {
-                targetColumn = node.type === 'input' 
+                targetColumn = node.type === 'input'
                     ? section.querySelector('.section-left-column')
                     : section.querySelector('.section-right-column');
             }
         }
         
-        // Fallback to old widget-nodes container if no section specified or found
-        if (!targetColumn) {
-            targetColumn = this.element.querySelector('.widget-nodes');
+        // Fallback to legacy widget-nodes container if no section specified or found
+        if (!targetColumn && this.nodesContainer) {
+            targetColumn = this.nodesContainer;
         }
         
         if (targetColumn) {
@@ -348,6 +456,8 @@ class Widget {
             else if (node.type === 'output') outputs.push(node);
         }
 
+        const useThreeColumn = this.usesThreeColumnLayout() && this.nodeColumnElements;
+
         const layoutNodes = (arr, relativeX) => {
             const count = arr.length;
             if (count === 0) return;
@@ -358,27 +468,52 @@ class Widget {
                 return { node, targetY: target.targetY, minSpacing: target.minSpacing };
             });
             entries.sort((a, b) => a.targetY - b.targetY);
-            let lastY = metrics.contentTop - 999;
-            for (const entry of entries) {
-                const node = entry.node;
-                let desiredY = entry.targetY;
-                const spacing = entry.minSpacing;
-                if (desiredY - lastY < spacing) {
-                    desiredY = lastY + spacing;
+
+            if (useThreeColumn) {
+                let currentY = metrics.contentTop;
+                for (const entry of entries) {
+                    const node = entry.node;
+                    this.positionNode(node, currentY, metrics);
+                    currentY += entry.minSpacing;
                 }
-                if (desiredY < metrics.contentTop) {
-                    desiredY = metrics.contentTop;
+            } else {
+                let lastY = metrics.contentTop - 999;
+                for (const entry of entries) {
+                    const node = entry.node;
+                    let desiredY = entry.targetY;
+                    const spacing = entry.minSpacing;
+                    if (desiredY - lastY < spacing) {
+                        desiredY = lastY + spacing;
+                    }
+                    if (desiredY < metrics.contentTop) {
+                        desiredY = metrics.contentTop;
+                    }
+                    if (desiredY > metrics.contentBottom) {
+                        desiredY = metrics.contentBottom;
+                    }
+                    this.positionNode(node, desiredY, metrics);
+                    lastY = desiredY;
                 }
-                if (desiredY > metrics.contentBottom) {
-                    desiredY = metrics.contentBottom;
-                }
-                this.positionNode(node, desiredY, metrics);
-                lastY = desiredY;
             }
         };
 
         layoutNodes(inputs, 0);
         layoutNodes(outputs, 1);
+
+        if (useThreeColumn && this.nodeColumnElements) {
+            ['input', 'output'].forEach(type => {
+                const column = this.nodeColumnElements[type];
+                if (!column) return;
+                let maxBottom = 0;
+                column.querySelectorAll('.node').forEach(nodeEl => {
+                    const top = parseFloat(nodeEl.style.top || '0');
+                    const height = nodeEl.offsetHeight || 12;
+                    maxBottom = Math.max(maxBottom, top + height);
+                });
+                column.style.minHeight = maxBottom > 0 ? `${Math.ceil(maxBottom + 12)}px` : '0';
+            });
+        }
+
         if (window.nodeSystem) window.nodeSystem.updateConnections();
     }
 
@@ -397,7 +532,7 @@ class Widget {
         
         // Remove DOM elements
         const nodeElement = document.getElementById(nodeId);
-        const labelElement = nodeElement?.nextElementSibling;
+        const labelElement = this.element?.querySelector(`.node-label[data-node-id="${nodeId}"]`) || nodeElement?.nextElementSibling;
         if (nodeElement) nodeElement.remove();
         if (labelElement && labelElement.classList.contains('node-label')) {
             labelElement.remove();
@@ -568,12 +703,15 @@ class Widget {
     }
 
     getNodeLayoutMetrics() {
-        const headerHeight = 40;
-        const topPadding = 10;
-        const bottomPadding = 20;
-        const availableHeight = Math.max(60, this.height - headerHeight - topPadding - bottomPadding);
+    const headerHeight = this.element?.querySelector('.widget-header')?.offsetHeight || 40;
+    const elementHeight = this.element?.offsetHeight || this.height || headerHeight + 100;
+    const isThreeColumn = this.usesThreeColumnLayout();
+    const topPadding = isThreeColumn ? 6 : 10;
+    const bottomPadding = isThreeColumn ? 12 : 20;
+        const availableHeight = Math.max(60, elementHeight - headerHeight - topPadding - bottomPadding);
         const contentTop = headerHeight + topPadding;
         const contentBottom = contentTop + availableHeight;
+        this.height = elementHeight; // keep cached height in sync for legacy code paths
         return { headerHeight, topPadding, bottomPadding, availableHeight, contentTop, contentBottom };
     }
 
@@ -601,17 +739,57 @@ class Widget {
     positionNode(node, targetY, metrics = null) {
         const nodeElement = document.getElementById(node.id);
         if (!nodeElement) return;
-        const labelElement = nodeElement.nextElementSibling;
-        const baseX = this.width * node.relativeX;
+
+        const labelElement = this.element?.querySelector(`.node-label[data-node-id="${node.id}"]`) || nodeElement.nextElementSibling;
         const layout = metrics || this.getNodeLayoutMetrics();
         const clampedY = Math.max(layout.contentTop, Math.min(layout.contentBottom, targetY));
 
         const nodeWidth = nodeElement.offsetWidth || 12;
-        const edgeOffset = 12;
-    const labelSpacing = 10;
-    const labelInsideOffset = 14;
         const isInput = node.type === 'input';
         const isOutput = node.type === 'output';
+    const useThreeColumn = this.usesThreeColumnLayout() && this.nodeColumnElements;
+
+        if (useThreeColumn) {
+            const column = isInput ? this.nodeColumnElements.input : this.nodeColumnElements.output;
+            if (column) {
+                const computed = getComputedStyle(column);
+                if (computed.position === 'static') {
+                    column.style.position = 'relative';
+                }
+
+                const fallbackWidth = this.element?.offsetWidth || this.width || 240;
+                const columnWidth = column.offsetWidth || fallbackWidth / 4;
+                const inputLabelGap = 0;
+                const outputLabelGap = 8;
+                const defaultLabelGap = 8;
+                const nodeHeight = nodeElement.offsetHeight || 12;
+
+                const columnRect = column.getBoundingClientRect();
+                const widgetRect = this.element.getBoundingClientRect();
+                const columnOffsetTop = columnRect.top - widgetRect.top;
+                const fallbackHeight = layout.availableHeight || nodeHeight;
+                const columnHeight = column.offsetHeight || column.scrollHeight || fallbackHeight;
+                const clampedColumnHeight = Math.max(nodeHeight, columnHeight);
+                const relativeTop = Math.max(0, Math.min(clampedColumnHeight - nodeHeight, clampedY - columnOffsetTop));
+
+                if (labelElement) {
+                    labelElement.classList.remove('node-label-inward');
+                    const measuredWidth = labelElement.offsetWidth || labelElement.getBoundingClientRect?.().width || 0;
+                    const labelWidth = measuredWidth || 60;
+                    const nodeCenterY = relativeTop + nodeHeight / 2;
+                    labelElement.style.top = nodeCenterY + 'px';
+                }
+
+                node.relativeY = (clampedY - layout.contentTop) / layout.availableHeight;
+            }
+            return;
+        }
+
+        const elementWidth = this.element?.offsetWidth || this.width || 0;
+        const baseX = elementWidth * node.relativeX;
+        const edgeOffset = 12;
+        const labelSpacing = 10;
+        const labelInsideOffset = 14;
 
         let nodeX = baseX;
         if (isInput) {
@@ -630,28 +808,22 @@ class Widget {
             labelElement.style.top = clampedY + 'px';
             if (isInput) {
                 labelX = baseX + labelInsideOffset + labelWidth;
-                labelElement.style.left = labelX + 'px';
             } else if (isOutput) {
                 labelX = nodeX - labelSpacing;
-                labelElement.style.left = labelX + 'px';
-            } else {
-                labelElement.style.left = labelX + 'px';
             }
+            labelElement.style.left = labelX + 'px';
         }
-        // Persist normalized position for fallback layout
+
         node.relativeY = (clampedY - layout.contentTop) / layout.availableHeight;
     }
 
     setupEventListeners() {
         const header = this.element.querySelector('.widget-header');
-        const resizeHandle = this.element.querySelector('.widget-resize-handle');
-        
-        // Dragging
-        header.addEventListener('mousedown', (e) => this.startDrag(e));
-        
-        // Resizing
-        resizeHandle.addEventListener('mousedown', (e) => this.startResize(e));
-        
+
+        if (header) {
+            header.addEventListener('mousedown', (e) => this.startDrag(e));
+        }
+
         // Selection
         this.element.addEventListener('mousedown', (e) => {
             if (e.target === this.element || e.target.closest('.widget-content')) {
@@ -732,45 +904,6 @@ class Widget {
         if (window.app && window.app.updateMinimap) window.app.updateMinimap();
     }
 
-    startResize(e) {
-        if (e.button !== 0) return; // Only left mouse button
-        
-        this.isResizing = true;
-        this.select();
-        
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startWidth = this.width;
-        const startHeight = this.height;
-        
-        const resize = (e) => {
-            if (!this.isResizing) return;
-            
-            this.width = Math.max(200, startWidth + (e.clientX - startX));
-            this.height = Math.max(150, startHeight + (e.clientY - startY));
-            
-            this.element.style.width = this.width + 'px';
-            this.element.style.height = this.height + 'px';
-            
-            this.updateAllNodePositions();
-            window.nodeSystem.updateConnections();
-            if (window.app && window.app.updateMinimap) window.app.updateMinimap();
-        };
-        
-        const stopResize = () => {
-            this.isResizing = false;
-            document.removeEventListener('mousemove', resize);
-            document.removeEventListener('mouseup', stopResize);
-            if (window.app && window.app.updateMinimap) window.app.updateMinimap();
-        };
-        
-        document.addEventListener('mousemove', resize);
-        document.addEventListener('mouseup', stopResize);
-        
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
     select() {
         // Deselect all other widgets
         document.querySelectorAll('.widget.selected').forEach(w => {
@@ -790,23 +923,38 @@ class Widget {
 
     toggleMinimize() {
         this.minimized = !this.minimized;
-        
-        if (this.minimized) {
-            // Store original height before minimizing
-            this.originalHeight = this.height;
-            this.height = 40;
-            this.element.style.height = '40px';
-        } else {
-            // Restore original height when unminimizing
-            this.height = this.originalHeight || this.height;
-            this.element.style.height = this.height + 'px';
-        }
-        
         this.element.classList.toggle('minimized', this.minimized);
-        
-        if (!this.minimized) {
-            this.updateAllNodePositions();
-            window.nodeSystem.updateConnections();
+
+        if (this.minimizeButton) {
+            this.minimizeButton.innerHTML = this.minimized ? '▴' : '▾';
+            this.minimizeButton.title = this.minimized ? 'Restore widget' : 'Minimize widget';
+        }
+
+        if (this.summaryElement) {
+            if (this.minimized) {
+                this.summaryElement.hidden = false;
+                this.summaryElement.innerHTML = '';
+                if (typeof this.renderSummary === 'function') {
+                    this.renderSummary(this.summaryElement);
+                }
+            } else {
+                this.summaryElement.innerHTML = '';
+                this.summaryElement.hidden = true;
+            }
+        }
+
+        if (typeof this.onMinimizeStateChanged === 'function') {
+            this.onMinimizeStateChanged(this.minimized);
+        }
+
+        const refresh = () => {
+            this.reflowNodes();
+        };
+
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(refresh);
+        } else {
+            refresh();
         }
     }
 
@@ -1036,8 +1184,31 @@ class Widget {
             this.element.classList.add('minimized');
         }
         
-    this.loadSerializedData(data.data || {});
-    this.updateAllNodePositions();
+        this.loadSerializedData(data.data || {});
+
+        if (this.minimizeButton) {
+            this.minimizeButton.innerHTML = this.minimized ? '▴' : '▾';
+            this.minimizeButton.title = this.minimized ? 'Restore widget' : 'Minimize widget';
+        }
+
+        if (this.summaryElement) {
+            if (this.minimized) {
+                this.summaryElement.hidden = false;
+                this.summaryElement.innerHTML = '';
+                if (typeof this.renderSummary === 'function') {
+                    this.renderSummary(this.summaryElement);
+                }
+            } else {
+                this.summaryElement.innerHTML = '';
+                this.summaryElement.hidden = true;
+            }
+        }
+
+        if (typeof this.onMinimizeStateChanged === 'function') {
+            this.onMinimizeStateChanged(this.minimized);
+        }
+
+        this.updateAllNodePositions();
     }
 
     // Hierarchy helpers

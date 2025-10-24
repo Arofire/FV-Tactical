@@ -1,6 +1,6 @@
 /* Node System Styles */
 .node {
-    position: absolute;
+    /* position: absolute; */
     width: 12px;
     height: 12px;
     border-radius: 50%;
@@ -9,8 +9,7 @@
     cursor: pointer;
     z-index: 20;
     transition: all 0.2s;
-    /* Increased margin to guarantee separation */
-    margin: 8px;
+    margin: 8px 0px 0px 0px;
 }
 
 .node:hover {
@@ -41,7 +40,7 @@
 
 /* Node Labels */
 .node-label {
-    position: absolute;
+    /* position: absolute; */
     font-size: 10px;
     color: #ccc;
     white-space: nowrap;
@@ -49,16 +48,11 @@
     pointer-events: none;
     z-index: 21;
     top: 50%;
-    transform: translateY(-50%);
+    /* transform: translateY(-50%); */
     display: block;
-}
-
-.node-label.input {
-    text-align: right;
-}
-
-.node-label.output {
-    text-align: left;
+    /* padding: 4px; */
+    background: #1f1f1f;
+    border: 1px solid #444;
 }
 
 /* Connection Lines */
@@ -279,24 +273,4 @@
     background: #f02020;
     border-color: #f02020;
     box-shadow: 0 0 8px rgba(240, 32, 32, 0.5);
-}
-
-/* Responsive Node Sizes */
-@media (max-width: 900px) {
-    .node {
-        width: 16px;
-        height: 16px;
-    }
-    
-    .node-label {
-        font-size: 11px;
-    }
-    
-    .node-label.input {
-        right: 20px;
-    }
-    
-    .node-label.output {
-        left: 20px;
-    }
 }

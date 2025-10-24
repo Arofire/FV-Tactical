@@ -14,7 +14,7 @@ class MissilesWidget extends Widget {
     createContent(contentElement) {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         const designSection = this.createSection('design', 'Missile Design');
-        designSection.contentContainer.innerHTML = `
+        this.setSectionContent(designSection, `
             <div class="input-group">
                 <label>Missile Name</label>
                 <input type="text" id="${this.id}-name" value="${this.missileData.name}">
@@ -33,13 +33,13 @@ class MissilesWidget extends Widget {
                     Ignore Tech Requirements
                 </label>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(designSection.section);
 
         const statsSection = this.createSection('stats', 'Statistics');
-        statsSection.contentContainer.innerHTML = `
+        this.setSectionContent(statsSection, `
             <div class="widget-stats" id="${this.id}-stats"></div>
-        `;
+        `);
         sectionsContainer.appendChild(statsSection.section);
 
         this.setupMissileListeners();

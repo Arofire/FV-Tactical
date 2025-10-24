@@ -8,11 +8,11 @@ class RerouteWidget extends Widget {
     createContent(contentElement) {
         const sections = contentElement.querySelector('.widget-sections');
         const routesSection = this.createSection('routes', 'Routes');
-        routesSection.contentContainer.innerHTML = `
+        this.setSectionContent(routesSection, `
             <div class="component-list" id="${this.id}-route-list">
                 <div class="component-item placeholder" data-placeholder="true">Drag a connection into this widget to add ports</div>
             </div>
-        `;
+        `);
         sections.appendChild(routesSection.section);
     }
 

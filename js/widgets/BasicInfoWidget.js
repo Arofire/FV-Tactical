@@ -22,7 +22,7 @@ class BasicInfoWidget extends Widget {
         
         // Create Basic Info section
         const basicSection = this.createSection('basic', 'Basic Information');
-        basicSection.contentContainer.innerHTML = `
+        this.setSectionContent(basicSection, `
             <div class="input-group">
                 <label>Ship Class Name</label>
                 <input type="text" id="${this.id}-name" value="${this.basicData.name}" placeholder="Enter ship class name">
@@ -34,12 +34,12 @@ class BasicInfoWidget extends Widget {
                 </select>
                 <input type="text" id="${this.id}-custom-role" placeholder="Enter custom role" style="display: ${this.basicData.role === 'custom' ? 'block' : 'none'}; margin-top:4px;" value="${this.basicData.customRole}">
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(basicSection.section);
         
         // Create Documentation section
         const documentationSection = this.createSection('documentation', 'Documentation');
-        documentationSection.contentContainer.innerHTML = `
+        this.setSectionContent(documentationSection, `
             <div class="input-group">
                 <label>Description</label>
                 <textarea id="${this.id}-description" placeholder="Ship class description and purpose...">${this.basicData.description}</textarea>
@@ -56,7 +56,7 @@ class BasicInfoWidget extends Widget {
                 <label>Text2Img Prompt</label>
                 <textarea id="${this.id}-text2img" placeholder="AI image generation prompt (auto-generated from design criteria)..." readonly>${this.basicData.text2imgPrompt}</textarea>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(documentationSection.section);
         
         this.setupEventListeners();

@@ -17,7 +17,7 @@ class CraftWidget extends Widget {
         
         // Create Meta section
         const metaSection = this.createSection('meta', 'Craft Information');
-        metaSection.contentContainer.innerHTML = `
+        this.setSectionContent(metaSection, `
             <div class="input-group">
                 <label>Craft Name</label>
                 <input type="text" id="${this.id}-name" value="${this.craftData.name}" placeholder="Enter craft name">
@@ -40,12 +40,12 @@ class CraftWidget extends Widget {
                     Ignore Tech Requirements
                 </label>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(metaSection.section);
         
         // Create Components section
         const componentsSection = this.createSection('components', 'Components');
-        componentsSection.contentContainer.innerHTML = `
+        this.setSectionContent(componentsSection, `
             <div class="input-group">
                 <label>Add Component</label>
                 <div style="display: flex; gap: 8px;">
@@ -61,16 +61,16 @@ class CraftWidget extends Widget {
             <div class="component-list" id="${this.id}-component-list">
                 <!-- Components will be added here -->
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(componentsSection.section);
         
         // Create Stats section
         const statsSection = this.createSection('stats', 'Statistics');
-        statsSection.contentContainer.innerHTML = `
+        this.setSectionContent(statsSection, `
             <div class="widget-stats" id="${this.id}-stats">
                 <!-- Stats will be calculated here -->
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(statsSection.section);
         
         this.setupCraftEventListeners();

@@ -241,7 +241,7 @@ class PreflightCheck {
         if (!widget?.parents || widget.parents.size === 0 || !this.widgetManager) return null;
         for (const parentId of widget.parents) {
             const parentWidget = this.widgetManager.getWidget(parentId);
-            if (parentWidget && parentWidget.type === 'ship') {
+            if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
                 return parentWidget;
             }
         }

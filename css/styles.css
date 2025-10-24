@@ -156,6 +156,37 @@ body {
     flex-direction: column;
 }
 
+.widget-context-menu,
+.connection-selection-menu {
+    position: fixed;
+    background: #2d2d2d;
+    border: 1px solid #555;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+}
+
+.widget-context-menu,
+.connection-selection-menu {
+    z-index: 10000;
+}
+
+.widget-context-menu-item,
+.connection-selection-menu-item {
+    display: block;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #e0e0e0;
+    transition: background 0.2s ease;
+    user-select: none;
+}
+
+.widget-context-menu-item:hover,
+.connection-selection-menu-item:hover {
+    background: #4a4a4a;
+}
+
 /* Main Container */
 .main-container {
     position: absolute;
@@ -632,8 +663,9 @@ body {
 /* Cursor Coordinates */
 .cursor-coords {
   position: absolute;
-  right: 10px;
-  bottom: 10px;
+  right: 4px;
+  /* top: -10px; */
+  bottom: 4px;
   background: rgba(30,30,30,0.75);
   border: 1px solid #444;
   padding: 4px 8px;
@@ -650,8 +682,8 @@ body {
 /* Minimap */
 .minimap {
   position: absolute;
-  right: 12px;
-  bottom: 50px;
+  right: 8px;
+  bottom: 8px;
   width: 180px;
   height: 120px;
   background: rgba(20,20,20,0.55);

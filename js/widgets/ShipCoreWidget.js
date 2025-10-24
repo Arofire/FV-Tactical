@@ -8,12 +8,12 @@ class ShipCoreWidget extends Widget {
     createContent(contentElement) {
         const sections = contentElement.querySelector('.widget-sections');
         const infoSection = this.createSection('info', 'Core Notes');
-        infoSection.contentContainer.innerHTML = `
+        this.setSectionContent(infoSection, `
             <div class="input-group">
                 <label>Notes</label>
                 <textarea id="${this.id}-notes" placeholder="Describe core purpose...">${this.coreData.notes}</textarea>
             </div>
-        `;
+        `);
         sections.appendChild(infoSection.section);
 
         const notesField = document.getElementById(`${this.id}-notes`);

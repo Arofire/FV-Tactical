@@ -11,14 +11,14 @@ class LoadoutsWidget extends Widget {
     createContent(contentElement) {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         const configSection = this.createSection('config', 'Configuration');
-        configSection.contentContainer.innerHTML = `
+        this.setSectionContent(configSection, `
             <div class="input-group">
                 <label>Loadout Name</label>
                 <input type="text" id="${this.id}-name" value="${this.loadoutData.name}">
             </div>
             <button class="add-component-btn" id="${this.id}-add-item">Add Item</button>
             <div class="component-list" id="${this.id}-items-list"></div>
-        `;
+        `);
         sectionsContainer.appendChild(configSection.section);
 
         this.setupLoadoutListeners();

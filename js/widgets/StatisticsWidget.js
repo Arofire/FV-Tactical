@@ -43,7 +43,7 @@ class StatisticsWidget extends Widget {
             ['troopCapacity', 'Troop Capacity']
         ];
 
-        statsSection.contentContainer.innerHTML = `
+        this.setSectionContent(statsSection, `
             <div class="stats-grid">
                 ${statFields.map(([key, label]) => `
                     <div class="stat-input">
@@ -52,15 +52,15 @@ class StatisticsWidget extends Widget {
                     </div>
                 `).join('')}
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(statsSection.section);
 
         const connectionsSection = this.createSection('sources', 'Linked Sources');
-        connectionsSection.contentContainer.innerHTML = `
+        this.setSectionContent(connectionsSection, `
             <div class="component-list" id="${this.id}-source-list">
                 <div class="component-item placeholder" data-placeholder="true">No statistics connections</div>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(connectionsSection.section);
 
         this.refreshStatInputs();
@@ -145,7 +145,7 @@ class StatisticsWidget extends Widget {
             item.textContent = widget.title || widget.type;
             list.appendChild(item);
 
-            if (!primaryShip && widget.type === 'ship') {
+            if (!primaryShip && (widget.type === 'ship' || widget.type === 'shipPrototype')) {
                 primaryShip = widget;
             }
         });

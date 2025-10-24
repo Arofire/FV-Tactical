@@ -307,6 +307,9 @@ class FVTacticalApp {
                 case 'ship':
                     widget = new ShipWidget(x, y);
                     break;
+                case 'shipPrototype':
+                    widget = new ShipWidgetPrototype(x, y);
+                    break;
                 case 'craft':
                     widget = new CraftWidget(x, y);
                     break;
@@ -645,6 +648,7 @@ class FVTacticalApp {
             let widget;
             switch (widgetData.type) {
                 case 'ship': widget = new ShipWidget(); break;
+                case 'shipPrototype': widget = new ShipWidgetPrototype(); break;
                 case 'craft': widget = new CraftWidget(); break;
                 case 'troops': widget = new TroopsWidget(); break;
                 case 'missiles': widget = new MissilesWidget(); break;
@@ -779,21 +783,13 @@ class FVTacticalApp {
         
         const contextMenu = document.createElement('div');
         contextMenu.id = 'widget-context-menu';
-        contextMenu.style.cssText = `
-            position: fixed;
-            left: ${x}px;
-            top: ${y}px;
-            background: #2d2d2d;
-            border: 1px solid #555;
-            border-radius: 4px;
-            padding: 4px 0;
-            min-width: 160px;
-            z-index: 10000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        `;
+        contextMenu.classList.add('widget-context-menu');
+        contextMenu.style.left = `${x}px`;
+        contextMenu.style.top = `${y}px`;
         
         const widgetTypes = [
             { type: 'ship', label: '🚢 Ship Design' },
+            { type: 'shipPrototype', label: '🚢 Ship Design (Prototype)' },
             { type: 'craft', label: '✈️ Craft Design' },
             { type: 'troops', label: '👥 Troop Unit' },
             { type: 'missiles', label: '🚀 Missile Design' },
@@ -809,22 +805,8 @@ class FVTacticalApp {
         
         widgetTypes.forEach(({ type, label }) => {
             const menuItem = document.createElement('div');
-            menuItem.style.cssText = `
-                padding: 8px 16px;
-                cursor: pointer;
-                font-size: 14px;
-                color: #e0e0e0;
-                transition: background 0.2s;
-            `;
+            menuItem.classList.add('widget-context-menu-item');
             menuItem.textContent = label;
-            
-            menuItem.addEventListener('mouseenter', () => {
-                menuItem.style.background = '#4a4a4a';
-            });
-            
-            menuItem.addEventListener('mouseleave', () => {
-                menuItem.style.background = 'transparent';
-            });
             
             menuItem.addEventListener('click', () => {
                 // Translate screen coords (x,y) to world (pre-transform) coords

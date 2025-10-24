@@ -235,7 +235,7 @@ class OutfitWidget extends Widget {
         
         // Create Meta section
         const metaSection = this.createSection('meta', 'Meta Information');
-        metaSection.contentContainer.innerHTML = `
+        this.setSectionContent(metaSection, `
             <div class="outfit-meta-header widget-sticky-header" id="${this.id}-meta-header">
                 <div class="outfit-header-row" id="${this.id}-hardpoint-row">
                     ${this.hardpointDefinitions.map(({ key }) => `
@@ -256,12 +256,12 @@ class OutfitWidget extends Widget {
                 <label>Outfit Name</label>
                 <input type="text" id="${this.id}-name" value="${this.outfitData.name}" placeholder="Enter outfit name">
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(metaSection.section);
         
         // Create Role section
         const roleSection = this.createSection('role', 'Role');
-        roleSection.contentContainer.innerHTML = `
+        this.setSectionContent(roleSection, `
             <div class="input-group role-group" id="${this.id}-role-group">
                 <label>Role</label>
                 <div class="role-controls">
@@ -276,11 +276,13 @@ class OutfitWidget extends Widget {
                 <label>Outfit Notes</label>
                 <textarea id="${this.id}-notes" placeholder="Doctrine, deployment notes, logistics considerations...">${this.outfitData.notes}</textarea>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(roleSection.section);
         
         // Create Hardpoints section
         const hardpointsSection = this.createSection('hardpoints', 'Hardpoints');
+        const hardpointsContent = hardpointsSection.contentContainer;
+        hardpointsContent.id = `${this.id}-hardpoints-section`;
         const hardpointRows = this.hardpointDefinitions.map(({ key }) => `
             <tr>
                 <td>${key}</td>
@@ -289,51 +291,44 @@ class OutfitWidget extends Widget {
                 <td><input type="number" id="${this.id}-hp-split-${key}" min="0" step="1" value="${this.outfitData.hardpoints.split[key]}"></td>
             </tr>
         `).join('');
-        hardpointsSection.contentContainer.innerHTML = `
-            <div class="section-block" id="${this.id}-hardpoints-section">
-                <table class="hardpoints-table">
-                    <thead>
-                        <tr>
-                            <th>Hardpoint</th>
-                            <th>Base</th>
-                            <th>Merge (−3)</th>
-                            <th>Split (+1)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${hardpointRows}
-                    </tbody>
-                </table>
-                <div class="hardpoint-note">Merging reduces available hardpoints by 3 at a time; splitting increases the available count.</div>
-            </div>
-        `;
+        this.setSectionContent(hardpointsSection, `
+            <table class="hardpoints-table">
+                <thead>
+                    <tr>
+                        <th>Hardpoint</th>
+                        <th>Base</th>
+                        <th>Merge (−3)</th>
+                        <th>Split (+1)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${hardpointRows}
+                </tbody>
+            </table>
+            <div class="hardpoint-note">Merging reduces available hardpoints by 3 at a time; splitting increases the available count.</div>
+        `);
         sectionsContainer.appendChild(hardpointsSection.section);
         
         // Create Systems section
         const systemsSection = this.createSection('systems', 'Systems');
-        systemsSection.contentContainer.innerHTML = `
-            <div class="section-block systems-section" id="${this.id}-systems-section">
-                ${this.renderSystemsSection()}
-            </div>
-        `;
+        const systemsContent = systemsSection.contentContainer;
+        systemsContent.classList.add('systems-section');
+        systemsContent.id = `${this.id}-systems-section`;
+        this.setSectionContent(systemsSection, this.renderSystemsSection());
         sectionsContainer.appendChild(systemsSection.section);
         
         // Create Features section
         const featuresSection = this.createSection('features', 'Features');
-        featuresSection.contentContainer.innerHTML = `
-            <div class="section-block" id="${this.id}-features-section">
-                ${this.renderFeaturesTable()}
-            </div>
-        `;
+        const featuresContent = featuresSection.contentContainer;
+        featuresContent.id = `${this.id}-features-section`;
+        this.setSectionContent(featuresSection, this.renderFeaturesTable());
         sectionsContainer.appendChild(featuresSection.section);
         
         // Create Weapons section
         const weaponsSection = this.createSection('weapons', 'Weapons');
-        weaponsSection.contentContainer.innerHTML = `
-            <div class="section-block" id="${this.id}-weapons-section">
-                ${this.renderWeaponsSection()}
-            </div>
-        `;
+        const weaponsContent = weaponsSection.contentContainer;
+        weaponsContent.id = `${this.id}-weapons-section`;
+        this.setSectionContent(weaponsSection, this.renderWeaponsSection());
         sectionsContainer.appendChild(weaponsSection.section);
 
         this.setupEventListeners();
@@ -1052,13 +1047,13 @@ class OutfitWidget extends Widget {
     }
 
     onParentLinked(parentWidget) {
-        if (parentWidget?.type === 'ship') {
+        if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
             this.applyParentInheritance(parentWidget);
         }
     }
 
     onParentUnlinked(parentWidget) {
-        if (parentWidget?.type === 'ship') {
+        if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
             this.resetInheritedValues();
         }
     }

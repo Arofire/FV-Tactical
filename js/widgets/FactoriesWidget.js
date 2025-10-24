@@ -12,7 +12,7 @@ class FactoriesWidget extends Widget {
     createContent(contentElement) {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         const configSection = this.createSection('config', 'Factory Configuration');
-        configSection.contentContainer.innerHTML = `
+        this.setSectionContent(configSection, `
             <div class="input-group">
                 <label>Factory Name</label>
                 <input type="text" id="${this.id}-name" value="${this.factoryData.name}">
@@ -22,13 +22,13 @@ class FactoriesWidget extends Widget {
                 <input type="range" id="${this.id}-efficiency" min="50" max="150" value="${this.factoryData.efficiency}">
                 <span>${this.factoryData.efficiency}%</span>
             </div>
-        `;
+        `);
         sectionsContainer.appendChild(configSection.section);
 
         const productionSection = this.createSection('production', 'Production Lines');
-        productionSection.contentContainer.innerHTML = `
+        this.setSectionContent(productionSection, `
             <div class="component-list" id="${this.id}-production-list"></div>
-        `;
+        `);
         sectionsContainer.appendChild(productionSection.section);
 
         this.setupFactoryListeners();
