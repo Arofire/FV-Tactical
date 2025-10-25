@@ -210,11 +210,6 @@
     display: block;
 }
 
-.widget.widget-three-column.minimized .widget-node-column {
-    padding: 10px 0;
-    min-height: 0;
-}
-
 .widget.widget-three-column .widget-sections {
     display: flex;
     flex-direction: column;
@@ -495,7 +490,7 @@
 }
 
 .outfit-widget .widget-content {
-    padding: 10px;
+    /* padding: 10px; */
     display: flex;
     flex-direction: column;
     gap: 12px;

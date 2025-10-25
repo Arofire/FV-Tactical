@@ -857,6 +857,9 @@ class Widget {
         this.x = e.clientX - this.dragOffset.x;
         this.y = e.clientY - this.dragOffset.y;
 
+        // Apply magnetic snapping to nearby widget edges
+        this.applyMagneticSnapping();
+
         // Constrain movement to the canvas bounds
         this.clampToCanvasBounds();
 
@@ -893,6 +896,104 @@ class Widget {
             }
         }
         if (window.app && window.app.updateMinimap) window.app.updateMinimap();
+    }
+
+    applyMagneticSnapping() {
+        if (!window.widgetManager) return;
+        
+        const snapThreshold = 15; // pixels within which snapping occurs
+        const myWidth = this.element?.offsetWidth || this.width || 300;
+        const myHeight = this.element?.offsetHeight || this.height || 200;
+        const myLeft = this.x;
+        const myRight = this.x + myWidth;
+        const myTop = this.y;
+        const myBottom = this.y + myHeight;
+        
+        let snapX = null;
+        let snapY = null;
+        
+        // Check all other widgets for snapping opportunities
+        for (const otherWidget of window.widgetManager.widgets.values()) {
+            if (otherWidget === this || !otherWidget.element) continue;
+            
+            const otherWidth = otherWidget.element.offsetWidth || otherWidget.width || 300;
+            const otherHeight = otherWidget.element.offsetHeight || otherWidget.height || 200;
+            const otherLeft = otherWidget.x;
+            const otherRight = otherWidget.x + otherWidth;
+            const otherTop = otherWidget.y;
+            const otherBottom = otherWidget.y + otherHeight;
+            
+            // Check for vertical overlap (for horizontal snapping to make sense)
+            const verticalOverlap = !(myBottom < otherTop || myTop > otherBottom);
+            
+            // Check for horizontal overlap (for vertical snapping to make sense)
+            const horizontalOverlap = !(myRight < otherLeft || myLeft > otherRight);
+            
+            // Only apply horizontal snapping if there's vertical overlap or near-overlap
+            const verticalProximity = Math.min(
+                Math.abs(myTop - otherBottom),
+                Math.abs(myBottom - otherTop),
+                Math.abs(myTop - otherTop),
+                Math.abs(myBottom - otherBottom)
+            );
+            
+            if (snapX === null && (verticalOverlap || verticalProximity < snapThreshold)) {
+                // Check for horizontal alignment opportunities (left/right edges)
+                // Snap my left edge to other's left edge
+                if (Math.abs(myLeft - otherLeft) < snapThreshold) {
+                    snapX = otherLeft;
+                }
+                // Snap my left edge to other's right edge
+                else if (Math.abs(myLeft - otherRight) < snapThreshold) {
+                    snapX = otherRight;
+                }
+                // Snap my right edge to other's left edge
+                else if (Math.abs(myRight - otherLeft) < snapThreshold) {
+                    snapX = otherLeft - myWidth;
+                }
+                // Snap my right edge to other's right edge
+                else if (Math.abs(myRight - otherRight) < snapThreshold) {
+                    snapX = otherRight - myWidth;
+                }
+            }
+            
+            // Only apply vertical snapping if there's horizontal overlap or near-overlap
+            const horizontalProximity = Math.min(
+                Math.abs(myLeft - otherRight),
+                Math.abs(myRight - otherLeft),
+                Math.abs(myLeft - otherLeft),
+                Math.abs(myRight - otherRight)
+            );
+            
+            if (snapY === null && (horizontalOverlap || horizontalProximity < snapThreshold)) {
+                // Check for vertical alignment opportunities (top/bottom edges)
+                // Snap my top edge to other's top edge
+                if (Math.abs(myTop - otherTop) < snapThreshold) {
+                    snapY = otherTop;
+                }
+                // Snap my top edge to other's bottom edge
+                else if (Math.abs(myTop - otherBottom) < snapThreshold) {
+                    snapY = otherBottom;
+                }
+                // Snap my bottom edge to other's top edge
+                else if (Math.abs(myBottom - otherTop) < snapThreshold) {
+                    snapY = otherTop - myHeight;
+                }
+                // Snap my bottom edge to other's bottom edge
+                else if (Math.abs(myBottom - otherBottom) < snapThreshold) {
+                    snapY = otherBottom - myHeight;
+                }
+            }
+            
+            // If we found both snap positions, we can stop checking
+            if (snapX !== null && snapY !== null) {
+                break;
+            }
+        }
+        
+        // Apply the snap positions
+        if (snapX !== null) this.x = snapX;
+        if (snapY !== null) this.y = snapY;
     }
 
     stopDrag() {
