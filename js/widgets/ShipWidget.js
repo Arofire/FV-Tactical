@@ -838,31 +838,17 @@ class ShipWidget extends Widget {
     }
 
     syncFormFromData() {
-        const nameInput = document.getElementById(`${this.id}-name`);
-        if (nameInput) {
-            nameInput.value = this.shipData.name || '';
-        }
+        // Use base class helper for simple fields
+        const simpleFields = {
+            'name': { id: 'name', type: 'text' },
+            'designNotes': { id: 'class-notes', type: 'text' },
+            'ignoreTechRequirements': { id: 'ignore-tech', type: 'checkbox' },
+            'operational': { id: 'operational', type: 'checkbox' },
+            'developmentCost': { id: 'dvp-cost', type: 'number' }
+        };
+        this.syncDataToFields(this.shipData, simpleFields);
 
-        const notesInput = document.getElementById(`${this.id}-class-notes`);
-        if (notesInput) {
-            notesInput.value = this.shipData.designNotes || '';
-        }
-
-        const ignoreTechCheckbox = document.getElementById(`${this.id}-ignore-tech`);
-        if (ignoreTechCheckbox) {
-            ignoreTechCheckbox.checked = !!this.shipData.ignoreTechRequirements;
-        }
-
-        const operationalCheckbox = document.getElementById(`${this.id}-operational`);
-        if (operationalCheckbox) {
-            operationalCheckbox.checked = !!this.shipData.operational;
-        }
-
-        const dvpInput = document.getElementById(`${this.id}-dvp-cost`);
-        if (dvpInput) {
-            dvpInput.value = this.shipData.developmentCost ?? '';
-        }
-
+        // Handle foundation checkboxes
         this.foundationKeys.forEach(key => {
             const cb = document.getElementById(`${this.id}-foundation-${key}`);
             if (cb) {
@@ -870,8 +856,13 @@ class ShipWidget extends Widget {
             }
         });
 
+        // Update hull display (spinboxes)
         this.updateHullDisplay();
+        
+        // Update cargo/remass slider
+        this.updateCargoRemassUI();
 
+        // Handle role (custom logic for dropdown vs custom)
         const roleValue = this.shipData.customRole ? this.shipData.customRole : this.shipData.role;
         this.ensureRoleAvailable(this.shipData.role);
         if (this.roleSelectElement) {
@@ -883,7 +874,78 @@ class ShipWidget extends Widget {
         if (typeof this.applyRoleMode === 'function') {
             this.applyRoleMode(this.shipData.customRole ? 'custom' : 'dropdown');
         }
+        
         this.updateSubclassState();
+    }
+
+    syncDataFromForm() {
+        // Use base class helper for simple fields
+        const simpleFields = {
+            'name': { id: 'name', type: 'text' },
+            'designNotes': { id: 'class-notes', type: 'text' },
+            'ignoreTechRequirements': { id: 'ignore-tech', type: 'checkbox' },
+            'operational': { id: 'operational', type: 'checkbox' },
+            'developmentCost': { id: 'dvp-cost', type: 'number' }
+        };
+        this.syncFieldsToData(this.shipData, simpleFields);
+
+        // Handle foundation checkboxes
+        this.foundationKeys.forEach(key => {
+            const cb = document.getElementById(`${this.id}-foundation-${key}`);
+            if (cb) {
+                if (!this.shipData.foundations) {
+                    this.shipData.foundations = {};
+                }
+                this.shipData.foundations[key] = !!cb.checked;
+            }
+        });
+
+        // Handle role (custom logic for dropdown vs custom)
+        const roleSelect = this.roleSelectElement || document.getElementById(`${this.id}-role-select`);
+        const customRoleInput = this.roleCustomInput || document.getElementById(`${this.id}-role-custom`);
+
+        if (this.roleMode === 'custom') {
+            const customValue = customRoleInput ? customRoleInput.value.trim() : '';
+            this.shipData.customRole = customValue;
+            if (customValue) {
+                this.shipData.role = customValue;
+            }
+        } else {
+            const selectedRole = roleSelect ? roleSelect.value : this.shipData.role;
+            if (selectedRole) {
+                this.shipData.role = selectedRole;
+            }
+            this.shipData.customRole = '';
+        }
+
+        this.ensureRoleAvailable(this.shipData.role);
+
+        // Handle hull composition spinboxes
+        if (this.shipData.hullComposition) {
+            this.hullTypes.forEach(hullType => {
+                const input = document.getElementById(`${this.id}-hull-${hullType}`);
+                if (input) {
+                    const value = parseInt(input.value, 10);
+                    this.shipData.hullComposition[hullType] = Number.isFinite(value) && value >= 0 ? value : 0;
+                }
+            });
+        }
+
+        // Handle cargo/remass slider
+        const cargoSlider = document.getElementById(`${this.id}-cargo-remass-slider`);
+        if (cargoSlider) {
+            const totalSlots = this.getCivilHullSlots();
+            const capacity = totalSlots * 50;
+            const cargoValue = parseInt(cargoSlider.value, 10);
+            const cargo = Number.isFinite(cargoValue) && cargoValue >= 0 ? cargoValue : 0;
+            const remass = Math.max(0, capacity - cargo);
+
+            if (!this.shipData.resources) {
+                this.shipData.resources = { cargo: 0, remass: 0 };
+            }
+            this.shipData.resources.cargo = cargo;
+            this.shipData.resources.remass = remass;
+        }
     }
 
     updateNodes() { /* DOM node list removed in linear layout; retained for potential future use */ }
@@ -1154,6 +1216,7 @@ class ShipWidget extends Widget {
     }
 
     getSerializedData() {
+        this.syncDataFromForm();
         return {
             ...super.getSerializedData(),
             shipData: this.shipData
@@ -1164,6 +1227,8 @@ class ShipWidget extends Widget {
         super.loadSerializedData(data);
         if (data.shipData) {
             this.shipData = { ...this.shipData, ...data.shipData };
+            
+            // Deep merge nested objects from the incoming data
             this.shipData.hullComposition = {
                 containment: 0,
                 remass: 0,
@@ -1173,7 +1238,7 @@ class ShipWidget extends Widget {
                 system: 0,
                 powerplant: 0,
                 emplacement: 0,
-                ...(this.shipData.hullComposition || {})
+                ...(data.shipData.hullComposition || {})
             };
             this.shipData.hardpoints = {
                 perEmplacement: 4,
@@ -1186,13 +1251,27 @@ class ShipWidget extends Widget {
                 SHP: 0,
                 PHP: 0,
                 MHP: 0,
-                ...(this.shipData.hardpoints || {})
+                ...(data.shipData.hardpoints || {})
+            };
+            this.shipData.foundations = {
+                structural: false,
+                propulsion: false,
+                power: false,
+                heat: false,
+                lifeSupport: false,
+                navigation: false,
+                sensors: false,
+                weapons: false,
+                defense: false,
+                logistics: false,
+                ...(data.shipData.foundations || {})
             };
             this.shipData.resources = {
                 cargo: 0,
                 remass: 0,
-                ...(this.shipData.resources || {})
+                ...(data.shipData.resources || {})
             };
+            
             if (!data.shipData.resources) {
                 const containmentCapacity = (this.shipData.hullComposition.containment ?? 0) * 50;
                 const remassCapacity = (this.shipData.hullComposition.remass ?? 0) * 50;
@@ -1201,6 +1280,7 @@ class ShipWidget extends Widget {
             }
             this.ensureRoleAvailable(this.shipData.role);
             this.roleMode = this.shipData.customRole ? 'custom' : 'dropdown';
+            
             this.syncFormFromData();
             this.createNodes();
             this.updateStats();

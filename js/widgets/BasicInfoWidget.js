@@ -124,7 +124,42 @@ class BasicInfoWidget extends Widget {
         }
     }
 
+    syncDataFromForm() {
+        // Sync form values to basicData
+        const fields = {
+            'name': { id: 'name', type: 'text' },
+            'role': { id: 'role', type: 'select' },
+            'customRole': { id: 'custom-role', type: 'text' },
+            'description': { id: 'description', type: 'text' },
+            'designNotes': { id: 'design-notes', type: 'text' },
+            'appearance': { id: 'appearance', type: 'text' },
+            'text2imgPrompt': { id: 'text2img', type: 'text' }
+        };
+        this.syncFieldsToData(this.basicData, fields);
+    }
+
+    syncFormFromData() {
+        // Sync basicData values to form
+        const fields = {
+            'name': { id: 'name', type: 'text' },
+            'role': { id: 'role', type: 'select' },
+            'customRole': { id: 'custom-role', type: 'text' },
+            'description': { id: 'description', type: 'text' },
+            'designNotes': { id: 'design-notes', type: 'text' },
+            'appearance': { id: 'appearance', type: 'text' },
+            'text2imgPrompt': { id: 'text2img', type: 'text' }
+        };
+        this.syncDataToFields(this.basicData, fields);
+        
+        // Handle custom role visibility
+        const customRoleInput = document.getElementById(`${this.id}-custom-role`);
+        if (customRoleInput) {
+            customRoleInput.style.display = this.basicData.role === 'custom' ? 'block' : 'none';
+        }
+    }
+
     getSerializedData() {
+        this.syncDataFromForm();
         return { ...super.getSerializedData(), basicData: this.basicData };
     }
 
@@ -132,6 +167,7 @@ class BasicInfoWidget extends Widget {
         super.loadSerializedData(data);
         if (data.basicData) {
             this.basicData = { ...this.basicData, ...data.basicData };
+            this.syncFormFromData();
         }
     }
 

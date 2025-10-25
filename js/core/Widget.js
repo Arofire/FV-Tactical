@@ -64,15 +64,14 @@ class Widget {
         const controls = document.createElement('div');
         controls.className = 'widget-controls';
 
-        const minimizeBtn = document.createElement('button');
-        minimizeBtn.className = 'widget-control-btn minimize';
-        minimizeBtn.innerHTML = '▾';
-        minimizeBtn.title = 'Minimize widget';
-        minimizeBtn.onclick = (e) => {
+        const duplicateBtn = document.createElement('button');
+        duplicateBtn.className = 'widget-control-btn duplicate';
+        duplicateBtn.innerHTML = '⎘';
+        duplicateBtn.title = 'Duplicate widget';
+        duplicateBtn.onclick = (e) => {
             e.stopPropagation();
-            this.toggleMinimize();
+            this.duplicate();
         };
-        this.minimizeButton = minimizeBtn;
 
         const pinBtn = document.createElement('button');
         pinBtn.className = 'widget-control-btn pin';
@@ -82,6 +81,16 @@ class Widget {
             e.stopPropagation();
             this.togglePin();
         };
+
+        const minimizeBtn = document.createElement('button');
+        minimizeBtn.className = 'widget-control-btn minimize';
+        minimizeBtn.innerHTML = '−';
+        minimizeBtn.title = 'Minimize widget';
+        minimizeBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.toggleMinimize();
+        };
+        this.minimizeButton = minimizeBtn;
 
         const closeBtn = document.createElement('button');
         closeBtn.className = 'widget-control-btn close';
@@ -98,8 +107,9 @@ class Widget {
         preflightIndicator.style.display = 'none'; // Hidden by default
         
         controls.appendChild(preflightIndicator);
-        controls.appendChild(minimizeBtn);
+        controls.appendChild(duplicateBtn);
         controls.appendChild(pinBtn);
+        controls.appendChild(minimizeBtn);
         controls.appendChild(closeBtn);
         header.appendChild(titleElement);
         header.appendChild(controls);
@@ -1027,7 +1037,7 @@ class Widget {
         this.element.classList.toggle('minimized', this.minimized);
 
         if (this.minimizeButton) {
-            this.minimizeButton.innerHTML = this.minimized ? '▴' : '▾';
+            this.minimizeButton.innerHTML = this.minimized ? '□' : '−';
             this.minimizeButton.title = this.minimized ? 'Restore widget' : 'Minimize widget';
         }
 
@@ -1111,6 +1121,39 @@ class Widget {
         } else {
             this.pin();
         }
+    }
+
+    duplicate() {
+        // Create a new widget of the same type, offset from the original
+        const duplicateX = this.x + 40;
+        const duplicateY = this.y + 40;
+        
+        const newWidget = window.app?.createWidget(this.type, duplicateX, duplicateY);
+        if (!newWidget) return;
+        
+        // Copy the serialized data from this widget to the new one
+        const data = this.getSerializedData();
+        if (data && typeof newWidget.loadSerializedData === 'function') {
+            // Create a deep copy of the data to avoid reference issues
+            const dataCopy = JSON.parse(JSON.stringify(data));
+            newWidget.loadSerializedData(dataCopy);
+            
+            // The loadSerializedData method should handle all internal updates,
+            // but we ensure the display is refreshed
+            if (typeof newWidget.updateTitle === 'function') {
+                newWidget.updateTitle();
+            }
+            if (typeof newWidget.refresh === 'function') {
+                newWidget.refresh();
+            }
+        }
+        
+        // Trigger any necessary refreshes
+        if (window.preflightCheck) {
+            window.preflightCheck.runCheck();
+        }
+        
+        return newWidget;
     }
 
     pin() {
@@ -1242,8 +1285,89 @@ class Widget {
         };
     }
 
+    // Generic helper to sync form field values to a data object
+    // fieldMap: { dataPath: 'elementId' } or { dataPath: { id: 'elementId', type: 'text|number|checkbox|select' } }
+    syncFieldsToData(dataObject, fieldMap) {
+        for (const [dataPath, fieldConfig] of Object.entries(fieldMap)) {
+            const elementId = typeof fieldConfig === 'string' ? fieldConfig : fieldConfig.id;
+            const fieldType = typeof fieldConfig === 'string' ? 'text' : (fieldConfig.type || 'text');
+            
+            const element = document.getElementById(`${this.id}-${elementId}`);
+            if (!element) continue;
+            
+            let value;
+            switch (fieldType) {
+                case 'checkbox':
+                    value = !!element.checked;
+                    break;
+                case 'number':
+                    const num = parseFloat(element.value);
+                    value = isNaN(num) ? null : num;
+                    break;
+                case 'select':
+                case 'text':
+                default:
+                    value = element.value || '';
+                    break;
+            }
+            
+            // Support nested paths like 'nested.field'
+            const pathParts = dataPath.split('.');
+            let target = dataObject;
+            for (let i = 0; i < pathParts.length - 1; i++) {
+                if (!target[pathParts[i]]) {
+                    target[pathParts[i]] = {};
+                }
+                target = target[pathParts[i]];
+            }
+            target[pathParts[pathParts.length - 1]] = value;
+        }
+    }
+
+    // Generic helper to sync data object values to form fields
+    syncDataToFields(dataObject, fieldMap) {
+        for (const [dataPath, fieldConfig] of Object.entries(fieldMap)) {
+            const elementId = typeof fieldConfig === 'string' ? fieldConfig : fieldConfig.id;
+            const fieldType = typeof fieldConfig === 'string' ? 'text' : (fieldConfig.type || 'text');
+            
+            const element = document.getElementById(`${this.id}-${elementId}`);
+            if (!element) continue;
+            
+            // Get value from nested path
+            const pathParts = dataPath.split('.');
+            let value = dataObject;
+            for (const part of pathParts) {
+                value = value?.[part];
+                if (value === undefined) break;
+            }
+            
+            if (value === undefined || value === null) continue;
+            
+            switch (fieldType) {
+                case 'checkbox':
+                    element.checked = !!value;
+                    break;
+                case 'number':
+                case 'select':
+                case 'text':
+                default:
+                    element.value = value;
+                    break;
+            }
+        }
+    }
+
     getSerializedData() {
         // To be overridden by subclasses
+        // Important: Subclasses should sync form data to internal state before returning data
+        // Example pattern:
+        //   getSerializedData() {
+        //       this.syncDataFromForm(); // Read current form values into this.data
+        //       return {
+        //           ...super.getSerializedData(),
+        //           myData: this.myData
+        //       };
+        //   }
         return {};
     }
 
@@ -1437,6 +1561,17 @@ class Widget {
 
     loadSerializedData(data) {
         // To be overridden by subclasses
+        // Important: Subclasses should load data into internal state and update the display
+        // Example pattern:
+        //   loadSerializedData(data) {
+        //       super.loadSerializedData(data);
+        //       if (data.myData) {
+        //           this.myData = { ...this.myData, ...data.myData };
+        //           // Deep merge any nested objects
+        //           this.syncFormFromData(); // Update form fields from this.myData
+        //           this.updateDisplay(); // Refresh any calculated displays
+        //       }
+        //   }
     }
 }
 

@@ -23,7 +23,6 @@
 }
 
 .widget.selected {
-    border-color: #4a90e2;
     box-shadow: 0 6px 20px rgba(74, 144, 226, 0.3);
 }
 
@@ -486,7 +485,7 @@
 
 
 .outfit-widget {
-    border-left: 4px solid #8cc0ff;
+    /* border-left: 4px solid #8cc0ff; */
 }
 
 .outfit-widget .widget-content {
@@ -498,12 +497,14 @@
 
 .outfit-meta-header {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    flex-direction: row;
+    gap: 8px;
     background: #1f1f1f;
     border: 1px solid #3f3f3f;
     border-radius: 6px;
-    padding: 8px 10px;
+    padding: 8px;
+    flex-wrap: wrap;
+    justify-content: space-between;
 }
 
 .outfit-header-row {
@@ -518,9 +519,10 @@
     border-radius: 6px;
     padding: 6px 8px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     text-align: center;
+    flex: 1 1 auto;
+    min-width: 40px;
+    flex-direction: column;
 }
 
 .outfit-stat .label {

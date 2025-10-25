@@ -234,23 +234,19 @@ class OutfitWidget extends Widget {
     createContent(contentElement) {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         
-        // Create Meta section
-        const metaSection = this.createSection('meta', 'Meta Information');
+        // Create Meta section (no title)
+        const metaSection = this.createSection('meta', '');
         this.setSectionContent(metaSection, `
             <div class="outfit-meta-header widget-sticky-header" id="${this.id}-meta-header">
-                <div class="outfit-header-row" id="${this.id}-hardpoint-row">
-                    ${this.hardpointDefinitions.map(({ key }) => `
-                        <div class="outfit-stat" data-hardpoint="${key}">
-                            <span class="label">${key}</span>
-                            <span class="value" id="${this.id}-hp-value-${key}">0</span>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="outfit-header-row" id="${this.id}-shipyard-row">
-                    <div class="outfit-stat">
-                        <span class="label">SM</span>
-                        <span class="value" id="${this.id}-shipyard-months">0</span>
+                ${this.hardpointDefinitions.map(({ key }) => `
+                    <div class="outfit-stat" data-hardpoint="${key}">
+                        <span class="label">${key}</span>
+                        <span class="value" id="${this.id}-hp-value-${key}">0</span>
                     </div>
+                `).join('')}
+                <div class="outfit-stat">
+                    <span class="label">SM</span>
+                    <span class="value" id="${this.id}-shipyard-months">0</span>
                 </div>
             </div>
             <div class="input-group" id="${this.id}-name-group">
@@ -260,8 +256,8 @@ class OutfitWidget extends Widget {
         `);
         sectionsContainer.appendChild(metaSection.section);
         
-        // Create Role section
-        const roleSection = this.createSection('role', 'Role');
+        // Create Role section (no title)
+        const roleSection = this.createSection('role', '');
         this.setSectionContent(roleSection, `
             <div class="input-group role-group" id="${this.id}-role-group">
                 <label>Role</label>
@@ -270,7 +266,7 @@ class OutfitWidget extends Widget {
                         ${this.getRoleOptions()}
                     </select>
                     <input type="text" id="${this.id}-role-custom" class="role-input" placeholder="Enter custom role" ${this.roleMode === 'dropdown' ? 'style="display:none;"' : ''} value="${this.getRoleInputValue()}">
-                    <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '✏️' : '🌳'}</button>
+                    <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '🖉' : '🌳'}</button>
                 </div>
             </div>
             <div class="input-group" id="${this.id}-notes-group">
@@ -306,7 +302,6 @@ class OutfitWidget extends Widget {
                     ${hardpointRows}
                 </tbody>
             </table>
-            <div class="hardpoint-note">Merging reduces available hardpoints by 3 at a time; splitting increases the available count.</div>
         `);
         sectionsContainer.appendChild(hardpointsSection.section);
         
@@ -824,23 +819,26 @@ class OutfitWidget extends Widget {
 
     renderFeaturesTable() {
         const rows = [
-            ['Aero Streamlining', '', '', '', '', 'FALSE', '-', '', '', '(252)', '', '', ''],
-            ['Enhanced Armour', '', '', '', '', 'FALSE', '-', '', '', '(33)', '', '', ''],
-            ['QW Hardening', '', '', '', '', 'FALSE', '-', '', '', '', '', '', ''],
-            ['Particle Sail', '', '', '', '', 'FALSE', '5%', '', '', '', '', '', ''],
-            ['Fighter Catapult', '', '', '', '', '0', 'MHP', '', '', '(50)', '', '', ''],
-            ['Flinger Little', '', '', '', '', 'FALSE', 'MHP', '', '', '(50)', '', '', ''],
-            ['Magazine Crane', '', '', '', '', 'FALSE', 'MHP', '', '', '(50)', '', '', ''],
-            ['Bomb Launcher', '', '', '', '', '0', 'PHP', '', '', '(12)', '', '', ''],
-            ['LASER Focus', '', '', '', '', '0', 'SHP', '', '', '(50)', '', '', ''],
-            ['Jump Beacon', '', '', '', '', 'FALSE', 'MHP', '', '', '(90)', '', '', ''],
-            ['Transporter', '', '', '', '', '0', 'UHP', '', '', '(30)', '', '', '']
+            ['Aero Streamlining', 'FALSE', '-', '(252)'],
+            ['Enhanced Armour', 'FALSE', '-', '(33)'],
+            ['QW Hardening', 'FALSE', '-', ''],
+            ['Particle Sail', 'FALSE', '5%', ''],
+            ['Fighter Catapult', '0', 'MHP', '(50)'],
+            ['Flinger Little', 'FALSE', 'MHP', '(50)'],
+            ['Magazine Crane', 'FALSE', 'MHP', '(50)'],
+            ['Bomb Launcher', '0', 'PHP', '(12)'],
+            ['LASER Focus', '0', 'SHP', '(50)'],
+            ['Jump Beacon', 'FALSE', 'MHP', '(90)'],
+            ['Transporter', '0', 'UHP', '(30)']
         ];
         return `
             <table class="features-table">
                 <thead>
                     <tr>
-                        ${Array.from({ length: 12 }).map((_, idx) => `<th>${idx === 0 ? 'Feature' : '&nbsp;'}</th>`).join('')}
+                        <th>Feature</th>
+                        <th>Active</th>
+                        <th>Cost</th>
+                        <th>Notes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1157,7 +1155,67 @@ class OutfitWidget extends Widget {
         this.reflowNodes();
     }
 
+    syncDataFromForm() {
+        // Sync simple form fields to outfitData
+        const simpleFields = {
+            'name': { id: 'name', type: 'text' },
+            'notes': { id: 'notes', type: 'text' }
+        };
+        this.syncFieldsToData(this.outfitData, simpleFields);
+
+        // Handle role (dropdown vs custom)
+        const roleSelect = document.getElementById(`${this.id}-role-select`);
+        const roleCustom = document.getElementById(`${this.id}-role-custom`);
+        
+        if (this.roleMode === 'custom' && roleCustom) {
+            this.outfitData.customRole = roleCustom.value.trim();
+            this.outfitData.role = this.outfitData.customRole;
+        } else if (roleSelect) {
+            this.outfitData.role = roleSelect.value;
+            this.outfitData.customRole = '';
+        }
+
+        // Sync hardpoint merge/split values
+        ['UHP', 'SHP', 'PHP', 'MHP'].forEach(key => {
+            const mergeInput = document.getElementById(`${this.id}-hp-merge-${key}`);
+            const splitInput = document.getElementById(`${this.id}-hp-split-${key}`);
+            if (mergeInput) {
+                const val = parseInt(mergeInput.value, 10);
+                this.outfitData.hardpoints.merge[key] = isNaN(val) ? 0 : val;
+            }
+            if (splitInput) {
+                const val = parseInt(splitInput.value, 10);
+                this.outfitData.hardpoints.split[key] = isNaN(val) ? 0 : val;
+            }
+        });
+
+        // Sync spinal mount selection
+        const spinalSelect = document.getElementById(`${this.id}-spinal-select`);
+        if (spinalSelect) {
+            this.outfitData.weapons.spinal = spinalSelect.value;
+        }
+
+        // Sync weapon arrays (offensive/defensive)
+        ['offensive', 'defensive'].forEach(category => {
+            const weaponsArray = this.outfitData.weapons?.[category];
+            if (!weaponsArray || !Array.isArray(weaponsArray)) return;
+            
+            weaponsArray.forEach((weapon, idx) => {
+                const nameEl = document.getElementById(`${this.id}-${category}-${idx}-name`);
+                const categoryEl = document.getElementById(`${this.id}-${category}-${idx}-category`);
+                const hpEl = document.getElementById(`${this.id}-${category}-${idx}-hp`);
+                const countEl = document.getElementById(`${this.id}-${category}-${idx}-count`);
+                
+                if (nameEl) weapon.name = nameEl.value;
+                if (categoryEl) weapon.category = categoryEl.value;
+                if (hpEl) weapon.hp = parseInt(hpEl.value, 10) || 0;
+                if (countEl) weapon.count = parseInt(countEl.value, 10) || 0;
+            });
+        });
+    }
+
     getSerializedData() {
+        this.syncDataFromForm();
         return {
             ...super.getSerializedData(),
             outfitData: this.outfitData
