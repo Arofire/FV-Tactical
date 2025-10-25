@@ -526,8 +526,16 @@ class NodeSystem {
             const item = document.createElement('div');
             item.className = 'connection-selection-menu-item';
             item.textContent = label;
-            item.addEventListener('click', () => {
-                this.handleConnectionSelection(sourceNode, sourceNodeId, widgetType, targetWorld);
+            item.addEventListener('click', (clickEvent) => {
+                // Capture cursor position at the moment of menu item click, not at drag end
+                const clickWorldPos = this.clientToWorld(clickEvent.clientX, clickEvent.clientY);
+                const clickTargetWorld = clickWorldPos ? {
+                    x: clickWorldPos.x - 150,
+                    y: clickWorldPos.y - 100
+                } : targetWorld;
+                
+                // Pass both the initial widget position and the current cursor position
+                this.handleConnectionSelection(sourceNode, sourceNodeId, widgetType, clickTargetWorld, clickWorldPos);
             });
             menu.appendChild(item);
         });
@@ -544,21 +552,64 @@ class NodeSystem {
         }, 0);
     }
 
-    handleConnectionSelection(sourceNode, sourceNodeId, widgetType, targetWorld) {
+    handleConnectionSelection(sourceNode, sourceNodeId, widgetType, initialPos, cursorPos) {
         this.destroyConnectionSelectionMenu();
-        const newWidget = window.app.createWidget(widgetType, targetWorld.x, targetWorld.y);
+        
+        // Use cursorPos if provided, otherwise fall back to initialPos for backward compatibility
+        const targetCursorPos = cursorPos || initialPos;
+        
+        // Create widget at initial position (with offset so it doesn't cover the cursor)
+        const newWidget = window.app.createWidget(widgetType, initialPos.x, initialPos.y);
         if (!newWidget) return;
 
         if (widgetType === 'reroute' && typeof newWidget.configureForNodeType === 'function') {
             newWidget.configureForNodeType(sourceNode.nodeType);
         }
 
-        setTimeout(() => {
+        // Get the source widget and mark it as manually positioned to prevent auto-arrange
+        const sourceWidget = window.widgetManager?.getWidget(sourceNode.widgetId);
+        if (sourceWidget) {
+            sourceWidget.manualPosition = true;
+        }
+
+        // Use requestAnimationFrame for faster, smoother repositioning
+        requestAnimationFrame(() => {
             const compatibleNodeId = this.findCompatibleNode(newWidget, sourceNode);
             if (compatibleNodeId && this.canConnect(sourceNodeId, compatibleNodeId)) {
+                // Get the node's absolute position in world coordinates
+                const nodeWorldPos = newWidget.getNodeAbsolutePosition(compatibleNodeId);
+                
+                if (nodeWorldPos) {
+                    // Calculate the offset from widget position to node position in world coords
+                    const nodeOffsetX = nodeWorldPos.x - newWidget.x;
+                    const nodeOffsetY = nodeWorldPos.y - newWidget.y;
+                    
+                    // Position widget so the node is at the target cursor position
+                    newWidget.x = targetCursorPos.x - nodeOffsetX;
+                    newWidget.y = targetCursorPos.y - nodeOffsetY;
+                    
+                    // Mark as manually positioned to prevent autoArrangeHierarchy from moving it
+                    newWidget.manualPosition = true;
+                    
+                    // Clamp to canvas bounds
+                    newWidget.clampToCanvasBounds();
+                    
+                    // Update widget position in DOM
+                    if (newWidget.element) {
+                        newWidget.element.style.left = newWidget.x + 'px';
+                        newWidget.element.style.top = newWidget.y + 'px';
+                    }
+                    
+                    // Update all connections to reflect new position
+                    this.updateConnections();
+                }
+                
+                // Create the connection AFTER repositioning
+                // This way hierarchy is assigned after the widget is in its final position
+                // and manualPosition=true prevents autoArrangeHierarchy from moving it
                 this.connectNodesRespectingDirection(sourceNodeId, compatibleNodeId);
             }
-        }, 100);
+        });
     }
 
     connectNodesRespectingDirection(nodeIdA, nodeIdB) {
@@ -615,7 +666,7 @@ class NodeSystem {
             },
             'loadout': {
                 'input': ['ship'],
-                'output': []
+                'output': ['loadouts']
             },
             'powerplant': {
                 'input': ['powerplants'],
@@ -627,7 +678,7 @@ class NodeSystem {
             },
             'outfit': {
                 'input': ['ship'],
-                'output': []
+                'output': ['outfit']
             },
             'statistics': {
                 'input': ['ship', 'outfit'],

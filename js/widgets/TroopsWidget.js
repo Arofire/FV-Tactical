@@ -1,7 +1,7 @@
 // Troops widget for managing military units
 class TroopsWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('troops', 'New Troop Unit', x, y, 280); // Remove fixed height
+        super('troops', 'New Troop Unit', x, y, null);
         this.troopData = {
             name: 'New Troop Unit',
             type: 'infantry',
@@ -9,6 +9,7 @@ class TroopsWidget extends Widget {
             equipment: [],
             morale: 100
         };
+        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -78,12 +79,14 @@ class TroopsWidget extends Widget {
             nameInput.addEventListener('input', (e) => {
                 this.troopData.name = e.target.value;
                 this.updateTitle();
+                this.refreshSummary();
             });
         }
         
         if (typeSelect) {
             typeSelect.addEventListener('change', (e) => {
                 this.troopData.type = e.target.value;
+                this.refreshSummary();
             });
         }
         
@@ -91,6 +94,7 @@ class TroopsWidget extends Widget {
             sizeInput.addEventListener('input', (e) => {
                 this.troopData.size = parseInt(e.target.value) || 0;
                 this.updateStats();
+                this.refreshSummary();
             });
         }
         
@@ -127,12 +131,14 @@ class TroopsWidget extends Widget {
         this.troopData.equipment.push(troopEquipment);
         this.updateEquipmentList();
         this.updateStats();
+        this.refreshSummary();
     }
 
     removeEquipment(equipmentId) {
         this.troopData.equipment = this.troopData.equipment.filter(e => e.id !== equipmentId);
         this.updateEquipmentList();
         this.updateStats();
+        this.refreshSummary();
     }
 
     updateEquipmentList() {
@@ -198,5 +204,72 @@ class TroopsWidget extends Widget {
         this.updateTitle();
         this.updateEquipmentList();
         this.updateStats();
+    }
+
+    renderSummary(container) {
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'summary-title';
+        titleDiv.textContent = this.troopData.name || 'New Troop Unit';
+        container.appendChild(titleDiv);
+
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'summary-badges';
+        
+        if (this.troopData.type) {
+            badgesDiv.appendChild(this.createBadge(this.troopData.type, 'info'));
+        }
+
+        container.appendChild(badgesDiv);
+
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'summary-grid';
+
+        this.addSummaryField(gridDiv, 'Type', this.troopData.type || '—');
+        this.addSummaryField(gridDiv, 'Size', `${this.troopData.size} personnel`);
+        this.addSummaryField(gridDiv, 'Equipment Items', this.troopData.equipment.length.toString());
+        this.addSummaryField(gridDiv, 'Morale', `${this.troopData.morale}%`);
+
+        container.appendChild(gridDiv);
+    }
+
+    refreshSummary() {
+        if (!this.element) return;
+        const summaryContainer = this.element.querySelector('.widget-summary');
+        if (!summaryContainer) return;
+        
+        const isMinimized = this.element.classList.contains('minimized');
+        if (isMinimized) {
+            this.renderSummary(summaryContainer);
+        }
+    }
+
+    onMinimizeStateChanged(isMinimized) {
+        if (isMinimized) {
+            this.refreshSummary();
+        }
+    }
+
+    addSummaryField(container, label, value) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'summary-label';
+        labelDiv.textContent = label;
+
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'summary-value';
+        valueDiv.textContent = value;
+
+        container.appendChild(labelDiv);
+        container.appendChild(valueDiv);
+    }
+
+    createBadge(text, variant = '') {
+        const badge = document.createElement('span');
+        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
+        badge.textContent = text;
+        return badge;
     }
 }

@@ -1,6 +1,6 @@
 class BasicInfoWidget extends Widget {
     constructor(shipWidget, x = 550, y = 100) {
-        super('basic-info', 'Basic Info', x, y, 320); // Remove fixed height
+        super('basic-info', 'Basic Info', x, y, null);
         this.shipWidget = shipWidget; // reference for synchronization
         this.basicData = {
             name: shipWidget?.shipData?.name || 'New Ship Class',
@@ -14,6 +14,7 @@ class BasicInfoWidget extends Widget {
         this.defaultRoles = shipWidget?.defaultRoles || [
             'corvette','frigate','destroyer','cruiser','battleship','dreadnought','carrier','fighter','bomber','scout','transport','support','custom'
         ];
+        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -75,27 +76,33 @@ class BasicInfoWidget extends Widget {
             this.basicData.name = e.target.value;
             this.updateTitle(this.basicData.name);
             this.syncToShip();
+            this.refreshSummary();
         });
         if (roleSelect) roleSelect.addEventListener('change', e => {
             this.basicData.role = e.target.value;
             if (customRoleInput) customRoleInput.style.display = e.target.value === 'custom' ? 'block' : 'none';
             this.syncToShip(true);
+            this.refreshSummary();
         });
         if (customRoleInput) customRoleInput.addEventListener('input', e => {
             this.basicData.customRole = e.target.value;
             this.syncToShip(true);
+            this.refreshSummary();
         });
         if (descriptionTextarea) descriptionTextarea.addEventListener('input', e => {
             this.basicData.description = e.target.value;
             this.syncToShip();
+            this.refreshSummary();
         });
         if (designNotesTextarea) designNotesTextarea.addEventListener('input', e => {
             this.basicData.designNotes = e.target.value;
             this.syncToShip();
+            this.refreshSummary();
         });
         if (appearanceTextarea) appearanceTextarea.addEventListener('input', e => {
             this.basicData.appearance = e.target.value;
             this.syncToShip(true);
+            this.refreshSummary();
         });
     }
 
@@ -126,5 +133,77 @@ class BasicInfoWidget extends Widget {
         if (data.basicData) {
             this.basicData = { ...this.basicData, ...data.basicData };
         }
+    }
+
+    renderSummary(container) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'summary-title';
+        titleDiv.textContent = this.basicData.name || 'New Ship Class';
+        container.appendChild(titleDiv);
+
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'summary-badges';
+        
+        const displayRole = this.basicData.role === 'custom' 
+            ? this.basicData.customRole 
+            : this.basicData.role;
+        if (displayRole) {
+            badgesDiv.appendChild(this.createBadge(displayRole, 'role'));
+        }
+
+        container.appendChild(badgesDiv);
+
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'summary-grid';
+
+        this.addSummaryField(gridDiv, 'Name', this.basicData.name || '—');
+        this.addSummaryField(gridDiv, 'Role', displayRole || '—');
+        
+        const descPreview = this.basicData.description 
+            ? (this.basicData.description.substring(0, 50) + (this.basicData.description.length > 50 ? '...' : ''))
+            : '—';
+        this.addSummaryField(gridDiv, 'Description', descPreview);
+
+        container.appendChild(gridDiv);
+    }
+
+    refreshSummary() {
+        if (!this.element) return;
+        const summaryContainer = this.element.querySelector('.widget-summary');
+        if (!summaryContainer) return;
+        
+        const isMinimized = this.element.classList.contains('minimized');
+        if (isMinimized) {
+            this.renderSummary(summaryContainer);
+        }
+    }
+
+    onMinimizeStateChanged(isMinimized) {
+        if (isMinimized) {
+            this.refreshSummary();
+        }
+    }
+
+    addSummaryField(container, label, value) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'summary-label';
+        labelDiv.textContent = label;
+
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'summary-value';
+        valueDiv.textContent = value;
+
+        container.appendChild(labelDiv);
+        container.appendChild(valueDiv);
+    }
+
+    createBadge(text, variant = '') {
+        const badge = document.createElement('span');
+        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
+        badge.textContent = text;
+        return badge;
     }
 }

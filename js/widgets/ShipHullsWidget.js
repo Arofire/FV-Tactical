@@ -1,10 +1,11 @@
 class ShipHullsWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('shipHulls', 'Hull Plan', x, y, 320);
+        super('shipHulls', 'Hull Plan', x, y, null);
         this.hullData = {
             label: 'Hull Plan',
             notes: ''
         };
+        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -29,6 +30,7 @@ class ShipHullsWidget extends Widget {
                 this.hullData.label = e.target.value;
                 this.title = this.hullData.label || 'Hull Plan';
                 this.updateWidgetTitle();
+                this.refreshSummary();
             });
         }
 
@@ -36,6 +38,7 @@ class ShipHullsWidget extends Widget {
         if (notesField) {
             notesField.addEventListener('input', (e) => {
                 this.hullData.notes = e.target.value;
+                this.refreshSummary();
             });
         }
     }
@@ -103,5 +106,66 @@ class ShipHullsWidget extends Widget {
         if (notesField) {
             notesField.value = this.hullData.notes || '';
         }
+    }
+
+    renderSummary(container) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'summary-title';
+        titleDiv.textContent = this.hullData.label || 'Hull Plan';
+        container.appendChild(titleDiv);
+
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'summary-badges';
+        container.appendChild(badgesDiv);
+
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'summary-grid';
+
+        const notesPreview = this.hullData.notes 
+            ? (this.hullData.notes.substring(0, 50) + (this.hullData.notes.length > 50 ? '...' : ''))
+            : '—';
+        this.addSummaryField(gridDiv, 'Notes', notesPreview);
+
+        container.appendChild(gridDiv);
+    }
+
+    refreshSummary() {
+        if (!this.element) return;
+        const summaryContainer = this.element.querySelector('.widget-summary');
+        if (!summaryContainer) return;
+        
+        const isMinimized = this.element.classList.contains('minimized');
+        if (isMinimized) {
+            this.renderSummary(summaryContainer);
+        }
+    }
+
+    onMinimizeStateChanged(isMinimized) {
+        if (isMinimized) {
+            this.refreshSummary();
+        }
+    }
+
+    addSummaryField(container, label, value) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'summary-label';
+        labelDiv.textContent = label;
+
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'summary-value';
+        valueDiv.textContent = value;
+
+        container.appendChild(labelDiv);
+        container.appendChild(valueDiv);
+    }
+
+    createBadge(text, variant = '') {
+        const badge = document.createElement('span');
+        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
+        badge.textContent = text;
+        return badge;
     }
 }

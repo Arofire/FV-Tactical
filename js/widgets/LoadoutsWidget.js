@@ -1,10 +1,11 @@
 class LoadoutsWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('loadouts', 'New Loadout', x, y, 280);
+        super('loadouts', 'New Loadout', x, y, null);
         this.loadoutData = {
             name: 'New Loadout',
             items: []
         };
+        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -30,6 +31,7 @@ class LoadoutsWidget extends Widget {
             nameInput.addEventListener('input', (e) => {
                 this.loadoutData.name = e.target.value;
                 this.updateTitle();
+                this.refreshSummary();
             });
         }
     }
@@ -92,5 +94,63 @@ class LoadoutsWidget extends Widget {
     loadSerializedData(data) {
         this.loadoutData = data;
         this.updateTitle();
+    }
+
+    renderSummary(container) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'summary-title';
+        titleDiv.textContent = this.loadoutData.name || 'New Loadout';
+        container.appendChild(titleDiv);
+
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'summary-badges';
+        container.appendChild(badgesDiv);
+
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'summary-grid';
+
+        this.addSummaryField(gridDiv, 'Items', this.loadoutData.items.length.toString());
+
+        container.appendChild(gridDiv);
+    }
+
+    refreshSummary() {
+        if (!this.element) return;
+        const summaryContainer = this.element.querySelector('.widget-summary');
+        if (!summaryContainer) return;
+        
+        const isMinimized = this.element.classList.contains('minimized');
+        if (isMinimized) {
+            this.renderSummary(summaryContainer);
+        }
+    }
+
+    onMinimizeStateChanged(isMinimized) {
+        if (isMinimized) {
+            this.refreshSummary();
+        }
+    }
+
+    addSummaryField(container, label, value) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'summary-label';
+        labelDiv.textContent = label;
+
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'summary-value';
+        valueDiv.textContent = value;
+
+        container.appendChild(labelDiv);
+        container.appendChild(valueDiv);
+    }
+
+    createBadge(text, variant = '') {
+        const badge = document.createElement('span');
+        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
+        badge.textContent = text;
+        return badge;
     }
 }

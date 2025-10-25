@@ -1,7 +1,7 @@
 // Craft design widget - similar to ship but for smaller vessels
 class CraftWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('craft', 'New Craft', x, y, 300); // Remove fixed height for auto-sizing
+        super('craft', 'New Craft', x, y, null);
         this.craftData = {
             name: 'New Craft',
             type: 'fighter',
@@ -9,6 +9,7 @@ class CraftWidget extends Widget {
             description: '',
             ignoreTechRequirements: false
         };
+        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -86,12 +87,14 @@ class CraftWidget extends Widget {
             nameInput.addEventListener('input', (e) => {
                 this.craftData.name = e.target.value;
                 this.updateTitle();
+                this.refreshSummary();
             });
         }
         
         if (typeSelect) {
             typeSelect.addEventListener('change', (e) => {
                 this.craftData.type = e.target.value;
+                this.refreshSummary();
             });
         }
         
@@ -138,6 +141,7 @@ class CraftWidget extends Widget {
         this.updateComponentList();
         this.updateStats();
         this.updateNodes();
+        this.refreshSummary();
     }
 
     removeComponent(componentId) {
@@ -145,6 +149,7 @@ class CraftWidget extends Widget {
         this.updateComponentList();
         this.updateStats();
         this.updateNodes();
+        this.refreshSummary();
     }
 
     updateComponentList() {
@@ -209,5 +214,92 @@ class CraftWidget extends Widget {
         this.updateTitle();
         this.updateComponentList();
         this.updateStats();
+    }
+
+    renderSummary(container) {
+        if (!container) return;
+
+        // Clear any existing summary
+        container.innerHTML = '';
+
+        // Title
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'summary-title';
+        titleDiv.textContent = this.craftData.name || 'New Craft';
+        container.appendChild(titleDiv);
+
+        // Badges
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'summary-badges';
+        
+        if (this.craftData.type) {
+            badgesDiv.appendChild(this.createBadge(this.craftData.type, 'info'));
+        }
+        
+        if (this.craftData.ignoreTechRequirements) {
+            badgesDiv.appendChild(this.createBadge('Tech Unlocked', 'warning'));
+        }
+
+        container.appendChild(badgesDiv);
+
+        // Summary grid
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'summary-grid';
+
+        // Type
+        this.addSummaryField(gridDiv, 'Type', this.craftData.type || '—');
+
+        // Calculate stats
+        let totalMass = 0;
+        let totalThrust = 0;
+        
+        for (const component of this.craftData.components) {
+            if (component.mass) totalMass += component.mass;
+            if (component.thrust) totalThrust += component.thrust;
+        }
+
+        // Stats
+        this.addSummaryField(gridDiv, 'Mass', `${totalMass} units`);
+        this.addSummaryField(gridDiv, 'Thrust', `${totalThrust} units`);
+        this.addSummaryField(gridDiv, 'Components', this.craftData.components.length.toString());
+
+        container.appendChild(gridDiv);
+    }
+
+    refreshSummary() {
+        if (!this.element) return;
+        const summaryContainer = this.element.querySelector('.widget-summary');
+        if (!summaryContainer) return;
+        
+        const isMinimized = this.element.classList.contains('minimized');
+        if (isMinimized) {
+            this.renderSummary(summaryContainer);
+        }
+    }
+
+    onMinimizeStateChanged(isMinimized) {
+        if (isMinimized) {
+            this.refreshSummary();
+        }
+    }
+
+    addSummaryField(container, label, value) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'summary-label';
+        labelDiv.textContent = label;
+
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'summary-value';
+        valueDiv.textContent = value;
+
+        container.appendChild(labelDiv);
+        container.appendChild(valueDiv);
+    }
+
+    createBadge(text, variant = '') {
+        const badge = document.createElement('span');
+        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
+        badge.textContent = text;
+        return badge;
     }
 }

@@ -4,9 +4,9 @@
     background: #2d2d2d;
     border: 2px solid #555;
     border-radius: 8px;
-    min-width: 250px;
-    min-height: 150px;
-    width: auto; /* Allow auto-width based on content */
+    /* min-width: 250px; */
+    /* min-height: 150px; */
+    width: 400px; /* Allow auto-width based on content */
     height: auto; /* Allow auto-height based on content */
     display: flex;
     flex-direction: column;
@@ -904,34 +904,6 @@
 
 .foundation-item.locked input[type="checkbox"] {
     pointer-events: none;
-}
-
-.craft-widget {
-    border-left: 4px solid #e2904a;
-}
-
-.troops-widget {
-    border-left: 4px solid #90e24a;
-}
-
-.missiles-widget {
-    border-left: 4px solid #e24a90;
-}
-
-.loadouts-widget {
-    border-left: 4px solid #e2e24a;
-}
-
-.powerplants-widget {
-    border-left: 4px solid #4ae290;
-}
-
-.factories-widget {
-    border-left: 4px solid #904ae2;
-}
-
-.shipyards-widget {
-    border-left: 4px solid #e2904a;
 }
 
 /* Widget Stats Display */

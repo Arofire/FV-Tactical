@@ -305,10 +305,8 @@ class FVTacticalApp {
         try {
             switch (type) {
                 case 'ship':
-                    widget = new ShipWidget(x, y);
-                    break;
                 case 'shipPrototype':
-                    widget = new ShipWidgetPrototype(x, y);
+                    widget = new ShipWidget(x, y);
                     break;
                 case 'craft':
                     widget = new CraftWidget(x, y);
@@ -647,8 +645,10 @@ class FVTacticalApp {
         for (const widgetData of data.widgets || []) {
             let widget;
             switch (widgetData.type) {
-                case 'ship': widget = new ShipWidget(); break;
-                case 'shipPrototype': widget = new ShipWidgetPrototype(); break;
+                case 'ship':
+                case 'shipPrototype':
+                    widget = new ShipWidget();
+                    break;
                 case 'craft': widget = new CraftWidget(); break;
                 case 'troops': widget = new TroopsWidget(); break;
                 case 'missiles': widget = new MissilesWidget(); break;
@@ -788,18 +788,17 @@ class FVTacticalApp {
         contextMenu.style.top = `${y}px`;
         
         const widgetTypes = [
-            { type: 'ship', label: '🚢 Ship Design' },
-            { type: 'shipPrototype', label: '🚢 Ship Design (Prototype)' },
-            { type: 'craft', label: '✈️ Craft Design' },
-            { type: 'troops', label: '👥 Troop Unit' },
-            { type: 'missiles', label: '🚀 Missile Design' },
-            { type: 'outfit', label: '🧰 Ship Outfit' },
-            { type: 'loadouts', label: '📦 Equipment Loadout' },
-            { type: 'shipCore', label: '⚡ Ship Core' },
-            { type: 'shipBerth', label: '🛏 Ship Berths' },
+            { type: 'ship', label: 'Ship Design' },
+            { type: 'craft', label: 'Craft Design' },
+            { type: 'troops', label: 'Troop Unit' },
+            { type: 'missiles', label: 'Missile Design' },
+            { type: 'outfit', label: 'Ship Outfit' },
+            { type: 'loadouts', label: 'Equipment Loadout' },
+            { type: 'shipCore', label: 'Ship Core' },
+            { type: 'shipBerth', label: 'Ship Berths' },
             { type: 'shipHulls', label: 'Hull Plan' },
-            { type: 'statistics', label: '📊 Statistics Hub' },
-            { type: 'factories', label: '🏭 Factory' },
+            { type: 'statistics', label: 'Statistics Hub' },
+            { type: 'factories', label: 'Factory' },
             { type: 'shipyards', label: 'Shipyard' }
         ];
         

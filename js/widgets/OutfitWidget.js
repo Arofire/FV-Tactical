@@ -1,7 +1,7 @@
 // Outfit widget for configuring ship load-outs
 class OutfitWidget extends Widget {
     constructor(x = 550, y = 120) {
-        super('outfit', 'New Outfit', x, y, 560); // Remove fixed height for auto-sizing
+        super('outfit', 'New Outfit', x, y, null);
 
         this.defaultRoles = [
             'Artillery',
@@ -71,6 +71,7 @@ class OutfitWidget extends Widget {
         this.availableRoles = OutfitWidget.loadStoredRoles(this.defaultRoles);
         this.ensureRoleAvailable(this.outfitData.role);
 
+        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -371,12 +372,14 @@ class OutfitWidget extends Widget {
             nameInput.addEventListener('input', (e) => {
                 this.outfitData.name = e.target.value;
                 this.updateTitle(this.outfitData.name || 'New Outfit');
+                this.refreshSummary();
             });
         }
 
         if (notesInput) {
             notesInput.addEventListener('input', (e) => {
                 this.outfitData.notes = e.target.value;
+                this.refreshSummary();
             });
         }
 
@@ -385,6 +388,7 @@ class OutfitWidget extends Widget {
                 this.outfitData.role = e.target.value;
                 this.outfitData.customRole = '';
                 this.roleMode = 'dropdown';
+                this.refreshSummary();
             });
         }
 
@@ -393,10 +397,12 @@ class OutfitWidget extends Widget {
                 const value = e.target.value;
                 this.outfitData.customRole = value;
                 this.outfitData.role = value;
+                this.refreshSummary();
             });
             roleCustom.addEventListener('change', (e) => {
                 const value = e.target.value.trim();
                 if (value) this.ensureRoleAvailable(value);
+                this.refreshSummary();
             });
         }
 
@@ -413,6 +419,7 @@ class OutfitWidget extends Widget {
                     this.outfitData.customRole = '';
                     this.applyRoleMode('dropdown');
                 }
+                this.refreshSummary();
             });
         }
 
@@ -477,6 +484,7 @@ class OutfitWidget extends Widget {
                     e.target.value = value;
                     this.outfitData.hardpoints.merge[key] = value;
                     this.updateHardpointHeader();
+                    this.refreshSummary();
                 });
             }
 
@@ -486,6 +494,7 @@ class OutfitWidget extends Widget {
                     e.target.value = value;
                     this.outfitData.hardpoints.split[key] = value;
                     this.updateHardpointHeader();
+                    this.refreshSummary();
                 });
             }
         });
@@ -735,6 +744,7 @@ class OutfitWidget extends Widget {
         this.outfitData.systemsData.modules.push(newModule);
         this.outfitData.systemsData.usedSystemHulls = total;
         this.renderSystemsContent();
+        this.refreshSummary();
     }
 
     uninstallModule(moduleInstanceId) {
@@ -744,6 +754,7 @@ class OutfitWidget extends Widget {
         this.outfitData.systemsData.usedSystemHulls = Math.max(0, this.outfitData.systemsData.usedSystemHulls - (module?.systemHulls || 0));
         this.outfitData.systemsData.modules.splice(idx, 1);
         this.renderSystemsContent();
+        this.refreshSummary();
     }
 
     addHeatManagement(type) {
@@ -755,6 +766,7 @@ class OutfitWidget extends Widget {
         if (type === 'demon') this.outfitData.systemsData.heatManagement.demonSystems++;
         this.outfitData.systemsData.usedSystemHulls += module.systemHulls;
         this.updateHeatStats();
+        this.refreshSummary();
     }
 
     removeHeatManagement(type) {
@@ -770,6 +782,7 @@ class OutfitWidget extends Widget {
             this.outfitData.systemsData.usedSystemHulls = Math.max(0, this.outfitData.systemsData.usedSystemHulls - module.systemHulls);
         }
         this.updateHeatStats();
+        this.refreshSummary();
     }
 
     updateHeatStats() {
@@ -902,6 +915,7 @@ class OutfitWidget extends Widget {
         if (spinalSelect) {
             spinalSelect.addEventListener('change', (e) => {
                 this.outfitData.weapons.spinal = e.target.value;
+                this.refreshSummary();
             });
         }
 
@@ -910,6 +924,7 @@ class OutfitWidget extends Widget {
             addOffensive.addEventListener('click', () => {
                 this.outfitData.weapons.offensive.push({ mount: 'Single', weapon: '', copies: 1, arcs: '', hardpoint: '-', totalCost: 0 });
                 this.renderOffensiveWeapons();
+                this.refreshSummary();
             });
         }
 
@@ -918,6 +933,7 @@ class OutfitWidget extends Widget {
             addDefensive.addEventListener('click', () => {
                 this.outfitData.weapons.defensive.push({ weapon: '', copies: 1, arcs: '', hardpoint: '-', totalCost: 0 });
                 this.renderDefensiveWeapons();
+                this.refreshSummary();
             });
         }
     }
@@ -961,6 +977,7 @@ class OutfitWidget extends Widget {
                 const index = parseInt(btn.dataset.index, 10);
                 this.outfitData.weapons.offensive.splice(index, 1);
                 this.renderOffensiveWeapons();
+                this.refreshSummary();
             });
         });
     }
@@ -999,6 +1016,7 @@ class OutfitWidget extends Widget {
                 const index = parseInt(btn.dataset.index, 10);
                 this.outfitData.weapons.defensive.splice(index, 1);
                 this.renderDefensiveWeapons();
+                this.refreshSummary();
             });
         });
     }
@@ -1035,6 +1053,8 @@ class OutfitWidget extends Widget {
         } else {
             this.renderDefensiveWeapons();
         }
+        
+        this.refreshSummary();
     }
 
     getMountMultiplier(mount) {
@@ -1202,5 +1222,131 @@ class OutfitWidget extends Widget {
         if (titleElement) {
             titleElement.textContent = text || this.outfitData.name || 'New Outfit';
         }
+    }
+
+    renderSummary(container) {
+        if (!container) return;
+
+        // Clear any existing summary
+        container.innerHTML = '';
+
+        // Title
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'summary-title';
+        titleDiv.textContent = this.outfitData.name || 'New Outfit';
+        container.appendChild(titleDiv);
+
+        // Badges
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'summary-badges';
+        
+        if (this.outfitData.role) {
+            badgesDiv.appendChild(this.createBadge(this.outfitData.role, 'role'));
+        }
+        
+        if (this.roleMode === 'custom') {
+            badgesDiv.appendChild(this.createBadge('Custom Role', 'info'));
+        }
+
+        container.appendChild(badgesDiv);
+
+        // Summary grid
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'summary-grid';
+
+        // Role
+        const roleValue = this.outfitData.role || '—';
+        this.addSummaryField(gridDiv, 'Role', roleValue);
+
+        // Hardpoints
+        const hpBase = this.formatHardpoints(this.outfitData.hardpoints.base);
+        const hpMerge = this.formatHardpoints(this.outfitData.hardpoints.merge);
+        const hpSplit = this.formatHardpoints(this.outfitData.hardpoints.split);
+        this.addSummaryField(gridDiv, 'Hardpoints (Base)', hpBase);
+        if (hpMerge !== '—') {
+            this.addSummaryField(gridDiv, 'Hardpoints (Merge)', hpMerge);
+        }
+        if (hpSplit !== '—') {
+            this.addSummaryField(gridDiv, 'Hardpoints (Split)', hpSplit);
+        }
+
+        // Systems
+        const moduleCount = this.outfitData.systemsData?.modules?.length || 0;
+        const usedHulls = this.outfitData.systemsData?.usedSystemHulls || 0;
+        const availableHulls = this.outfitData.systemsData?.availableSystemHulls || 0;
+        this.addSummaryField(gridDiv, 'System Modules', `${moduleCount} (${usedHulls}/${availableHulls} hulls)`);
+
+        // Heat Management
+        const magnetic = this.outfitData.systemsData?.heatManagement?.magneticSystems || 0;
+        const demon = this.outfitData.systemsData?.heatManagement?.demonSystems || 0;
+        if (magnetic > 0 || demon > 0) {
+            const heatParts = [];
+            if (magnetic > 0) heatParts.push(`${magnetic}× Magnetic`);
+            if (demon > 0) heatParts.push(`${demon}× Demon`);
+            this.addSummaryField(gridDiv, 'Heat Mgmt', heatParts.join(', '));
+        }
+
+        // Weapons
+        const spinalWeapon = this.outfitData.weapons?.spinal || '—';
+        const offensiveCount = this.outfitData.weapons?.offensive?.length || 0;
+        const defensiveCount = this.outfitData.weapons?.defensive?.length || 0;
+        
+        if (spinalWeapon !== 'none' && spinalWeapon !== '—') {
+            this.addSummaryField(gridDiv, 'Spinal', spinalWeapon);
+        }
+        this.addSummaryField(gridDiv, 'Offensive Weapons', offensiveCount.toString());
+        this.addSummaryField(gridDiv, 'Defensive Weapons', defensiveCount.toString());
+
+        container.appendChild(gridDiv);
+    }
+
+    refreshSummary() {
+        if (!this.element) return;
+        const summaryContainer = this.element.querySelector('.widget-summary');
+        if (!summaryContainer) return;
+        
+        const isMinimized = this.element.classList.contains('minimized');
+        if (isMinimized) {
+            this.renderSummary(summaryContainer);
+        }
+    }
+
+    onMinimizeStateChanged(isMinimized) {
+        if (isMinimized) {
+            this.refreshSummary();
+        }
+    }
+
+    addSummaryField(container, label, value) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'summary-label';
+        labelDiv.textContent = label;
+
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'summary-value';
+        valueDiv.textContent = value;
+
+        container.appendChild(labelDiv);
+        container.appendChild(valueDiv);
+    }
+
+    formatHardpoints(hardpointObj) {
+        if (!hardpointObj) return '—';
+        
+        const parts = [];
+        if (hardpointObj.spinal > 0) parts.push(`${hardpointObj.spinal}S`);
+        if (hardpointObj.heavy > 0) parts.push(`${hardpointObj.heavy}H`);
+        if (hardpointObj.medium > 0) parts.push(`${hardpointObj.medium}M`);
+        if (hardpointObj.light > 0) parts.push(`${hardpointObj.light}L`);
+        if (hardpointObj.turret > 0) parts.push(`${hardpointObj.turret}T`);
+        
+        return parts.length > 0 ? parts.join(' ') : '—';
+    }
+
+    createBadge(text, variant = '') {
+        const badge = document.createElement('span');
+        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
+        badge.textContent = text;
+        return badge;
     }
 }

@@ -5,7 +5,7 @@ class StatisticsWidget extends Widget {
             x = shipWidget;
             shipWidget = null;
         }
-        super('statistics', 'Statistics', x, y, 340);
+        super('statistics', 'Statistics', x, y, null);
         this.shipWidget = shipWidget;
         this.stats = {
             endurance: 0,
@@ -21,6 +21,7 @@ class StatisticsWidget extends Widget {
             qcm: 0,
             troopCapacity: 0
         };
+        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -75,6 +76,7 @@ class StatisticsWidget extends Widget {
                     const val = parseFloat(e.target.value);
                     this.stats[key] = Number.isFinite(val) ? val : 0;
                     this.syncToShip();
+                    this.refreshSummary();
                 });
             }
         });
@@ -182,5 +184,91 @@ class StatisticsWidget extends Widget {
         }
         this.syncToShip();
         this.updateSources();
+    }
+
+    renderSummary(container) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'summary-title';
+        titleDiv.textContent = 'Statistics';
+        container.appendChild(titleDiv);
+
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'summary-badges';
+        
+        // Count non-zero stats
+        const nonZeroCount = Object.values(this.stats).filter(v => v > 0).length;
+        if (nonZeroCount > 0) {
+            badgesDiv.appendChild(this.createBadge(`${nonZeroCount} Stats`, 'info'));
+        }
+
+        container.appendChild(badgesDiv);
+
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'summary-grid';
+
+        // Show key stats in summary
+        if (this.stats.endurance) {
+            this.addSummaryField(gridDiv, 'Endurance', this.stats.endurance.toString());
+        }
+        if (this.stats.developmentPoints) {
+            this.addSummaryField(gridDiv, 'Dev Points', this.stats.developmentPoints.toString());
+        }
+        if (this.stats.shipyardMonths) {
+            this.addSummaryField(gridDiv, 'Shipyard Months', this.stats.shipyardMonths.toString());
+        }
+        if (this.stats.thrustRatio) {
+            this.addSummaryField(gridDiv, 'Thrust Ratio', this.stats.thrustRatio.toString());
+        }
+
+        // Count source connections
+        let sourceCount = 0;
+        for (const node of this.nodes.values()) {
+            if (node.nodeType === 'statistics' && node.type === 'input' && node.connections) {
+                sourceCount += node.connections.size || 0;
+            }
+        }
+        this.addSummaryField(gridDiv, 'Sources', sourceCount.toString());
+
+        container.appendChild(gridDiv);
+    }
+
+    refreshSummary() {
+        if (!this.element) return;
+        const summaryContainer = this.element.querySelector('.widget-summary');
+        if (!summaryContainer) return;
+        
+        const isMinimized = this.element.classList.contains('minimized');
+        if (isMinimized) {
+            this.renderSummary(summaryContainer);
+        }
+    }
+
+    onMinimizeStateChanged(isMinimized) {
+        if (isMinimized) {
+            this.refreshSummary();
+        }
+    }
+
+    addSummaryField(container, label, value) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'summary-label';
+        labelDiv.textContent = label;
+
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'summary-value';
+        valueDiv.textContent = value;
+
+        container.appendChild(labelDiv);
+        container.appendChild(valueDiv);
+    }
+
+    createBadge(text, variant = '') {
+        const badge = document.createElement('span');
+        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
+        badge.textContent = text;
+        return badge;
     }
 }

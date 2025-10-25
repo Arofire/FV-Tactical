@@ -1,6 +1,6 @@
 class MissilesWidget extends Widget {
     constructor(x = 100, y = 100) {
-        super('missiles', 'New Missile', x, y, 280);
+        super('missiles', 'New Missile', x, y, null);
         this.missileData = {
             name: 'New Missile',
             warhead: null,
@@ -8,6 +8,7 @@ class MissilesWidget extends Widget {
             propulsion: null,
             ignoreTechRequirements: false
         };
+        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -51,6 +52,7 @@ class MissilesWidget extends Widget {
             nameInput.addEventListener('input', (e) => {
                 this.missileData.name = e.target.value;
                 this.updateTitle();
+                this.refreshSummary();
             });
         }
     }
@@ -78,5 +80,74 @@ class MissilesWidget extends Widget {
     loadSerializedData(data) {
         this.missileData = data;
         this.updateTitle();
+    }
+
+    renderSummary(container) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'summary-title';
+        titleDiv.textContent = this.missileData.name || 'New Missile';
+        container.appendChild(titleDiv);
+
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'summary-badges';
+        
+        if (this.missileData.warhead) {
+            badgesDiv.appendChild(this.createBadge(this.missileData.warhead, 'info'));
+        }
+        
+        if (this.missileData.ignoreTechRequirements) {
+            badgesDiv.appendChild(this.createBadge('Tech Unlocked', 'warning'));
+        }
+
+        container.appendChild(badgesDiv);
+
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'summary-grid';
+
+        this.addSummaryField(gridDiv, 'Warhead', this.missileData.warhead || '—');
+        this.addSummaryField(gridDiv, 'Guidance', this.missileData.guidance || '—');
+        this.addSummaryField(gridDiv, 'Propulsion', this.missileData.propulsion || '—');
+
+        container.appendChild(gridDiv);
+    }
+
+    refreshSummary() {
+        if (!this.element) return;
+        const summaryContainer = this.element.querySelector('.widget-summary');
+        if (!summaryContainer) return;
+        
+        const isMinimized = this.element.classList.contains('minimized');
+        if (isMinimized) {
+            this.renderSummary(summaryContainer);
+        }
+    }
+
+    onMinimizeStateChanged(isMinimized) {
+        if (isMinimized) {
+            this.refreshSummary();
+        }
+    }
+
+    addSummaryField(container, label, value) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'summary-label';
+        labelDiv.textContent = label;
+
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'summary-value';
+        valueDiv.textContent = value;
+
+        container.appendChild(labelDiv);
+        container.appendChild(valueDiv);
+    }
+
+    createBadge(text, variant = '') {
+        const badge = document.createElement('span');
+        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
+        badge.textContent = text;
+        return badge;
     }
 }
