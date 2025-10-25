@@ -387,9 +387,9 @@
     background: #1a1a1a;
     border: 1px solid #555;
     color: #e0e0e0;
-    /* padding: 6px 8px; */
+    padding: 4px 6px;
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .input-group input:focus,
@@ -481,11 +481,6 @@
 
 .add-component-btn:hover {
     background: #5a7751;
-}
-
-
-.outfit-widget {
-    /* border-left: 4px solid #8cc0ff; */
 }
 
 .outfit-widget .widget-content {
@@ -1060,13 +1055,6 @@
 
 .ship-widget .input-group label {
     font-size: 11px;
-}
-
-.ship-widget .input-group input,
-.ship-widget .input-group select,
-.ship-widget .input-group textarea {
-    padding: 4px 6px;
-    font-size: 12px;
 }
 
 /* Top flags */
