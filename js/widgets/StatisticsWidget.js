@@ -89,11 +89,7 @@ class StatisticsWidget extends Widget {
 
     createNodes() {
         this.clearNodes();
-        this.addNode('input', 'statistics', 'Statistics In', 0, 0.5, {
-            sectionId: 'stats',
-            allowMultipleConnections: true
-        });
-        this.addNode('output', 'statistics', 'Statistics Out', 1, 0.5, {
+        this.addNode('input', 'Statistics', 'Statistics', 0, 0.5, {
             sectionId: 'stats',
             allowMultipleConnections: true
         });

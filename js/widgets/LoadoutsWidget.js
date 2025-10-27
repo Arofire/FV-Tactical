@@ -46,40 +46,24 @@ class LoadoutsWidget extends Widget {
     createNodes() {
         this.clearNodes();
 
-        this.addNode('input', 'loadout', 'Class', 0, 0.2, {
+        this.addNode('input', 'Class', 'Class', 0, 0.2, {
             sectionId: 'config',
             anchorId: `${this.id}-config`
         });
 
-        this.createExpandableNodeGroup('craft-slots', {
-            baseLabel: 'Craft',
-            labelFormatter: (index) => index === 1 ? 'Craft' : `Craft ${index}`,
-            direction: 'input',
-            nodeType: 'craft',
+        this.addNode('input', 'Craft', 'Craft', 0, 0.45, {
             sectionId: 'config',
             anchorId: `${this.id}-config`,
-            anchorOffset: 32,
-            minSpacing: 28,
-            relativeX: 0,
-            relativeY: 0.45,
-            maxFree: 2
+            anchorOffset: 32
         });
 
-        this.createExpandableNodeGroup('weapon-slots', {
-            baseLabel: 'Weapon',
-            labelFormatter: (index) => index === 1 ? 'Weapon' : `Weapon ${index}`,
-            direction: 'input',
-            nodeType: 'weapon',
+        this.addNode('input', 'Weapon', 'Weapon', 0, 0.65, {
             sectionId: 'config',
             anchorId: `${this.id}-config`,
-            anchorOffset: 64,
-            minSpacing: 28,
-            relativeX: 0,
-            relativeY: 0.65,
-            maxFree: 2
+            anchorOffset: 64
         });
 
-        this.addNode('output', 'loadout-hull', 'Hull', 1, 0.45, {
+        this.addNode('output', 'Loadout', 'Loadout', 1, 0.45, {
             sectionId: 'config',
             anchorId: `${this.id}-config`
         });

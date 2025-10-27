@@ -53,27 +53,20 @@ class ShipBerthWidget extends Widget {
     createNodes() {
         this.clearNodes();
 
-        this.addNode('input', 'berth', 'Outfit', 0, 0.2, {
+        this.addNode('input', 'Outfit', 'Outfit', 0, 0.2, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             minSpacing: 32
         });
 
-        this.createExpandableNodeGroup('troop-links', {
-            baseLabel: 'Troop',
-            labelFormatter: (index) => index === 1 ? 'Troop' : `Troop ${index}`,
-            direction: 'input',
-            nodeType: 'troop',
+        this.addNode('input', 'Troop', 'Troop', 0, 0.45, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             anchorOffset: 40,
-            minSpacing: 28,
-            relativeX: 0,
-            relativeY: 0.45,
-            maxFree: 2
+            minSpacing: 28
         });
 
-        this.addNode('output', 'staff', 'Staff', 1, 0.45, {
+        this.addNode('output', 'Berth', 'Berth', 1, 0.45, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             minSpacing: 32

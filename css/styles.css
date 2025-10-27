@@ -366,6 +366,7 @@ body {
     pointer-events: none;
     z-index: 5;
     overflow: visible; /* ensure curves near edges are visible */
+    transform-origin: 0 0;
 }
 
 /* Tech Tree Styles */
@@ -413,11 +414,11 @@ body {
     max-height: 0px;
     overflow: hidden;
     opacity: 0;
-    transition: min-height 0.3s ease, opacity 0.3s ease;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 
 .tech-category.expanded .tech-category-content {
-    min-height: fit-content;
+    max-height: 5000px;
     padding: 8px;
     opacity: 1;
     display: flex;
@@ -656,7 +657,7 @@ body {
   margin-top: 8px;
   gap: 8px;
   z-index: 180;
-  pointer-events: auto;
+  pointer-events: none;
   flex-direction: column;
 }
 
@@ -711,14 +712,28 @@ body {
   border: 1px solid #fff;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
   background: rgba(255,255,255,0.08);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: move;
+  z-index: 150;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.minimap-viewport:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: #4a90e2;
+}
+
+.minimap-viewport:active,
+.minimap-viewport.dragging {
+  background: rgba(74,144,226,0.25);
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 0 8px rgba(74,144,226,0.5);
 }
 
 /* Responsive Design */
 @media (max-width: 1200px) {
     .side-panel {
-        min-width: 200px;
-        /* width: 250px; */
+        width: 340px;
         border-right: 2px solid #555;
     }
 }

@@ -188,7 +188,7 @@ class TroopsWidget extends Widget {
 
     createNodes() {
         this.clearNodes();
-        this.addNode('output', 'troop', 'Troop', 1, 0.4, {
+        this.addNode('output', 'Troop', 'Troop', 1, 0.4, {
             sectionId: 'meta',
             anchorId: `${this.id}-meta`
         });

@@ -53,38 +53,30 @@ class ShipHullsWidget extends Widget {
     createNodes() {
         this.clearNodes();
 
-        this.addNode('input', 'outfit-hull', 'Outfit', 0, 0.2, {
+        this.addNode('input', 'Outfit', 'Outfit', 0, 0.2, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             minSpacing: 32
         });
 
-        this.createExpandableNodeGroup('loadout-links', {
-            baseLabel: 'Loadout',
-            labelFormatter: (index) => index === 1 ? 'Loadout' : `Loadout ${index}`,
-            direction: 'input',
-            nodeType: 'loadout-hull',
+        this.addNode('input', 'Berth', 'Berth', 0, 0.45, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             anchorOffset: 36,
-            minSpacing: 28,
-            relativeX: 0,
-            relativeY: 0.45,
-            maxFree: 2
+            minSpacing: 28
         });
 
-        this.createExpandableNodeGroup('staff-links', {
-            baseLabel: 'Staff',
-            labelFormatter: (index) => index === 1 ? 'Staff' : `Staff ${index}`,
-            direction: 'input',
-            nodeType: 'staff',
+        this.addNode('input', 'Loadout', 'Loadout', 0, 0.7, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             anchorOffset: 70,
-            minSpacing: 28,
-            relativeX: 0,
-            relativeY: 0.7,
-            maxFree: 2
+            minSpacing: 28
+        });
+
+        this.addNode('output', 'Statistics', 'Statistics', 1, 0.45, {
+            sectionId: 'info',
+            anchorId: `${this.id}-info`,
+            minSpacing: 32
         });
 
         this.reflowNodes();

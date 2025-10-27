@@ -23,10 +23,18 @@ class FVTacticalApp {
         this.init();
     }
 
-    init() {
+    async init() {
+        console.log('FVTacticalApp: Starting initialization...');
+        // Wait for empire to initialize
+        console.log('FVTacticalApp: Waiting for empire initialization...');
+        await this.empire.initialized;
+        console.log('FVTacticalApp: Empire initialized');
+        
         this.setupUI();
         this.setupEventListeners();
-        this.initializeTechTree();
+        console.log('FVTacticalApp: Initializing tech tree...');
+        await this.initializeTechTree();
+        console.log('FVTacticalApp: Tech tree initialized');
         this.updateEmpireDisplay();
         
         // Try to load saved data
@@ -61,11 +69,17 @@ class FVTacticalApp {
         // Initialize minimap (after DOM elements exist)
         this.initMinimap();
         
-        // Add resize listener to update minimap when screen size changes
+        // Add resize listener to update minimap and enforce minimum zoom when screen size changes
         window.addEventListener('resize', () => {
             // Debounce resize events to avoid excessive updates
             clearTimeout(this.resizeTimeout);
             this.resizeTimeout = setTimeout(() => {
+                // Enforce minimum zoom if current zoom is now below the new minimum
+                const minZoom = this.getMinimumZoom();
+                if (this.workspaceTransform && this.workspaceTransform.scale < minZoom) {
+                    this.workspaceTransform.scale = minZoom;
+                    this.updateWorkspaceTransform();
+                }
                 this.updateMinimap();
             }, 100);
         });
@@ -164,22 +178,22 @@ class FVTacticalApp {
         }
 
         if (toggleUnavailableBtn) {
-            toggleUnavailableBtn.addEventListener('click', () => {
+            toggleUnavailableBtn.addEventListener('click', async () => {
                 this.hideUnavailableTech = !this.hideUnavailableTech;
                 toggleUnavailableBtn.classList.toggle('active-filter', this.hideUnavailableTech);
                 toggleUnavailableBtn.textContent = this.hideUnavailableTech ? 'Show Unavailable' : 'Hide Unavailable';
                 this.persistTechFilters();
-                this.updateTechTree();
+                await this.updateTechTree();
             });
         }
 
         if (toggleResearchedBtn) {
-            toggleResearchedBtn.addEventListener('click', () => {
+            toggleResearchedBtn.addEventListener('click', async () => {
                 this.hideResearchedTech = !this.hideResearchedTech;
                 toggleResearchedBtn.classList.toggle('active-filter', this.hideResearchedTech);
                 toggleResearchedBtn.textContent = this.hideResearchedTech ? 'Show Researched' : 'Hide Researched';
                 this.persistTechFilters();
-                this.updateTechTree();
+                await this.updateTechTree();
             });
         }
     }
@@ -329,15 +343,6 @@ class FVTacticalApp {
                 case 'reroute':
                     widget = new RerouteWidget(x, y);
                     break;
-                case 'powerplants':
-                    widget = new PowerplantsWidget(x, y);
-                    break;
-                case 'factories':
-                    widget = new FactoriesWidget(x, y);
-                    break;
-                case 'shipyards':
-                    widget = new ShipyardsWidget(x, y);
-                    break;
                 case 'shipCore':
                     widget = new ShipCoreWidget(x, y);
                     break;
@@ -413,11 +418,16 @@ class FVTacticalApp {
         }
     }
 
-    initializeTechTree() {
+    async initializeTechTree() {
         const techTreeContainer = document.getElementById('techTreeContainer');
-        if (!techTreeContainer) return;
+        if (!techTreeContainer) {
+            console.error('Tech tree container not found');
+            return;
+        }
         
-        const categories = TechTree.getTechsByCategory();
+        console.log('Initializing tech tree...');
+        const categories = await TechTree.getTechsByCategory();
+        console.log('Got categories:', Object.keys(categories), 'Total techs:', Object.values(categories).reduce((sum, techs) => sum + techs.length, 0));
         
         for (const [categoryName, techs] of Object.entries(categories)) {
             const categoryDiv = document.createElement('div');
@@ -475,11 +485,11 @@ class FVTacticalApp {
                 prereqRow.className = 'tech-item-prereqs';
                 techItem.appendChild(prereqRow);
                 
-                techItem.addEventListener('click', () => {
-                    if (this.empire.canResearch(tech.id)) {
+                techItem.addEventListener('click', async () => {
+                    if (await this.empire.canResearch(tech.id)) {
                         if (confirm(`Research "${tech.name}" for ${tech.cost} tech points?`)) {
-                            if (this.empire.researchTech(tech.id)) {
-                                this.updateTechTree();
+                            if (await this.empire.researchTech(tech.id)) {
+                                await this.updateTechTree();
                                 this.updateEmpireDisplay();
                                 this.preflightCheck.runCheck();
                             } else {
@@ -497,7 +507,7 @@ class FVTacticalApp {
             techTreeContainer.appendChild(categoryDiv);
         }
         
-        this.updateTechTree();
+        await this.updateTechTree();
     }
 
     updateTechTreeIndicators() {
@@ -521,18 +531,26 @@ class FVTacticalApp {
         });
     }
 
-    updateTechTree() {
+    async updateTechTree() {
         const techItems = document.querySelectorAll('.tech-item');
+        const techData = await TechTree.ensureLoaded();
+        const nameToId = new Map();
+        for (const [id, tech] of Object.entries(techData)) {
+            if (tech?.name) {
+                nameToId.set(tech.name, id);
+            }
+        }
 
         // Build mapping of techId to chain
         const researched = this.empire.researchedTech;
         const highestResearched = new Set();
         if (this.hideResearchedTech) {
             for (const techId of researched) {
-                if ([...highestResearched].some(id => TechTree.getTechPrerequisites(id).includes(techId))) continue;
+                const prereqs = await TechTree.getTechPrerequisites(techId);
+                if ([...highestResearched].some(id => prereqs.includes(id))) continue;
                 let current = techId;
                 while (true) {
-                    const deps = TechTree.getTechDependents(current).filter(d => researched.has(d));
+                    const deps = (await TechTree.getTechDependents(current)).filter(d => researched.has(d));
                     if (deps.length === 1) { current = deps[0]; continue; }
                     break;
                 }
@@ -545,9 +563,9 @@ class FVTacticalApp {
             const prereqElement = item.querySelector('.tech-item-prereqs');
             if (!titleElement) return;
             const techName = titleElement.textContent;
-            const techId = Object.keys(TechTree.techData).find(id => TechTree.techData[id].name === techName);
+            const techId = nameToId.get(techName);
             if (!techId) return;
-            const tech = TechTree.techData[techId];
+            const tech = techData[techId];
             item.classList.remove('researched', 'available', 'locked');
             item.style.display = '';
 
@@ -563,7 +581,7 @@ class FVTacticalApp {
                 if (this.hideUnavailableTech) item.style.display = 'none';
                 const unmetPrereqs = tech.prerequisites.filter(p => !researched.has(p));
                 if (unmetPrereqs.length) {
-                    prereqElement.textContent = 'Requires: ' + unmetPrereqs.map(p => TechTree.techData[p]?.name || p).join(', ');
+                    prereqElement.textContent = 'Requires: ' + unmetPrereqs.map(p => techData[p]?.name || p).join(', ');
                     prereqElement.style.display = 'block';
                 } else {
                     prereqElement.style.display = 'none';
@@ -627,14 +645,14 @@ class FVTacticalApp {
         
         try {
             const data = await this.dataManager.importFromFile(file);
-            this.loadEmpireData(data);
+            await this.loadEmpireData(data);
             this.showNotification('Empire imported successfully', 'success');
         } catch (error) {
             this.showNotification(`Import failed: ${error.message}`, 'error');
         }
     }
 
-    loadEmpireData(data) {
+    async loadEmpireData(data) {
         // Clear existing widgets
         this.widgetManager.clearAll();
         
@@ -658,9 +676,6 @@ class FVTacticalApp {
                     this.migrateLegacySystemsWidget(widgetData, widget);
                     break;
                 case 'loadouts': widget = new LoadoutsWidget(); break;
-                case 'powerplants': widget = new PowerplantsWidget(); break;
-                case 'factories': widget = new FactoriesWidget(); break;
-                case 'shipyards': widget = new ShipyardsWidget(); break;
                 case 'shipCore': widget = new ShipCoreWidget(); break;
                 case 'shipBerth': widget = new ShipBerthWidget(); break;
                 case 'shipHulls': widget = new ShipHullsWidget(); break;
@@ -680,7 +695,7 @@ class FVTacticalApp {
         }
         
         // Update UI
-        this.updateTechTree();
+        await this.updateTechTree();
         this.updateEmpireDisplay();
         this.preflightCheck.runCheck();
         
@@ -857,6 +872,7 @@ class FVTacticalApp {
         const canvasHeight = canvas.offsetHeight;
         const viewportWidth = workspace.clientWidth;
         const viewportHeight = workspace.clientHeight;
+        
         this.workspaceTransform = {
             scale: 1,
             translateX: viewportWidth / 2 - canvasWidth / 2,
@@ -922,34 +938,81 @@ class FVTacticalApp {
             }
         });
         
-        // Add zoom functionality (scroll wheel) - only on empty space
+        // Add zoom functionality (scroll wheel) on the workspace
         workspace.addEventListener('wheel', (e) => {
-            // Zoom temporarily disabled
-            return; // Remove this return to re-enable zoom logic below
-            /*
-            // Previous zoom logic retained for easy restoration
-            const target = e.target;
-            const widget = target.closest('.widget');
-            if (widget && !widget.classList.contains('pinned-widget')) return;
+            // Check if we're scrolling inside a scrollable element (like tech tree panel)
+            let target = e.target;
+            while (target && target !== workspace) {
+                const style = window.getComputedStyle(target);
+                const overflowY = style.overflowY;
+                
+                // If element is scrollable and has content that overflows, allow normal scrolling
+                if ((overflowY === 'auto' || overflowY === 'scroll') && target.scrollHeight > target.clientHeight) {
+                    // Check if we can actually scroll in the direction being scrolled
+                    const scrollingDown = e.deltaY > 0;
+                    const canScrollDown = target.scrollTop < (target.scrollHeight - target.clientHeight);
+                    const canScrollUp = target.scrollTop > 0;
+                    
+                    if ((scrollingDown && canScrollDown) || (!scrollingDown && canScrollUp)) {
+                        // Allow normal scroll behavior
+                        return;
+                    }
+                }
+                target = target.parentElement;
+            }
+            
+            // Prevent default and zoom the workspace
             e.preventDefault();
+            
             const rect = workspace.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
-            const step = 0.08;
+            
+            // Calculate minimum zoom to fit entire canvas
+            const minZoom = this.getMinimumZoom();
+            const maxZoom = 5;
+            
+            // Zoom speed: adjust step for smoother/faster zooming
+            const step = 0.1;
             const zoomFactor = e.deltaY > 0 ? (1 - step) : (1 + step);
-            const newScale = Math.max(0.1, Math.min(5, this.workspaceTransform.scale * zoomFactor));
+            const newScale = Math.max(minZoom, Math.min(maxZoom, this.workspaceTransform.scale * zoomFactor));
+            
             if (newScale !== this.workspaceTransform.scale) {
+                // Calculate the point in canvas coordinates that the mouse is over
                 const canvasX = (mouseX - this.workspaceTransform.translateX) / this.workspaceTransform.scale;
                 const canvasY = (mouseY - this.workspaceTransform.translateY) / this.workspaceTransform.scale;
+                
+                // Update scale
                 this.workspaceTransform.scale = newScale;
+                
+                // Adjust translation to keep the point under the mouse cursor fixed
                 this.workspaceTransform.translateX = mouseX - canvasX * newScale;
                 this.workspaceTransform.translateY = mouseY - canvasY * newScale;
+                
                 this.updateWorkspaceTransform();
             }
-            */
-        });
+        }, { passive: false });
     }
     
+    getMinimumZoom() {
+        const workspace = document.getElementById('workspace');
+        const canvas = document.getElementById('canvas');
+        if (!workspace || !canvas) return 0.1;
+        
+        const viewportWidth = workspace.clientWidth;
+        const viewportHeight = workspace.clientHeight;
+        const canvasWidth = canvas.offsetWidth;
+        const canvasHeight = canvas.offsetHeight;
+        
+        // Calculate zoom needed to fit canvas width and height separately
+        const zoomForWidth = viewportWidth / canvasWidth;
+        const zoomForHeight = viewportHeight / canvasHeight;
+        
+        // Use the larger of the two so the shortest axis fills the viewport
+        // This ensures the entire canvas is always visible
+        return Math.max(zoomForWidth, zoomForHeight);
+    }
+
     getWorkspaceBounds() {
         const workspace = document.getElementById('workspace');
         const canvas = document.getElementById('canvas');
@@ -1000,6 +1063,15 @@ class FVTacticalApp {
             svg.style.transform = `translate(${this.workspaceTransform.translateX}px, ${this.workspaceTransform.translateY}px) scale(${this.workspaceTransform.scale})`;
         }
         
+        // Update sticky headers on all widgets after canvas transform
+        if (window.widgetManager) {
+            window.widgetManager.getAllWidgets().forEach(widget => {
+                if (widget.updateStickyHeaders) {
+                    widget.updateStickyHeaders();
+                }
+            });
+        }
+        
         // Update node connections after transform
         if (window.nodeSystem) {
             window.nodeSystem.updateConnections();
@@ -1037,16 +1109,21 @@ class FVTacticalApp {
         this.isDraggingMinimapViewport = false;
         if (!this.minimapEl || !this.minimapViewportEl) return; // Graceful if markup absent
 
-        // Interaction: click to center
+        // Interaction: click to center or drag viewport
         this.minimapEl.addEventListener('mousedown', (e) => {
             // If clicking on viewport -> start drag; else recentre immediately
             if (e.target === this.minimapViewportEl) {
                 this.isDraggingMinimapViewport = true;
+                this.minimapViewportEl.classList.add('dragging');
+                const rect = this.minimapEl.getBoundingClientRect();
+                const viewportRect = this.minimapViewportEl.getBoundingClientRect();
+                // Calculate offset from mouse position to viewport center
                 this.minimapDragOffset = {
-                    x: e.offsetX - this.minimapViewportEl.offsetLeft,
-                    y: e.offsetY - this.minimapViewportEl.offsetTop
+                    x: e.clientX - (viewportRect.left + viewportRect.width / 2),
+                    y: e.clientY - (viewportRect.top + viewportRect.height / 2)
                 };
                 e.preventDefault();
+                e.stopPropagation();
             } else {
                 this.minimapJumpToEvent(e);
             }
@@ -1054,14 +1131,19 @@ class FVTacticalApp {
 
         document.addEventListener('mousemove', (e) => {
             if (!this.isDraggingMinimapViewport) return;
+            e.preventDefault();
             const rect = this.minimapEl.getBoundingClientRect();
-            const x = e.clientX - rect.left - this.minimapDragOffset.x + this.minimapViewportEl.clientWidth / 2;
-            const y = e.clientY - rect.top - this.minimapDragOffset.y + this.minimapViewportEl.clientHeight / 2;
+            // Calculate minimap coordinates for the viewport center
+            const x = e.clientX - rect.left - this.minimapDragOffset.x;
+            const y = e.clientY - rect.top - this.minimapDragOffset.y;
             this.minimapCenterTo(x, y);
         });
 
         document.addEventListener('mouseup', () => {
-            this.isDraggingMinimapViewport = false;
+            if (this.isDraggingMinimapViewport) {
+                this.isDraggingMinimapViewport = false;
+                this.minimapViewportEl.classList.remove('dragging');
+            }
         });
 
         // Initial draw
@@ -1214,6 +1296,10 @@ class WidgetManager {
 
     getWidget(widgetId) {
         return this.widgets.get(widgetId);
+    }
+
+    getAllWidgets() {
+        return Array.from(this.widgets.values());
     }
 
     deselectAll() {

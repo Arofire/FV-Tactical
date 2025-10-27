@@ -198,10 +198,17 @@ class CraftWidget extends Widget {
 
     createNodes() {
         this.clearNodes();
-        this.addNode('output', 'craft', 'Craft', 1, 0.4, {
+        
+        this.addNode('input', 'Core', 'Core', 0, 0.3, {
             sectionId: 'meta',
             anchorId: `${this.id}-meta`
         });
+        
+        this.addNode('output', 'Craft', 'Craft', 1, 0.4, {
+            sectionId: 'meta',
+            anchorId: `${this.id}-meta`
+        });
+        
         this.reflowNodes();
     }
 

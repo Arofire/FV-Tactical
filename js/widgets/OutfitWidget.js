@@ -22,14 +22,8 @@ class OutfitWidget extends Widget {
             { key: 'MHP', label: 'Main Hardpoints' }
         ];
 
-        this.weaponCatalog = {
-            '': { label: 'Select Weapon', cost: 0, hardpoint: '-' },
-            'laser-battery': { label: 'Laser Battery', cost: 12, hardpoint: 'SHP' },
-            'railgun': { label: 'Mass Driver Railgun', cost: 40, hardpoint: 'PHP' },
-            'missile-rack': { label: 'Missile Rack', cost: 18, hardpoint: 'UHP' },
-            'beam-lance': { label: 'Beam Lance', cost: 55, hardpoint: 'MHP' },
-            'point-defense': { label: 'Point Defense Cluster', cost: 8, hardpoint: 'UHP' }
-        };
+        this.parentShipWidget = null;
+        this.ignoreTechRequirements = false; // Mirrored from parent ShipWidget
 
         this.outfitData = {
             name: 'New Outfit',
@@ -66,6 +60,9 @@ class OutfitWidget extends Widget {
         };
 
         this.moduleTypes = this.buildModuleDefinitions();
+        this.weaponsData = null;
+        this.weaponsDataLoaded = false;
+        this.loadWeaponsData();
 
         this.roleMode = this.outfitData.roleMode;
         this.availableRoles = OutfitWidget.loadStoredRoles(this.defaultRoles);
@@ -100,6 +97,7 @@ class OutfitWidget extends Widget {
             console.warn('Unable to persist outfit roles', err);
         }
     }
+
 
     ensureRoleAvailable(role) {
         if (!role) return;
@@ -213,6 +211,71 @@ class OutfitWidget extends Widget {
         };
     }
 
+    async loadWeaponsData() {
+        try {
+            const response = await fetch('data/weapons.json');
+            this.weaponsData = await response.json();
+            this.weaponsDataLoaded = true;
+            console.log('Weapons data loaded:', this.weaponsData.categories.length, 'categories');
+            // If widget is already rendered, refresh weapons sections and attach listeners
+            if (this.element && document.contains(this.element)) {
+                console.log('Refreshing weapons dropdowns after data load');
+                this.refreshWeaponDropdowns();
+                this.setupWeaponsEventListeners();
+            }
+        } catch (error) {
+            console.error('Failed to load weapons data:', error);
+            this.weaponsData = { categories: [] };
+            this.weaponsDataLoaded = true;
+        }
+    }
+
+    getAllWeapons() {
+        if (!this.weaponsData || !this.weaponsData.categories) {
+            return [];
+        }
+        const weapons = [];
+        for (const category of this.weaponsData.categories) {
+            if (category.weapons && Array.isArray(category.weapons)) {
+                for (const weapon of category.weapons) {
+                    weapons.push({ ...weapon, categoryName: category.name });
+                }
+            }
+        }
+        return weapons;
+    }
+
+    getSpinalWeapons() {
+        return this.getAllWeapons().filter(weapon => 
+            weapon.techRequirement && weapon.techRequirement.includes('spinal')
+        );
+    }
+
+    getPDWeapons() {
+        return this.getAllWeapons().filter(weapon => 
+            weapon.name && weapon.name.toLowerCase().includes('pd')
+        );
+    }
+
+    getOffensiveWeapons() {
+        const allWeapons = this.getAllWeapons();
+        const pdWeapons = this.getPDWeapons();
+        const spinalWeapons = this.getSpinalWeapons();
+        
+        return allWeapons.filter(weapon => 
+            !pdWeapons.includes(weapon) && !spinalWeapons.includes(weapon)
+        );
+    }
+
+    filterWeaponsByTech(weapons) {
+        if (this.ignoreTechRequirements) return weapons;
+        
+        return weapons.filter(weapon => {
+            if (!weapon.techRequirement) return true;
+            return window.empire?.hasTech?.(weapon.techRequirement) ?? false;
+        });
+    }
+
     getRoleInputValue() {
         return this.roleMode === 'custom'
             ? (this.outfitData.customRole || this.outfitData.role || '')
@@ -319,7 +382,7 @@ class OutfitWidget extends Widget {
         featuresContent.id = `${this.id}-features-section`;
         this.setSectionContent(featuresSection, this.renderFeaturesTable());
         sectionsContainer.appendChild(featuresSection.section);
-        
+
         // Create Weapons section
         const weaponsSection = this.createSection('weapons', 'Weapons');
         const weaponsContent = weaponsSection.contentContainer;
@@ -332,7 +395,6 @@ class OutfitWidget extends Widget {
         this.updateHardpointHeader();
         this.updateShipyardMonths();
         this.renderSystemsContent();
-        this.initializeWeaponsContent();
     }
 
     registerLayoutAnchors() {
@@ -851,235 +913,334 @@ class OutfitWidget extends Widget {
     }
 
     renderWeaponsSection() {
-        const spinalOptions = Object.entries(this.weaponCatalog)
-            .map(([key, weapon]) => `<option value="${key}">${weapon.label}</option>`)
-            .join('');
+        const spinalWeapons = this.filterWeaponsByTech(this.getSpinalWeapons());
+        const spinalOptions = spinalWeapons.map(w => 
+            `<option value="${w.id}">${w.name} (${w.categoryName})</option>`
+        ).join('');
+
         return `
-            <div class="weapons-subsection spinal">
-                <h5>Spinal Weapon</h5>
-                <select id="${this.id}-spinal-weapon">${spinalOptions}</select>
-            </div>
-            <div class="weapons-subsection offensive">
-                <div class="weapons-header">
+            <div class="weapons-section">
+                <div class="spinal-weapon-group">
+                    <h5>Spinal Mount</h5>
+                    <div class="input-group">
+                        <select id="${this.id}-spinal-weapon" class="weapon-select">
+                            <option value="">None</option>
+                            ${spinalOptions}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="offensive-weapons-group">
                     <h5>Offensive Weapons</h5>
-                    <button class="add-weapon-btn" id="${this.id}-add-offensive">＋ Add</button>
+                    <button type="button" class="add-weapon-btn" id="${this.id}-add-offensive">Add Weapon</button>
+                    <table class="weapons-table">
+                        <thead>
+                            <tr>
+                                <th>Mount</th>
+                                <th>Weapon</th>
+                                <th>Arc</th>
+                                <th>Hardpoint</th>
+                                <th>Count</th>
+                                <th>Cost</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="${this.id}-offensive-weapons-body">
+                            ${this.renderWeaponRows('offensive')}
+                        </tbody>
+                    </table>
                 </div>
-                <table class="weapons-table">
-                    <thead>
-                        <tr>
-                            <th>Mount</th>
-                            <th>Weapon</th>
-                            <th>Copies</th>
-                            <th>Arcs</th>
-                            <th>Hardpoint</th>
-                            <th>Total Cost</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="${this.id}-offensive-body"></tbody>
-                </table>
-            </div>
-            <div class="weapons-subsection defensive">
-                <div class="weapons-header">
+
+                <div class="defensive-weapons-group">
                     <h5>Defensive Weapons</h5>
-                    <button class="add-weapon-btn" id="${this.id}-add-defensive">＋ Add</button>
+                    <button type="button" class="add-weapon-btn" id="${this.id}-add-defensive">Add Weapon</button>
+                    <table class="weapons-table">
+                        <thead>
+                            <tr>
+                                <th>Mount</th>
+                                <th>Weapon</th>
+                                <th>Arc</th>
+                                <th>Hardpoint</th>
+                                <th>Count</th>
+                                <th>Cost</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="${this.id}-defensive-weapons-body">
+                            ${this.renderWeaponRows('defensive')}
+                        </tbody>
+                    </table>
                 </div>
-                <table class="weapons-table">
-                    <thead>
-                        <tr>
-                            <th>Weapon</th>
-                            <th>Copies</th>
-                            <th>Arcs</th>
-                            <th>Hardpoint</th>
-                            <th>Total Cost</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="${this.id}-defensive-body"></tbody>
-                </table>
             </div>
         `;
     }
 
-    initializeWeaponsContent() {
-        this.renderOffensiveWeapons();
-        this.renderDefensiveWeapons();
-        const spinalSelect = document.getElementById(`${this.id}-spinal-weapon`);
-        if (spinalSelect) spinalSelect.value = this.outfitData.weapons.spinal || '';
+    renderWeaponRows(category) {
+        const weapons = this.outfitData.weapons[category];
+        if (!weapons || weapons.length === 0) {
+            return '<tr class="no-weapons"><td colspan="7">No weapons added</td></tr>';
+        }
+
+        return weapons.map((weapon, index) => this.renderWeaponRow(category, weapon, index)).join('');
+    }
+
+    renderWeaponRow(category, weapon, index) {
+        const offensiveWeapons = category === 'offensive' 
+            ? this.filterWeaponsByTech(this.getOffensiveWeapons())
+            : this.filterWeaponsByTech(this.getPDWeapons());
+
+        const weaponOptions = offensiveWeapons.map(w => 
+            `<option value="${w.id}" ${weapon.weaponId === w.id ? 'selected' : ''}>${w.name}</option>`
+        ).join('');
+
+        const selectedWeapon = offensiveWeapons.find(w => w.id === weapon.weaponId);
+        const hardpoint = selectedWeapon?.hardpoint || '-';
+        const weaponCost = selectedWeapon?.cost || 0;
+        const totalCost = weaponCost * (weapon.count || 0);
+
+        return `
+            <tr data-index="${index}">
+                <td>
+                    <select class="mount-select" data-category="${category}" data-index="${index}">
+                        <option value="Single" ${weapon.mount === 'Single' ? 'selected' : ''}>Single</option>
+                        <option value="Double" ${weapon.mount === 'Double' ? 'selected' : ''}>Double</option>
+                        <option value="Triple" ${weapon.mount === 'Triple' ? 'selected' : ''}>Triple</option>
+                        <option value="Quad" ${weapon.mount === 'Quad' ? 'selected' : ''}>Quad</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="weapon-select" data-category="${category}" data-index="${index}">
+                        <option value="">Select weapon...</option>
+                        ${weaponOptions}
+                    </select>
+                </td>
+                <td>
+                    <div class="arc-field" data-category="${category}" data-index="${index}">
+                        <input type="text" readonly value="${weapon.arc || ''}" class="arc-display" placeholder="FPSA">
+                        <div class="arc-popup" style="display: none;">
+                            <div class="arc-checkbox-grid">
+                                <div class="arc-row">
+                                    <label><input type="checkbox" value="F" ${weapon.arc?.includes('F') ? 'checked' : ''}> Fore</label>
+                                </div>
+                                <div class="arc-row arc-sides">
+                                    <label><input type="checkbox" value="P" ${weapon.arc?.includes('P') ? 'checked' : ''}> Port</label>
+                                    <div class="arc-arrow">↑</div>
+                                    <label><input type="checkbox" value="S" ${weapon.arc?.includes('S') ? 'checked' : ''}> Starboard</label>
+                                </div>
+                                <div class="arc-row">
+                                    <label><input type="checkbox" value="A" ${weapon.arc?.includes('A') ? 'checked' : ''}> Aft</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td class="hardpoint-cell">${hardpoint}</td>
+                <td>
+                    <input type="number" min="0" step="1" value="${weapon.count || 0}" 
+                           class="count-input" data-category="${category}" data-index="${index}">
+                </td>
+                <td class="cost-cell">${totalCost}</td>
+                <td>
+                    <button type="button" class="remove-weapon-btn" data-category="${category}" data-index="${index}">×</button>
+                </td>
+            </tr>
+        `;
     }
 
     setupWeaponsEventListeners() {
-        const spinalSelect = document.getElementById(`${this.id}-spinal-weapon`);
+        // Get weapons section
+        const weaponsSection = document.getElementById(`${this.id}-weapons-section`);
+        if (!weaponsSection) {
+            return;
+        }
+        
+        // Check if listeners are already attached to prevent duplicates
+        if (this._weaponsListenersAttached) {
+            return;
+        }
+        this._weaponsListenersAttached = true;
+
+        // Setup add weapon buttons
+        const addOffensiveBtn = weaponsSection.querySelector(`#${this.id}-add-offensive`);
+        const addDefensiveBtn = weaponsSection.querySelector(`#${this.id}-add-defensive`);
+        
+        if (addOffensiveBtn) {
+            addOffensiveBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.addWeaponRow('offensive');
+            });
+        }
+
+        if (addDefensiveBtn) {
+            addDefensiveBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.addWeaponRow('defensive');
+            });
+        }
+
+        // Spinal weapon selector
+        const spinalSelect = weaponsSection.querySelector(`#${this.id}-spinal-weapon`);
         if (spinalSelect) {
             spinalSelect.addEventListener('change', (e) => {
                 this.outfitData.weapons.spinal = e.target.value;
-                this.refreshSummary();
             });
         }
 
-        const addOffensive = document.getElementById(`${this.id}-add-offensive`);
-        if (addOffensive) {
-            addOffensive.addEventListener('click', () => {
-                this.outfitData.weapons.offensive.push({ mount: 'Single', weapon: '', copies: 1, arcs: '', hardpoint: '-', totalCost: 0 });
-                this.renderOffensiveWeapons();
-                this.refreshSummary();
-            });
-        }
+        // Event delegation for weapon table interactions
+        weaponsSection.addEventListener('change', (e) => {
+            if (e.target.classList.contains('mount-select')) {
+                const { category, index } = e.target.dataset;
+                if (this.outfitData.weapons[category] && this.outfitData.weapons[category][index]) {
+                    this.outfitData.weapons[category][index].mount = e.target.value;
+                }
+            } else if (e.target.classList.contains('weapon-select')) {
+                const { category, index } = e.target.dataset;
+                if (this.outfitData.weapons[category] && this.outfitData.weapons[category][index]) {
+                    this.outfitData.weapons[category][index].weaponId = e.target.value;
+                    this.refreshWeaponsTable(category);
+                }
+            } else if (e.target.classList.contains('count-input')) {
+                const { category, index } = e.target.dataset;
+                if (this.outfitData.weapons[category] && this.outfitData.weapons[category][index]) {
+                    this.outfitData.weapons[category][index].count = parseInt(e.target.value, 10) || 0;
+                    this.refreshWeaponsTable(category);
+                }
+            }
+        });
 
-        const addDefensive = document.getElementById(`${this.id}-add-defensive`);
-        if (addDefensive) {
-            addDefensive.addEventListener('click', () => {
-                this.outfitData.weapons.defensive.push({ weapon: '', copies: 1, arcs: '', hardpoint: '-', totalCost: 0 });
-                this.renderDefensiveWeapons();
-                this.refreshSummary();
-            });
+        weaponsSection.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-weapon-btn')) {
+                e.preventDefault();
+                const { category, index } = e.target.dataset;
+                this.removeWeaponRow(category, parseInt(index, 10));
+            } else if (e.target.classList.contains('arc-display')) {
+                e.preventDefault();
+                const arcField = e.target.closest('.arc-field');
+                if (arcField) {
+                    const popup = arcField.querySelector('.arc-popup');
+                    if (popup) {
+                        popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+                    }
+                }
+            }
+        });
+
+        // Arc checkbox handling
+        weaponsSection.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox' && e.target.closest('.arc-popup')) {
+                const arcField = e.target.closest('.arc-field');
+                if (arcField) {
+                    const { category, index } = arcField.dataset;
+                    if (this.outfitData.weapons[category] && this.outfitData.weapons[category][index]) {
+                        const checkboxes = arcField.querySelectorAll('input[type="checkbox"]:checked');
+                        const arcValue = Array.from(checkboxes).map(cb => cb.value).sort().join('');
+                        this.outfitData.weapons[category][index].arc = arcValue;
+                        const arcDisplay = arcField.querySelector('.arc-display');
+                        if (arcDisplay) {
+                            arcDisplay.value = arcValue;
+                        }
+                    }
+                }
+            }
+        });
+
+        // Hide arc popup when mouse leaves
+        weaponsSection.addEventListener('mouseleave', (e) => {
+            if (e.target.classList.contains('arc-field') || e.target.classList.contains('arc-popup')) {
+                const arcField = e.target.closest('.arc-field');
+                if (arcField) {
+                    const popup = arcField.querySelector('.arc-popup');
+                    if (popup) popup.style.display = 'none';
+                }
+            }
+        }, true);
+    }
+
+    addWeaponRow(category) {
+        const weapon = {
+            mount: 'Single',
+            weaponId: '',
+            arc: '',
+            count: 0
+        };
+        this.outfitData.weapons[category].push(weapon);
+        this.refreshWeaponsTable(category);
+    }
+
+    removeWeaponRow(category, index) {
+        this.outfitData.weapons[category].splice(index, 1);
+        this.refreshWeaponsTable(category);
+    }
+
+    refreshWeaponsTable(category) {
+        const tbody = document.getElementById(`${this.id}-${category}-weapons-body`);
+        if (tbody) {
+            tbody.innerHTML = this.renderWeaponRows(category);
         }
     }
 
-    renderOffensiveWeapons() {
-        const body = document.getElementById(`${this.id}-offensive-body`);
-        if (!body) return;
-        const mountOptions = ['Single', 'Dual', 'Triple', 'Quad'];
-        body.innerHTML = this.outfitData.weapons.offensive.map((row, index) => {
-            const weaponOptions = Object.entries(this.weaponCatalog)
-                .map(([key, weapon]) => `<option value="${key}" ${row.weapon === key ? 'selected' : ''}>${weapon.label}</option>`)
-                .join('');
-            const mountSelect = mountOptions.map(option => `<option value="${option}" ${row.mount === option ? 'selected' : ''}>${option}</option>`).join('');
-            return `
-                <tr data-index="${index}">
-                    <td>
-                        <select data-field="mount">${mountSelect}</select>
-                    </td>
-                    <td>
-                        <select data-field="weapon">${weaponOptions}</select>
-                    </td>
-                    <td>
-                        <input type="number" data-field="copies" min="1" step="1" value="${row.copies}">
-                    </td>
-                    <td>
-                        <input type="text" data-field="arcs" value="${row.arcs}" placeholder="FPSA">
-                    </td>
-                    <td class="hp" data-field="hardpoint">${row.hardpoint || '-'}</td>
-                    <td class="cost" data-field="totalCost">${row.totalCost || 0}</td>
-                    <td><button class="remove-weapon" data-remove="offensive" data-index="${index}">✕</button></td>
-                </tr>
-            `;
-        }).join('');
-
-        body.querySelectorAll('select, input').forEach(el => {
-            el.addEventListener('change', (e) => this.handleWeaponFieldChange(e, 'offensive'));
-            el.addEventListener('input', (e) => this.handleWeaponFieldChange(e, 'offensive'));
-        });
-        body.querySelectorAll('button[data-remove="offensive"]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const index = parseInt(btn.dataset.index, 10);
-                this.outfitData.weapons.offensive.splice(index, 1);
-                this.renderOffensiveWeapons();
-                this.refreshSummary();
-            });
-        });
-    }
-
-    renderDefensiveWeapons() {
-        const body = document.getElementById(`${this.id}-defensive-body`);
-        if (!body) return;
-        body.innerHTML = this.outfitData.weapons.defensive.map((row, index) => {
-            const weaponOptions = Object.entries(this.weaponCatalog)
-                .map(([key, weapon]) => `<option value="${key}" ${row.weapon === key ? 'selected' : ''}>${weapon.label}</option>`)
-                .join('');
-            return `
-                <tr data-index="${index}">
-                    <td>
-                        <select data-field="weapon">${weaponOptions}</select>
-                    </td>
-                    <td>
-                        <input type="number" data-field="copies" min="1" step="1" value="${row.copies}">
-                    </td>
-                    <td>
-                        <input type="text" data-field="arcs" value="${row.arcs}" placeholder="FPSA">
-                    </td>
-                    <td class="hp" data-field="hardpoint">${row.hardpoint || '-'}</td>
-                    <td class="cost" data-field="totalCost">${row.totalCost || 0}</td>
-                    <td><button class="remove-weapon" data-remove="defensive" data-index="${index}">✕</button></td>
-                </tr>
-            `;
-        }).join('');
-
-        body.querySelectorAll('select, input').forEach(el => {
-            el.addEventListener('change', (e) => this.handleWeaponFieldChange(e, 'defensive'));
-            el.addEventListener('input', (e) => this.handleWeaponFieldChange(e, 'defensive'));
-        });
-        body.querySelectorAll('button[data-remove="defensive"]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const index = parseInt(btn.dataset.index, 10);
-                this.outfitData.weapons.defensive.splice(index, 1);
-                this.renderDefensiveWeapons();
-                this.refreshSummary();
-            });
-        });
-    }
-
-    handleWeaponFieldChange(event, table) {
-        const cell = event.target.closest('tr');
-        if (!cell) return;
-        const index = parseInt(cell.dataset.index, 10);
-        const dataset = table === 'offensive' ? this.outfitData.weapons.offensive : this.outfitData.weapons.defensive;
-        const row = dataset[index];
-        if (!row) return;
-
-        const field = event.target.dataset.field;
-        if (field === 'weapon') {
-            row.weapon = event.target.value;
-        } else if (field === 'mount') {
-            row.mount = event.target.value;
-        } else if (field === 'copies') {
-            const value = Math.max(1, parseInt(event.target.value, 10) || 1);
-            event.target.value = value;
-            row.copies = value;
-        } else if (field === 'arcs') {
-            row.arcs = event.target.value.toUpperCase();
-            event.target.value = row.arcs;
+    refreshWeaponDropdowns() {
+        // Refresh spinal weapon dropdown
+        const spinalSelect = document.getElementById(`${this.id}-spinal-weapon`);
+        if (spinalSelect) {
+            const currentValue = spinalSelect.value;
+            const spinalWeapons = this.filterWeaponsByTech(this.getSpinalWeapons());
+            const spinalOptions = spinalWeapons.map(w => 
+                `<option value="${w.id}">${w.name} (${w.categoryName})</option>`
+            ).join('');
+            spinalSelect.innerHTML = `<option value="">None</option>${spinalOptions}`;
+            spinalSelect.value = currentValue;
         }
 
-        const catalogEntry = this.weaponCatalog[row.weapon] || { cost: 0, hardpoint: '-' };
-        const mountMultiplier = table === 'offensive' ? this.getMountMultiplier(row.mount) : 1;
-        row.hardpoint = catalogEntry.hardpoint || '-';
-        row.totalCost = mountMultiplier * catalogEntry.cost * row.copies;
-
-        if (table === 'offensive') {
-            this.renderOffensiveWeapons();
-        } else {
-            this.renderDefensiveWeapons();
-        }
-        
-        this.refreshSummary();
+        // Refresh offensive and defensive weapon tables
+        this.refreshWeaponsTable('offensive');
+        this.refreshWeaponsTable('defensive');
     }
 
-    getMountMultiplier(mount) {
-        switch ((mount || '').toLowerCase()) {
-            case 'dual': return 2;
-            case 'triple': return 3;
-            case 'quad': return 4;
-            default: return 1;
+    getParentShipWidget() {
+        if (this.parentShipWidget && this.parentShipWidget.element?.isConnected) {
+            return this.parentShipWidget;
         }
+
+        if (this.parents && window.widgetManager) {
+            for (const parentId of this.parents) {
+                const widget = window.widgetManager.getWidget(parentId);
+                if (widget && (widget.type === 'ship' || widget.type === 'shipPrototype')) {
+                    this.parentShipWidget = widget;
+                    return widget;
+                }
+            }
+        }
+
+        return null;
     }
 
     onParentLinked(parentWidget) {
         if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
+            this.parentShipWidget = parentWidget;
             this.applyParentInheritance(parentWidget);
         }
     }
 
     onParentUnlinked(parentWidget) {
         if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
+            if (this.parentShipWidget === parentWidget) {
+                this.parentShipWidget = null;
+            }
             this.resetInheritedValues();
         }
     }
 
     applyParentInheritance(shipWidget) {
+        if (shipWidget && (shipWidget.type === 'ship' || shipWidget.type === 'shipPrototype')) {
+            this.parentShipWidget = shipWidget;
+        }
         const shipData = shipWidget?.shipData || {};
         const stats = shipData.statistics || {};
         const hulls = shipData.hullComposition || {};
+
+        // Mirror ignoreTechRequirements flag from parent ship
+        this.ignoreTechRequirements = shipData.ignoreTechRequirements ?? false;
 
         this.outfitData.stats.cargo = stats.cargo ?? 0;
         this.outfitData.stats.remass = stats.remass ?? hulls.remass ?? 0;
@@ -1094,9 +1255,11 @@ class OutfitWidget extends Widget {
 
         this.updateHardpointBaseDisplay();
         this.updateShipyardMonths();
+        this.refreshWeaponDropdowns();
     }
 
     resetInheritedValues() {
+        this.ignoreTechRequirements = false;
         this.outfitData.stats.cargo = 0;
         this.outfitData.stats.remass = 0;
         this.outfitData.stats.shipyardMonths = 0;
@@ -1107,45 +1270,42 @@ class OutfitWidget extends Widget {
         });
         this.updateHardpointBaseDisplay();
         this.updateShipyardMonths();
+        this.refreshWeaponDropdowns();
+    }
+
+    handleParentTechRequirementChange(parentWidget) {
+        // Mirror the ignoreTechRequirements flag from parent
+        if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
+            this.ignoreTechRequirements = parentWidget.shipData?.ignoreTechRequirements ?? false;
+            // Refresh weapons to apply new filtering
+            this.refreshWeaponDropdowns();
+        }
     }
 
     createNodes() {
         this.clearNodes();
 
-        this.addNode('input', 'outfit', 'Class', 0, 0.2, {
+        this.addNode('input', 'Class', 'Class', 0, 0.2, {
             anchorId: 'outfit-meta',
             sectionId: 'meta',
             minSpacing: 32
         });
 
-        this.createExpandableNodeGroup('core-links', {
-            baseLabel: 'Core',
-            labelFormatter: (index) => index === 1 ? 'Core' : `Core ${index}`,
-            direction: 'input',
-            nodeType: 'core',
-            sectionId: 'meta',
+        this.addNode('input', 'Core', 'Core', 0, 0.4, {
             anchorId: 'outfit-meta',
+            sectionId: 'meta',
             anchorOffset: 32,
-            minSpacing: 32,
-            relativeX: 0,
-            relativeY: 0.4,
-            maxFree: 2
+            minSpacing: 32
         });
 
-        this.addNode('output', 'statistics', 'Stats', 1, 0.2, {
+        this.addNode('output', 'Outfit', 'Outfit', 1, 0.2, {
             anchorId: 'outfit-meta',
             sectionId: 'meta',
             minSpacing: 32,
             anchorOffset: 48
         });
 
-        this.addNode('output', 'berth', 'Berth', 1, 0.5, {
-            anchorId: 'outfit-systems',
-            sectionId: 'systems',
-            minSpacing: 32
-        });
-
-        this.addNode('output', 'outfit-hull', 'Hull', 1, 0.35, {
+        this.addNode('output', 'Statistics', 'Statistics', 1, 0.35, {
             anchorId: 'outfit-meta',
             sectionId: 'meta',
             anchorOffset: 80,
@@ -1154,6 +1314,8 @@ class OutfitWidget extends Widget {
 
         this.reflowNodes();
     }
+
+
 
     syncDataFromForm() {
         // Sync simple form fields to outfitData
@@ -1190,7 +1352,7 @@ class OutfitWidget extends Widget {
         });
 
         // Sync spinal mount selection
-        const spinalSelect = document.getElementById(`${this.id}-spinal-select`);
+        const spinalSelect = document.getElementById(`${this.id}-spinal-weapon`);
         if (spinalSelect) {
             this.outfitData.weapons.spinal = spinalSelect.value;
         }
@@ -1218,12 +1380,16 @@ class OutfitWidget extends Widget {
         this.syncDataFromForm();
         return {
             ...super.getSerializedData(),
-            outfitData: this.outfitData
+            outfitData: this.outfitData,
+            ignoreTechRequirements: this.ignoreTechRequirements
         };
     }
 
     loadSerializedData(data) {
         super.loadSerializedData(data);
+        if (data.ignoreTechRequirements !== undefined) {
+            this.ignoreTechRequirements = data.ignoreTechRequirements;
+        }
         if (data.outfitData) {
             this.outfitData = {
                 ...this.outfitData,

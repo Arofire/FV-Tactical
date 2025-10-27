@@ -79,15 +79,6 @@ class PreflightCheck {
             case 'loadouts':
                 this.checkLoadoutsWidget(widget);
                 break;
-            case 'powerplants':
-                this.checkPowerplantsWidget(widget);
-                break;
-            case 'factories':
-                this.checkFactoriesWidget(widget);
-                break;
-            case 'shipyards':
-                this.checkShipyardsWidget(widget);
-                break;
             case 'shipCore':
                 this.checkShipCoreWidget(widget);
                 break;
@@ -480,74 +471,6 @@ class PreflightCheck {
         const hullLinks = this.countNodeConnections(widget, 'loadout-hull', 'output');
         if (hullLinks === 0) {
             this.addAlert(`Loadout "${widget.title}" is not assigned to a hull plan`, widget.id);
-        }
-    }
-
-    checkPowerplantsWidget(widget) {
-        const data = widget.getSerializedData();
-        
-        if (!data.reactorType) {
-            this.addError(`Powerplant "${widget.title}" requires a reactor type`, widget.id);
-        }
-        
-        // Check reactor tech requirements
-        if (data.reactorType && data.reactorType.requiredTech) {
-            for (const tech of data.reactorType.requiredTech) {
-                if (!this.empire.hasTech(tech)) {
-                    this.addTechRequirement(
-                        `Powerplant "${widget.title}" reactor requires ${tech}`,
-                        tech, widget.id
-                    );
-                }
-            }
-        }
-    }
-
-    checkFactoriesWidget(widget) {
-        const data = widget.getSerializedData();
-        
-        if (!data.productionLines || data.productionLines.length === 0) {
-            this.addWarning(`Factory "${widget.title}" has no production lines`, widget.id);
-        }
-        
-        // Check if factory can produce what it's set to produce
-        if (data.productionLines) {
-            for (const line of data.productionLines) {
-                if (line.requiredTech) {
-                    for (const tech of line.requiredTech) {
-                        if (!this.empire.hasTech(tech)) {
-                            this.addTechRequirement(
-                                `Factory "${widget.title}" production line "${line.name}" requires ${tech}`,
-                                tech, widget.id
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    checkShipyardsWidget(widget) {
-        const data = widget.getSerializedData();
-        
-        if (!data.shipClass && !data.capabilities) {
-            this.addWarning(`Shipyard "${widget.title}" has no defined capabilities`, widget.id);
-        }
-        
-        // Check shipyard tech requirements
-        if (data.capabilities) {
-            for (const capability of data.capabilities) {
-                if (capability.requiredTech) {
-                    for (const tech of capability.requiredTech) {
-                        if (!this.empire.hasTech(tech)) {
-                            this.addTechRequirement(
-                                `Shipyard "${widget.title}" capability "${capability.name}" requires ${tech}`,
-                                tech, widget.id
-                            );
-                        }
-                    }
-                }
-            }
         }
     }
 

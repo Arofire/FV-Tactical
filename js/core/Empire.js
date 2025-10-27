@@ -17,12 +17,18 @@ class Empire {
             shipyards: []
         };
         
-        // Initialize available technologies
-        this.initializeAvailableTech();
+        // Initialize available technologies asynchronously
+        this.initialized = this.initialize();
+    }
+
+    async initialize() {
+        console.log('Empire: Starting initialization...');
+        await this.initializeAvailableTech();
+        console.log('Empire: Available tech initialized');
 
         // Auto-unlock (research) any technologies that have zero cost and no prerequisites
         // These represent baseline starting capabilities the player should always have.
-        const allTech = TechTree.getAllTech();
+        const allTech = await TechTree.getAllTech();
         for (const [techId, tech] of allTech) {
             if (tech.cost === 0 && tech.prerequisites.length === 0 && !tech.specialRequirement) {
                 // Add directly to researched if not already
@@ -35,12 +41,12 @@ class Empire {
         }
 
         // After auto-unlock, update availability for next tier
-        this.updateAvailableTech();
+        await this.updateAvailableTech();
     }
     
     // Initialize technologies that have no prerequisites
-    initializeAvailableTech() {
-        const allTech = TechTree.getAllTech();
+    async initializeAvailableTech() {
+        const allTech = await TechTree.getAllTech();
         for (const [techId, tech] of allTech) {
             if (tech.prerequisites.length === 0 && !tech.specialRequirement) {
                 this.availableTech.add(techId);
@@ -49,19 +55,19 @@ class Empire {
     }
 
     // Research a technology
-    researchTech(techId) {
+    async researchTech(techId) {
         if (this.availableTech.has(techId) && !this.researchedTech.has(techId)) {
-            const tech = TechTree.getTech(techId);
+            const tech = await TechTree.getTech(techId);
             if (tech && this.techPoints >= tech.cost) {
                 this.techPoints -= tech.cost;
                 this.researchedTech.add(techId);
                 this.availableTech.delete(techId);
                 
                 // Unlock new technologies
-                this.updateAvailableTech();
+                await this.updateAvailableTech();
                 
                 // Trigger events
-                this.onTechResearched(techId);
+                await this.onTechResearched(techId);
                 return true;
             }
         }
@@ -69,8 +75,8 @@ class Empire {
     }
 
     // Update available technologies based on research
-    updateAvailableTech() {
-        const allTech = TechTree.getAllTech();
+    async updateAvailableTech() {
+        const allTech = await TechTree.getAllTech();
         for (const [techId, tech] of allTech) {
             if (!this.researchedTech.has(techId) && !this.availableTech.has(techId)) {
                 // Check if prerequisites are met
@@ -139,10 +145,10 @@ class Empire {
     }
 
     // Event handlers
-    onTechResearched(techId) {
+    async onTechResearched(techId) {
         // Update UI
         if (window.app) {
-            window.app.updateTechTree();
+            await window.app.updateTechTree();
             window.app.updateEmpireDisplay();
             window.app.runPreflightCheck();
         }

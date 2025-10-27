@@ -346,7 +346,7 @@ class Widget {
         for (const [nodeId, node] of this.nodes) {
             if (node.sectionId) {
                 // Re-create the node element in the correct section
-                const oldElement = document.getElementById(nodeId);
+                const oldElement = this.getNodeDomElement(nodeId);
                 const oldLabel = this.element.querySelector(`.node-label[data-node-id="${nodeId}"]`);
                 
                 if (oldElement) oldElement.remove();
@@ -401,6 +401,26 @@ class Widget {
         this.nodes.set(nodeId, node);
         this.createNodeElement(node);
         return nodeId;
+    }
+
+    static escapeIdForSelector(id) {
+        return id.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    }
+
+    getNodeDomElement(nodeId) {
+        if (!nodeId) return null;
+        const selector = `[id="${Widget.escapeIdForSelector(nodeId)}"]`;
+        if (this.element) {
+            const scoped = this.element.querySelector(selector);
+            if (scoped) return scoped;
+        }
+        const candidates = document.querySelectorAll(selector);
+        for (const candidate of candidates) {
+            if (!candidate.closest('.pinned-widget')) {
+                return candidate;
+            }
+        }
+        return candidates[0] || null;
     }
 
     createNodeElement(node) {
@@ -541,7 +561,7 @@ class Widget {
         window.nodeSystem.removeNodeConnections(nodeId);
         
         // Remove DOM elements
-        const nodeElement = document.getElementById(nodeId);
+    const nodeElement = this.getNodeDomElement(nodeId);
         const labelElement = this.element?.querySelector(`.node-label[data-node-id="${nodeId}"]`) || nodeElement?.nextElementSibling;
         if (nodeElement) nodeElement.remove();
         if (labelElement && labelElement.classList.contains('node-label')) {
@@ -674,6 +694,57 @@ class Widget {
         if (updateMinimap && window.app && window.app.updateMinimap) {
             window.app.updateMinimap();
         }
+        this.updateStickyHeaders();
+    }
+
+    updateStickyHeaders() {
+        // Find all sticky headers in this widget and adjust their position
+        // to stay visible when the widget top is clipped by viewport
+        if (!this.element) return;
+        
+        const stickyHeaders = this.element.querySelectorAll('.widget-sticky-header');
+        if (stickyHeaders.length === 0) return;
+        
+        // Get workspace viewport info
+        const workspace = document.getElementById('workspace');
+        if (!workspace) return;
+        
+        const viewportRect = workspace.getBoundingClientRect();
+        const widgetRect = this.element.getBoundingClientRect();
+        
+        // Get the current transform scale to account for zoom
+        const transform = window.app?.workspaceTransform || { scale: 1, translateX: 0, translateY: 0 };
+        const scale = transform.scale;
+        
+        stickyHeaders.forEach(header => {
+            // Calculate how much of the widget top is clipped by the viewport
+            // The 40 is the header height in canvas units, so scale it to screen units
+            const clipAmount = viewportRect.top - widgetRect.top - (40 * scale);
+            
+            if (clipAmount > 0) {
+                // Widget top is clipped - move header down to stay visible
+                // Calculate max offset to prevent header from going past widget bottom
+                // Account for the header's height and the widget's bottom position
+                const widgetBottomClip = widgetRect.bottom - viewportRect.bottom;
+                const maxOffset = widgetRect.height - (header.offsetHeight * scale) - (60 * scale); // 40px margin from bottom
+                
+                // If widget bottom is also clipped, reduce the max offset
+                const effectiveMaxOffset = widgetBottomClip > 0 ? 
+                    maxOffset - widgetBottomClip : 
+                    maxOffset;
+                
+                // Convert screen offset back to canvas units for the transform
+                const offset = Math.min(clipAmount, Math.max(0, effectiveMaxOffset)) / scale;
+                header.style.transform = `translateY(${offset}px)`;
+                header.style.position = 'relative';
+                header.style.zIndex = '10';
+            } else {
+                // Widget top is fully visible - reset header position
+                header.style.transform = '';
+                header.style.position = '';
+                header.style.zIndex = '';
+            }
+        });
     }
 
     resetLayoutAnchors() {
@@ -747,7 +818,7 @@ class Widget {
     }
 
     positionNode(node, targetY, metrics = null) {
-        const nodeElement = document.getElementById(node.id);
+    const nodeElement = this.getNodeDomElement(node.id);
         if (!nodeElement) return;
 
         const labelElement = this.element?.querySelector(`.node-label[data-node-id="${node.id}"]`) || nodeElement.nextElementSibling;
@@ -849,8 +920,12 @@ class Widget {
         this.element.classList.add('dragging');
         this.select();
         
-        this.dragOffset.x = e.clientX - this.x;
-        this.dragOffset.y = e.clientY - this.y;
+        // Convert mouse position to canvas coordinates
+        const canvasPos = this.clientToCanvas(e.clientX, e.clientY);
+        if (!canvasPos) return;
+        
+        this.dragOffset.x = canvasPos.x - this.x;
+        this.dragOffset.y = canvasPos.y - this.y;
         // Store bound handlers so we can properly remove them later
         this._boundDrag = this._boundDrag || this.drag.bind(this);
         this._boundStopDrag = this._boundStopDrag || this.stopDrag.bind(this);
@@ -862,10 +937,15 @@ class Widget {
 
     drag(e) {
         if (!this.isDragging) return;
+        
+        // Convert mouse position to canvas coordinates
+        const canvasPos = this.clientToCanvas(e.clientX, e.clientY);
+        if (!canvasPos) return;
+        
         const oldX = this.x;
         const oldY = this.y;
-        this.x = e.clientX - this.dragOffset.x;
-        this.y = e.clientY - this.dragOffset.y;
+        this.x = canvasPos.x - this.dragOffset.x;
+        this.y = canvasPos.y - this.dragOffset.y;
 
         // Apply magnetic snapping to nearby widget edges
         this.applyMagneticSnapping();
@@ -1230,19 +1310,31 @@ class Widget {
     getNodeAbsolutePosition(nodeId) {
         const node = this.nodes.get(nodeId);
         if (!node) return null;
-        const nodeElement = document.getElementById(nodeId);
+        const nodeElement = this.getNodeDomElement(nodeId);
         if (nodeElement) {
+            // Since the SVG is on the canvas and transforms with it,
+            // we need to return positions in canvas/world coordinates, not screen coordinates
+            const canvas = document.getElementById('canvas');
             const workspace = document.getElementById('workspace');
             const transform = window.app?.workspaceTransform || { scale: 1, translateX: 0, translateY: 0 };
-            if (workspace) {
+            
+            if (canvas && workspace) {
                 const workspaceRect = workspace.getBoundingClientRect();
                 const rect = nodeElement.getBoundingClientRect();
-                const centerScreenX = rect.left - workspaceRect.left + rect.width / 2;
-                const centerScreenY = rect.top - workspaceRect.top + rect.height / 2;
-                const worldX = (centerScreenX / transform.scale) - transform.translateX;
-                const worldY = (centerScreenY / transform.scale) - transform.translateY;
-                return { x: worldX, y: worldY };
+                
+                // Get screen position relative to workspace
+                const screenX = rect.left - workspaceRect.left + rect.width / 2;
+                const screenY = rect.top - workspaceRect.top + rect.height / 2;
+                
+                // Convert screen coordinates to canvas coordinates by reversing the transform
+                // screen = (canvas * scale) + translate
+                // canvas = (screen - translate) / scale
+                const canvasX = (screenX - transform.translateX) / transform.scale;
+                const canvasY = (screenY - transform.translateY) / transform.scale;
+                
+                return { x: canvasX, y: canvasY };
             }
+            // Fallback: calculate from widget position
             const centerX = this.x + nodeElement.offsetLeft + nodeElement.offsetWidth / 2;
             const centerY = this.y + nodeElement.offsetTop + nodeElement.offsetHeight / 2;
             return { x: centerX, y: centerY };
@@ -1256,6 +1348,27 @@ class Widget {
         const baseTop = this.y + headerHeight + topPadding + (normalizedY * availableHeight);
         const baseLeft = this.x + (this.width * node.relativeX);
         return { x: baseLeft + 8, y: baseTop + 8 };
+    }
+
+    clientToCanvas(clientX, clientY) {
+        // Convert screen/client coordinates to canvas coordinates
+        const workspace = document.getElementById('workspace');
+        if (!workspace) return null;
+        
+        const workspaceRect = workspace.getBoundingClientRect();
+        const transform = window.app?.workspaceTransform || { scale: 1, translateX: 0, translateY: 0 };
+        
+        // Get position relative to workspace
+        const screenX = clientX - workspaceRect.left;
+        const screenY = clientY - workspaceRect.top;
+        
+        // Convert screen coordinates to canvas coordinates by reversing the transform
+        // screen = (canvas * scale) + translate
+        // canvas = (screen - translate) / scale
+        const canvasX = (screenX - transform.translateX) / transform.scale;
+        const canvasY = (screenY - transform.translateY) / transform.scale;
+        
+        return { x: canvasX, y: canvasY };
     }
 
     // Serialization

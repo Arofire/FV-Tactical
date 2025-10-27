@@ -1498,8 +1498,8 @@
 .weapons-table th,
 .weapons-table td {
     border: 1px solid #262626;
-    padding: 6px;
-    font-size: 12px;
+    /* padding: 6px; */
+    /* font-size: 12px; */
     text-align: center;
 }
 
@@ -1520,7 +1520,7 @@
     border: 1px solid #333;
     border-radius: 4px;
     padding: 4px 6px;
-    font-size: 12px;
+    /* font-size: 12px; */
 }
 
 .add-weapon-btn {
@@ -1555,6 +1555,12 @@
 .weapons-table .cost {
     font-family: 'Roboto Mono', monospace;
     font-size: 12px;
+}
+
+.weapons-table .empty-state {
+    text-align: center;
+    color: #9aa3b5;
+    font-style: italic;
 }
 
 .weapons-subsection.spinal select {
@@ -1628,4 +1634,217 @@
 
 .pinned-widget .widget-control-btn.unpin:hover {
     background: #357abd;
+}
+/* Weapons Section Styling */
+.weapons-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.spinal-weapon-group,
+.offensive-weapons-group,
+.defensive-weapons-group {
+    display: flex;
+    border: 1px solid #444;
+    padding: 4px;
+    border-radius: 4px;
+    background: #252525;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.spinal-weapon-group h5,
+.offensive-weapons-group h5,
+.defensive-weapons-group h5 {
+    margin: 0 0 8px 0;
+    color: #4a90e2;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.weapons-table {
+    width: 100%;
+    border-collapse: collapse;
+    /* margin-top: 8px; */
+    font-size: 11px;
+}
+
+.weapons-table thead {
+    background: #333;
+}
+
+.weapons-table th {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 2px solid #444;
+    font-weight: 600;
+    color: #aaa;
+}
+
+.weapons-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #3a3a3a;
+}
+
+.weapons-table tr:last-child td {
+    border-bottom: none;
+}
+
+.weapons-table .no-weapons {
+    text-align: center;
+    color: #777;
+    font-style: italic;
+}
+
+.weapon-select,
+.mount-select {
+    width: 100%;
+    padding: 4px 6px;
+    background: #2d2d2d;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    border-radius: 3px;
+    /* font-size: 12px; */
+}
+
+.weapon-select:focus,
+.mount-select:focus {
+    outline: none;
+    border-color: #4a90e2;
+}
+
+.add-weapon-btn {
+    padding: 6px 12px;
+    background: #4a90e2;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.add-weapon-btn:hover {
+    background: #357abd;
+}
+
+.remove-weapon-btn {
+    background: #f56c6c;
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-weapon-btn:hover {
+    background: #d9534f;
+}
+
+.hardpoint-cell,
+.cost-cell {
+    text-align: center;
+    color: #aaa;
+    font-weight: 500;
+}
+
+.count-input {
+    width: 60px;
+    padding: 4px 6px;
+    background: #2d2d2d;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    border-radius: 3px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.count-input:focus {
+    outline: none;
+    border-color: #4a90e2;
+}
+
+/* Arc Field Styling */
+.arc-field {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.arc-display {
+    width: 100%;
+    padding: 4px 6px;
+    background: #2d2d2d;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    border-radius: 3px;
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.arc-display:focus {
+    outline: none;
+    border-color: #4a90e2;
+}
+
+.arc-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    background: #2d2d2d;
+    border: 2px solid #4a90e2;
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    min-width: 200px;
+}
+
+.arc-checkbox-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.arc-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.arc-row.arc-sides {
+    justify-content: space-between;
+}
+
+.arc-arrow {
+    font-size: 24px;
+    color: #4a90e2;
+    margin: 0 8px;
+}
+
+.arc-popup label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.arc-popup input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.arc-popup label:hover {
+    color: #4a90e2;
 }

@@ -1,0 +1,8414 @@
+{
+  "categories": [
+    {
+      "name": "Cannon",
+      "weapons": [
+        {
+          "id": "light-autocannon",
+          "name": "Light Autocannon",
+          "ranges": [
+            {
+              "accuracy": "-2",
+              "damage": 1
+            },
+            {
+              "accuracy": "-4",
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": null,
+          "techRequirement": "light-cannon"
+        },
+        {
+          "id": "autocannon",
+          "name": "Autocannon",
+          "ranges": [
+            {
+              "accuracy": "-2",
+              "damage": 1
+            },
+            {
+              "accuracy": "-4",
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Swarm",
+              "value": 12
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 14,
+          "techRequirement": "heavy-cannon"
+        },
+        {
+          "id": "boosted-cannon",
+          "name": "Boosted Cannon",
+          "ranges": [
+            {
+              "accuracy": 3,
+              "damage": 5
+            },
+            {
+              "accuracy": 2,
+              "damage": 5
+            },
+            {
+              "accuracy": 1,
+              "damage": 5
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Durable",
+              "value": 3
+            },
+            {
+              "name": "Volume",
+              "value": 2
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 10,
+          "techRequirement": "nuclear-cannon"
+        },
+        {
+          "id": "pd-gun-pack",
+          "name": "PD Gun Pack",
+          "ranges": [
+            {
+              "accuracy": "+1",
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "One-shot"
+            },
+            {
+              "name": "Swarm",
+              "value": 15
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 20,
+          "techRequirement": "pd-gun-pack"
+        },
+        {
+          "id": "pd-chaingun",
+          "name": "PD Chaingun",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 1,
+          "techRequirement": "pd-chaingun"
+        }
+      ]
+    },
+    {
+      "name": "LASER",
+      "weapons": [
+        {
+          "id": "light-chemical-laser",
+          "name": "Light Chemical LASER",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            },
+            {
+              "name": "One-shot"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 4,
+          "techRequirement": "light-chemical-laser"
+        },
+        {
+          "id": "heavy-chemical-laser",
+          "name": "Heavy Chemical LASER",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            },
+            {
+              "name": "One-shot"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 9,
+          "techRequirement": "heavy-chemical-laser"
+        },
+        {
+          "id": "pd-fission-laser",
+          "name": "PD Fission LASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            },
+            {
+              "name": "One-shot"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 3,
+          "techRequirement": "pd-chemical-laser"
+        },
+        {
+          "id": "light-atomic-laser",
+          "name": "Light Atomic LASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 3
+            },
+            {
+              "accuracy": 3,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [],
+          "hardpoint": "SHP",
+          "cost": 6,
+          "techRequirement": "light-chemical-laser"
+        },
+        {
+          "id": "heavy-atomic-laser",
+          "name": "Heavy Atomic LASER",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 9,
+          "techRequirement": "heavy-chemical-laser"
+        },
+        {
+          "id": "pd-chemical-laser",
+          "name": "PD Chemical LASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 2,
+          "techRequirement": "pd-chemical-laser"
+        },
+        {
+          "id": "light-optical-aperture",
+          "name": "Light Optical Aperture",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 10,
+          "techRequirement": "light-optical-aperture"
+        },
+        {
+          "id": "heavy-optical-aperture",
+          "name": "Heavy Optical Aperture",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 13,
+          "techRequirement": "heavy-optical-aperture"
+        },
+        {
+          "id": "pd-optical-aperture",
+          "name": "PD Optical Aperture",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 1
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 3,
+          "techRequirement": "pd-optical-aperture"
+        },
+        {
+          "id": "light-multiplex-aperture",
+          "name": "Light Multiplex Aperture",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 15,
+          "techRequirement": "light-multiplex-aperture"
+        },
+        {
+          "id": "heavy-multiplex-aperture",
+          "name": "Heavy Multiplex Aperture",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 17,
+          "techRequirement": "heavy-multiplex-aperture"
+        },
+        {
+          "id": "pd-multiplex-aperture",
+          "name": "PD Multiplex Aperture",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 5,
+          "techRequirement": "pd-multiplex-aperture"
+        },
+        {
+          "id": "light-array-aperture",
+          "name": "Light Array Aperture",
+          "ranges": [
+            {
+              "accuracy": "+3",
+              "damage": 3
+            },
+            {
+              "accuracy": "+1",
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 29,
+          "techRequirement": "light-array-aperture"
+        },
+        {
+          "id": "heavy-array-aperture",
+          "name": "Heavy Array Aperture",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 4
+            },
+            {
+              "accuracy": "+0",
+              "damage": 3
+            },
+            {
+              "accuracy": "-2",
+              "damage": 3
+            },
+            {
+              "accuracy": "-6",
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 50,
+          "techRequirement": "heavy-array-aperture"
+        },
+        {
+          "id": "pd-array-aperture",
+          "name": "PD Array Aperture",
+          "ranges": [
+            {
+              "accuracy": "+3",
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 4
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 10,
+          "techRequirement": "pd-array-aperture"
+        },
+        {
+          "id": "light-beam-aperture",
+          "name": "Light Beam Aperture",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": 3,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 26,
+          "techRequirement": "light-ub-aperture"
+        },
+        {
+          "id": "heavy-beam-aperture",
+          "name": "Heavy Beam Aperture",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 8
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": 2,
+              "damage": 2
+            },
+            {
+              "accuracy": 1,
+              "damage": 2
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 35,
+          "techRequirement": "heavy-ub-aperture"
+        },
+        {
+          "id": "pd-beam-aperture",
+          "name": "PD Beam Aperture",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 7,
+          "techRequirement": "pd-ub-aperture"
+        },
+        {
+          "id": "light-optical-maser",
+          "name": "Light Optical MASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            }
+          ],
+          "hardpoint": null,
+          "cost": 9,
+          "techRequirement": "light-optical-aperture"
+        },
+        {
+          "id": "heavy-optical-maser",
+          "name": "Heavy Optical MASER",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            }
+          ],
+          "hardpoint": null,
+          "cost": 12,
+          "techRequirement": "heavy-optical-aperture"
+        },
+        {
+          "id": "pd-optical-maser",
+          "name": "PD Optical MASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 1
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            }
+          ],
+          "hardpoint": null,
+          "cost": 3,
+          "techRequirement": "pd-optical-aperture"
+        },
+        {
+          "id": "light-multiplex-maser",
+          "name": "Light Multiplex MASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 13,
+          "techRequirement": "light-multiplex-aperture"
+        },
+        {
+          "id": "heavy-multiplex-maser",
+          "name": "Heavy Multiplex MASER",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": 3,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 14,
+          "techRequirement": "heavy-multiplex-aperture"
+        },
+        {
+          "id": "pd-multiplex-maser",
+          "name": "PD Multiplex MASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 5,
+          "techRequirement": "pd-multiplex-aperture"
+        },
+        {
+          "id": "light-array-maser",
+          "name": "Light Array MASER",
+          "ranges": [
+            {
+              "accuracy": 3,
+              "damage": 3
+            },
+            {
+              "accuracy": 1,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 3,
+          "techRequirement": "light-array-aperture"
+        },
+        {
+          "id": "heavy-array-maser",
+          "name": "Heavy Array MASER",
+          "ranges": [
+            {
+              "accuracy": 2,
+              "damage": 4
+            },
+            {
+              "accuracy": 0,
+              "damage": 2
+            },
+            {
+              "accuracy": "-3",
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 34,
+          "techRequirement": "heavy-array-aperture"
+        },
+        {
+          "id": "pd-array-maser",
+          "name": "PD Array MASER",
+          "ranges": [
+            {
+              "accuracy": 3,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 4
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            }
+          ],
+          "hardpoint": null,
+          "cost": 2,
+          "techRequirement": "pd-array-aperture"
+        },
+        {
+          "id": "light-beam-maser",
+          "name": "Light Beam MASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 2
+            },
+            {
+              "accuracy": 3,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 21,
+          "techRequirement": "light-ub-aperture"
+        },
+        {
+          "id": "heavy-beam-maser",
+          "name": "Heavy Beam MASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 8
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 2
+            },
+            {
+              "accuracy": 1,
+              "damage": 0
+            },
+            {
+              "accuracy": 0,
+              "damage": 0
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 26,
+          "techRequirement": "heavy-ub-aperture"
+        },
+        {
+          "id": "pd-beam-maser",
+          "name": "PD Beam MASER",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 7,
+          "techRequirement": "pd-ub-aperture"
+        },
+        {
+          "id": "light-optical-uvaser",
+          "name": "Light Optical UVASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            }
+          ],
+          "hardpoint": null,
+          "cost": 12,
+          "techRequirement": "light-optical-aperture"
+        },
+        {
+          "id": "heavy-optical-uvaser",
+          "name": "Heavy Optical UVASER",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            }
+          ],
+          "hardpoint": null,
+          "cost": 14,
+          "techRequirement": "heavy-optical-aperture"
+        },
+        {
+          "id": "pd-optical-uvaser",
+          "name": "PD Optical UVASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 1
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            }
+          ],
+          "hardpoint": null,
+          "cost": 5,
+          "techRequirement": "pd-optical-aperture"
+        },
+        {
+          "id": "light-multiplex-uvaser",
+          "name": "Light Multiplex UVASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 5
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 17,
+          "techRequirement": "light-multiplex-aperture"
+        },
+        {
+          "id": "heavy-multiplex-uvaser",
+          "name": "Heavy Multiplex UVASER",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 18,
+          "techRequirement": "heavy-multiplex-aperture"
+        },
+        {
+          "id": "pd-multiplex-uvaser",
+          "name": "PD Multiplex UVASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 7,
+          "techRequirement": "pd-multiplex-aperture"
+        },
+        {
+          "id": "light-array-uvaser",
+          "name": "Light Array UVASER",
+          "ranges": [
+            {
+              "accuracy": 3,
+              "damage": 4
+            },
+            {
+              "accuracy": 1,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 4,
+          "techRequirement": "light-array-aperture"
+        },
+        {
+          "id": "heavy-array-uvaser",
+          "name": "Heavy Array UVASER",
+          "ranges": [
+            {
+              "accuracy": 2,
+              "damage": 5
+            },
+            {
+              "accuracy": 0,
+              "damage": 3
+            },
+            {
+              "accuracy": "-2",
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 50,
+          "techRequirement": "heavy-array-aperture"
+        },
+        {
+          "id": "pd-array-uvaser",
+          "name": "PD Array UVASER",
+          "ranges": [
+            {
+              "accuracy": 3,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 4
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            }
+          ],
+          "hardpoint": null,
+          "cost": 3,
+          "techRequirement": "pd-array-aperture"
+        },
+        {
+          "id": "light-beam-uvaser",
+          "name": "Light Beam UVASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": 3,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 28,
+          "techRequirement": "light-ub-aperture"
+        },
+        {
+          "id": "heavy-beam-uvaser",
+          "name": "Heavy Beam UVASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 9
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": 2,
+              "damage": 1
+            },
+            {
+              "accuracy": 0,
+              "damage": 1
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 33,
+          "techRequirement": "heavy-ub-aperture"
+        },
+        {
+          "id": "pd-beam-uvaser",
+          "name": "PD Beam UVASER",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 10,
+          "techRequirement": "pd-ub-aperture"
+        },
+        {
+          "id": "light-optical-fel",
+          "name": "Light Optical FEL",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            }
+          ],
+          "hardpoint": null,
+          "cost": 18,
+          "techRequirement": "light-optical-aperture"
+        },
+        {
+          "id": "heavy-optical-fel",
+          "name": "Heavy Optical FEL",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            }
+          ],
+          "hardpoint": null,
+          "cost": 20,
+          "techRequirement": "heavy-optical-aperture"
+        },
+        {
+          "id": "pd-optical-fel",
+          "name": "PD Optical FEL",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 1
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            }
+          ],
+          "hardpoint": null,
+          "cost": 8,
+          "techRequirement": "pd-optical-aperture"
+        },
+        {
+          "id": "light-multiplex-fel",
+          "name": "Light Multiplex FEL",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 25,
+          "techRequirement": "light-multiplex-aperture"
+        },
+        {
+          "id": "heavy-multiplex-fel",
+          "name": "Heavy Multiplex FEL",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 3,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 26,
+          "techRequirement": "heavy-multiplex-aperture"
+        },
+        {
+          "id": "pd-multiplex-fel",
+          "name": "PD Multiplex FEL",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 11,
+          "techRequirement": "pd-multiplex-aperture"
+        },
+        {
+          "id": "light-array-fel",
+          "name": "Light Array FEL",
+          "ranges": [
+            {
+              "accuracy": 4,
+              "damage": 5
+            },
+            {
+              "accuracy": 2,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 7,
+          "techRequirement": "light-array-aperture"
+        },
+        {
+          "id": "heavy-array-fel",
+          "name": "Heavy Array FEL",
+          "ranges": [
+            {
+              "accuracy": 3,
+              "damage": 6
+            },
+            {
+              "accuracy": 1,
+              "damage": 4
+            },
+            {
+              "accuracy": "-1",
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 76,
+          "techRequirement": "heavy-array-aperture"
+        },
+        {
+          "id": "pd-array-fel",
+          "name": "PD Array FEL",
+          "ranges": [
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 4
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            }
+          ],
+          "hardpoint": null,
+          "cost": 6,
+          "techRequirement": "pd-array-aperture"
+        },
+        {
+          "id": "light-beam-fel",
+          "name": "Light Beam FEL",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 8
+            },
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 39,
+          "techRequirement": "light-ub-aperture"
+        },
+        {
+          "id": "heavy-beam-fel",
+          "name": "Heavy Beam FEL",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 10
+            },
+            {
+              "accuracy": 6,
+              "damage": 7
+            },
+            {
+              "accuracy": 4,
+              "damage": 4
+            },
+            {
+              "accuracy": 2,
+              "damage": 2
+            },
+            {
+              "accuracy": 1,
+              "damage": 1
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 45,
+          "techRequirement": "heavy-ub-aperture"
+        },
+        {
+          "id": "pd-beam-fel",
+          "name": "PD Beam FEL",
+          "ranges": [
+            {
+              "accuracy": 10,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 14,
+          "techRequirement": "pd-ub-aperture"
+        },
+        {
+          "id": "light-optical-haser",
+          "name": "Light Optical HASER",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 8
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            }
+          ],
+          "hardpoint": null,
+          "cost": 26,
+          "techRequirement": "light-optical-aperture"
+        },
+        {
+          "id": "heavy-optical-haser",
+          "name": "Heavy Optical HASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 9
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            }
+          ],
+          "hardpoint": null,
+          "cost": 27,
+          "techRequirement": "heavy-optical-aperture"
+        },
+        {
+          "id": "pd-optical-haser",
+          "name": "PD Optical HASER",
+          "ranges": [
+            {
+              "accuracy": 10,
+              "damage": 5
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 1
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            }
+          ],
+          "hardpoint": null,
+          "cost": 15,
+          "techRequirement": "pd-optical-aperture"
+        },
+        {
+          "id": "light-multiplex-haser",
+          "name": "Light Multiplex HASER",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 8
+            },
+            {
+              "accuracy": 7,
+              "damage": 5
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 34,
+          "techRequirement": "light-multiplex-aperture"
+        },
+        {
+          "id": "heavy-multiplex-haser",
+          "name": "Heavy Multiplex HASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 9
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 35,
+          "techRequirement": "heavy-multiplex-aperture"
+        },
+        {
+          "id": "pd-multiplex-haser",
+          "name": "PD Multiplex HASER",
+          "ranges": [
+            {
+              "accuracy": 10,
+              "damage": 6
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 18,
+          "techRequirement": "pd-multiplex-aperture"
+        },
+        {
+          "id": "light-array-haser",
+          "name": "Light Array HASER",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 7
+            },
+            {
+              "accuracy": 2,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 12,
+          "techRequirement": "light-array-aperture"
+        },
+        {
+          "id": "heavy-array-haser",
+          "name": "Heavy Array HASER",
+          "ranges": [
+            {
+              "accuracy": 4,
+              "damage": 8
+            },
+            {
+              "accuracy": 1,
+              "damage": 5
+            },
+            {
+              "accuracy": "-1",
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 104,
+          "techRequirement": "heavy-array-aperture"
+        },
+        {
+          "id": "pd-array-haser",
+          "name": "PD Array HASER",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 4
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            }
+          ],
+          "hardpoint": null,
+          "cost": 11,
+          "techRequirement": "pd-array-aperture"
+        },
+        {
+          "id": "light-beam-haser",
+          "name": "Light Beam HASER",
+          "ranges": [
+            {
+              "accuracy": 10,
+              "damage": 10
+            },
+            {
+              "accuracy": 7,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 52,
+          "techRequirement": "light-ub-aperture"
+        },
+        {
+          "id": "heavy-beam-haser",
+          "name": "Heavy Beam HASER",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 12
+            },
+            {
+              "accuracy": 6,
+              "damage": 8
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 2,
+              "damage": 3
+            },
+            {
+              "accuracy": 1,
+              "damage": 2
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 10
+            },
+            {
+              "name": "Multiuse",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 58,
+          "techRequirement": "heavy-ub-aperture"
+        },
+        {
+          "id": "pd-beam-haser",
+          "name": "PD Beam HASER",
+          "ranges": [
+            {
+              "accuracy": 11,
+              "damage": 6
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 5
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Multiuse",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 23,
+          "techRequirement": "pd-ub-aperture"
+        }
+      ]
+    },
+    {
+      "name": "LASER/Kinetic",
+      "weapons": [
+        {
+          "id": "light-xraser",
+          "name": "Light XRASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 8
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 14,
+          "techRequirement": "light-photolytic-xraser"
+        },
+        {
+          "id": "heavy-xraser",
+          "name": "Heavy XRASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 9
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 19,
+          "techRequirement": "heavy-photolytic-xraser"
+        },
+        {
+          "id": "advanced-xraser",
+          "name": "Advanced XRASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 12
+            },
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 1
+            }
+          ],
+          "notes": [
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 62,
+          "techRequirement": "advanced-photolytic-xraser"
+        },
+        {
+          "id": "light-graser",
+          "name": "Light GRASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 10
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 23,
+          "techRequirement": "light-z-pinch-graser"
+        },
+        {
+          "id": "heavy-graser",
+          "name": "Heavy GRASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 12
+            },
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 1
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 30,
+          "techRequirement": "heavy-z-pinch-graser"
+        },
+        {
+          "id": "advanced-graser",
+          "name": "Advanced GRASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 14
+            },
+            {
+              "accuracy": 8,
+              "damage": 9
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 2
+            }
+          ],
+          "notes": [
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 85,
+          "techRequirement": "advanced-z-pinch-graser"
+        },
+        {
+          "id": "pulsar-cannon",
+          "name": "PULSAR Cannon",
+          "ranges": [
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "black hole guns"
+            },
+            {
+              "name": "perpetual drifting aoe black holes"
+            }
+          ],
+          "hardpoint": "MH2",
+          "cost": 0,
+          "techRequirement": "pulsar-cannon"
+        },
+        {
+          "id": "blitzar-cannon",
+          "name": "BLITZAR Cannon",
+          "ranges": [
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MH4",
+          "cost": 0,
+          "techRequirement": "blitzar-cannon"
+        },
+        {
+          "id": "quasar-cannon",
+          "name": "QUASAR Cannon",
+          "ranges": [
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MH6",
+          "cost": 0,
+          "techRequirement": "quasar-cannon"
+        }
+      ]
+    },
+    {
+      "name": "Kinetic",
+      "weapons": [
+        {
+          "id": "light-chemrail",
+          "name": "Light Chemrail",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 2
+            },
+            {
+              "accuracy": 5,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Charge to Strafe"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 3,
+          "techRequirement": "light-chemrail"
+        },
+        {
+          "id": "heavy-chemrail",
+          "name": "Heavy Chemrail",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 3
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Charge to Strafe"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 8,
+          "techRequirement": "heavy-chemrail"
+        },
+        {
+          "id": "versatile-chemrail",
+          "name": "Versatile Chemrail",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Volume",
+              "value": 2
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 10,
+          "techRequirement": "nuclear-chemrail"
+        },
+        {
+          "id": "pd-chemrail",
+          "name": "PD Chemrail",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "hHP",
+          "cost": 2,
+          "techRequirement": "pd-chemrail"
+        },
+        {
+          "id": "light-railgun",
+          "name": "Light Railgun",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": 3,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 14,
+          "techRequirement": "light-railgun"
+        },
+        {
+          "id": "heavy-railgun",
+          "name": "Heavy Railgun",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Durable",
+              "value": 1
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 30,
+          "techRequirement": "heavy-railgun"
+        },
+        {
+          "id": "fissile-railgun",
+          "name": "Fissile Railgun",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Durable",
+              "value": 2
+            },
+            {
+              "name": "Reinforced?"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 38,
+          "techRequirement": "medium-railgun"
+        },
+        {
+          "id": "pd-railgun",
+          "name": "PD Railgun",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Smart"
+            }
+          ],
+          "hardpoint": "hHP",
+          "cost": 2,
+          "techRequirement": "pd-railgun"
+        },
+        {
+          "id": "light-coilgun",
+          "name": "Light Coilgun",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 2
+            },
+            {
+              "accuracy": 6,
+              "damage": 2
+            },
+            {
+              "accuracy": 5,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 11,
+          "techRequirement": "light-coilgun"
+        },
+        {
+          "id": "heavy-coilgun",
+          "name": "Heavy Coilgun",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 2,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Charge to Swarm",
+              "value": 3
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 16,
+          "techRequirement": "heavy-coilgun"
+        },
+        {
+          "id": "versatile-coilgun",
+          "name": "Versatile Coilgun",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            },
+            {
+              "name": "Volume",
+              "value": 0.5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 26,
+          "techRequirement": "nuclear-coilgun"
+        },
+        {
+          "id": "pd-coilgun",
+          "name": "PD Coilgun",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 1
+            },
+            {
+              "accuracy": 2,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Smart"
+            }
+          ],
+          "hardpoint": "hHP",
+          "cost": 2,
+          "techRequirement": "pd-coilgun"
+        },
+        {
+          "id": "spinal-coilgun-01",
+          "name": "Spinal Coilgun 01",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 12
+            },
+            {
+              "accuracy": "+1",
+              "damage": 12
+            },
+            {
+              "accuracy": "+0",
+              "damage": 12
+            },
+            {
+              "accuracy": "-3",
+              "damage": 12
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 85,
+          "techRequirement": "spinal-coilgun-01"
+        },
+        {
+          "id": "spinal-coilgun-02",
+          "name": "Spinal Coilgun 02",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 9
+            },
+            {
+              "accuracy": "+1",
+              "damage": 9
+            },
+            {
+              "accuracy": "+0",
+              "damage": 9
+            },
+            {
+              "accuracy": "-3",
+              "damage": 9
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 94,
+          "techRequirement": "spinal-coilgun-02"
+        },
+        {
+          "id": "spinal-coilgun-03",
+          "name": "Spinal Coilgun 03",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 8
+            },
+            {
+              "accuracy": "+1",
+              "damage": 8
+            },
+            {
+              "accuracy": "+0",
+              "damage": 8
+            },
+            {
+              "accuracy": "-3",
+              "damage": 8
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 102,
+          "techRequirement": "spinal-coilgun-03"
+        },
+        {
+          "id": "spinal-coilgun-04",
+          "name": "Spinal Coilgun 04",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 7
+            },
+            {
+              "accuracy": "+1",
+              "damage": 7
+            },
+            {
+              "accuracy": "+0",
+              "damage": 7
+            },
+            {
+              "accuracy": "-3",
+              "damage": 7
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 111,
+          "techRequirement": "spinal-coilgun-04"
+        },
+        {
+          "id": "spinal-coilgun-05",
+          "name": "Spinal Coilgun 05",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 7
+            },
+            {
+              "accuracy": "+1",
+              "damage": 7
+            },
+            {
+              "accuracy": "+0",
+              "damage": 7
+            },
+            {
+              "accuracy": "-3",
+              "damage": 7
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Repeat",
+              "value": 4
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 119,
+          "techRequirement": "spinal-coilgun-05"
+        },
+        {
+          "id": "light-helical-driver",
+          "name": "Light Helical Driver",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 35,
+          "techRequirement": "light-helical-driver"
+        },
+        {
+          "id": "heavy-helical-driver",
+          "name": "Heavy Helical Driver",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 5
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 5
+            },
+            {
+              "accuracy": 3,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 3
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 72,
+          "techRequirement": "heavy-helical-driver"
+        },
+        {
+          "id": "nuclear-helical-driver",
+          "name": "Nuclear Helical Driver",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 4,
+              "damage": 6
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 105,
+          "techRequirement": "nuclear-helical-driver"
+        },
+        {
+          "id": "pd-helical-driver",
+          "name": "PD Helical Driver",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": 3,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Smart"
+            }
+          ],
+          "hardpoint": "hHP",
+          "cost": 5,
+          "techRequirement": "pd-helical-driver"
+        },
+        {
+          "id": "spinal-helical-driver-01",
+          "name": "Spinal Helical Driver 01",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 122,
+          "techRequirement": "spinal-helical-driver-01"
+        },
+        {
+          "id": "spinal-helical-driver-02",
+          "name": "Spinal Helical Driver 02",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 134,
+          "techRequirement": "spinal-helical-driver-02"
+        },
+        {
+          "id": "spinal-helical-driver-03",
+          "name": "Spinal Helical Driver 03",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 146,
+          "techRequirement": "spinal-helical-driver-03"
+        },
+        {
+          "id": "spinal-helical-driver-04",
+          "name": "Spinal Helical Driver 04",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 159,
+          "techRequirement": "spinal-helical-driver-04"
+        },
+        {
+          "id": "spinal-helical-driver-05",
+          "name": "Spinal Helical Driver 05",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 4
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 171,
+          "techRequirement": "spinal-helical-driver-05"
+        },
+        {
+          "id": "light-macron-gun",
+          "name": "Light Macron Gun",
+          "ranges": [
+            {
+              "accuracy": "+1",
+              "damage": 4
+            },
+            {
+              "accuracy": "+0",
+              "damage": 4
+            },
+            {
+              "accuracy": "-2",
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 30,
+          "techRequirement": "light-macron-gun"
+        },
+        {
+          "id": "heavy-macron-gun",
+          "name": "Heavy Macron Gun",
+          "ranges": [
+            {
+              "accuracy": "+1",
+              "damage": 6
+            },
+            {
+              "accuracy": "+0",
+              "damage": 6
+            },
+            {
+              "accuracy": "-2",
+              "damage": 6
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Swarm",
+              "value": 8
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 80,
+          "techRequirement": "heavy-macron-gun"
+        },
+        {
+          "id": "spinal-thermonuclear-torch-01",
+          "name": "Spinal Thermonuclear Torch 01",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 3
+            },
+            {
+              "accuracy": "+1",
+              "damage": 3
+            },
+            {
+              "accuracy": "-3",
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Terminal"
+            },
+            {
+              "name": "Swarm",
+              "value": 15
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 102,
+          "techRequirement": "spinal-thermonuclear-torch-01"
+        },
+        {
+          "id": "spinal-thermonuclear-torch-02",
+          "name": "Spinal Thermonuclear Torch 02",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 3
+            },
+            {
+              "accuracy": "+1",
+              "damage": 3
+            },
+            {
+              "accuracy": "-3",
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 2
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Terminal"
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            },
+            {
+              "name": "Swarm",
+              "value": 15
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 112,
+          "techRequirement": "spinal-thermonuclear-torch-02"
+        },
+        {
+          "id": "spinal-thermonuclear-torch-03",
+          "name": "Spinal Thermonuclear Torch 03",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 3
+            },
+            {
+              "accuracy": "+1",
+              "damage": 3
+            },
+            {
+              "accuracy": "-3",
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 3
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Terminal"
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Swarm",
+              "value": 15
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 122,
+          "techRequirement": "spinal-thermonuclear-torch-03"
+        },
+        {
+          "id": "spinal-thermonuclear-torch-04",
+          "name": "Spinal Thermonuclear Torch 04",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 3
+            },
+            {
+              "accuracy": "+1",
+              "damage": 3
+            },
+            {
+              "accuracy": "-3",
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 4
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Terminal"
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Swarm",
+              "value": 15
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 133,
+          "techRequirement": "spinal-thermonuclear-torch-04"
+        },
+        {
+          "id": "spinal-thermonuclear-torch-05",
+          "name": "Spinal Thermonuclear Torch 05",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 3
+            },
+            {
+              "accuracy": "+1",
+              "damage": 3
+            },
+            {
+              "accuracy": "-3",
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 5
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Terminal"
+            },
+            {
+              "name": "Repeat",
+              "value": 4
+            },
+            {
+              "name": "Swarm",
+              "value": 15
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 143,
+          "techRequirement": "spinal-thermonuclear-torch-05"
+        },
+        {
+          "id": "disruptor",
+          "name": "Disruptor",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 10
+            },
+            {
+              "accuracy": 7,
+              "damage": 10
+            },
+            {
+              "accuracy": 5,
+              "damage": 10
+            },
+            {
+              "accuracy": 3,
+              "damage": 10
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            },
+            {
+              "name": "Fragile"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 76,
+          "techRequirement": "disruptor"
+        },
+        {
+          "id": "light-field-effect-driver",
+          "name": "Light Field Effect Driver",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 2
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 55,
+          "techRequirement": "light-field-effect-gun"
+        },
+        {
+          "id": "heavy-field-effect-driver",
+          "name": "Heavy Field Effect Driver",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 7
+            },
+            {
+              "accuracy": 5,
+              "damage": 7
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Durable",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Volume",
+              "value": 2
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 101,
+          "techRequirement": "heavy-field-effect-gun"
+        },
+        {
+          "id": "spinal-wave-motion-cannon-01",
+          "name": "Spinal Wave Motion Cannon 01",
+          "ranges": [
+            {
+              "accuracy": "-1",
+              "damage": 3
+            },
+            {
+              "accuracy": "+0",
+              "damage": 5
+            },
+            {
+              "accuracy": "+1",
+              "damage": 10
+            },
+            {
+              "accuracy": "+1",
+              "damage": 15
+            },
+            {
+              "accuracy": "+1",
+              "damage": 22
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 284,
+          "techRequirement": "spinal-wave-motion-cannon-01"
+        },
+        {
+          "id": "spinal-wave-motion-cannon-02",
+          "name": "Spinal Wave Motion Cannon 02",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 3
+            },
+            {
+              "accuracy": "+0",
+              "damage": 5
+            },
+            {
+              "accuracy": "+1",
+              "damage": 10
+            },
+            {
+              "accuracy": "+1",
+              "damage": 16
+            },
+            {
+              "accuracy": "+1",
+              "damage": 23
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 2
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Swarm",
+              "value": 4
+            },
+            {
+              "name": "Charge hyperdrive to use"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 312,
+          "techRequirement": "spinal-wave-motion-cannon-02"
+        },
+        {
+          "id": "spinal-wave-motion-cannon-03",
+          "name": "Spinal Wave Motion Cannon 03",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 3
+            },
+            {
+              "accuracy": "+1",
+              "damage": 6
+            },
+            {
+              "accuracy": "+1",
+              "damage": 11
+            },
+            {
+              "accuracy": "+1",
+              "damage": 17
+            },
+            {
+              "accuracy": "+1",
+              "damage": 24
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 3
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Swarm",
+              "value": 4
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 341,
+          "techRequirement": "spinal-wave-motion-cannon-03"
+        },
+        {
+          "id": "spinal-wave-motion-cannon-04",
+          "name": "Spinal Wave Motion Cannon 04",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 4
+            },
+            {
+              "accuracy": "+1",
+              "damage": 6
+            },
+            {
+              "accuracy": "+2",
+              "damage": 11
+            },
+            {
+              "accuracy": "+2",
+              "damage": 18
+            },
+            {
+              "accuracy": "+2",
+              "damage": 25
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 4
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 369,
+          "techRequirement": "spinal-wave-motion-cannon-04"
+        },
+        {
+          "id": "spinal-wave-motion-cannon-05",
+          "name": "Spinal Wave Motion Cannon 05",
+          "ranges": [
+            {
+              "accuracy": "+0",
+              "damage": 4
+            },
+            {
+              "accuracy": "+1",
+              "damage": 7
+            },
+            {
+              "accuracy": "+2",
+              "damage": 12
+            },
+            {
+              "accuracy": "+2",
+              "damage": 19
+            },
+            {
+              "accuracy": "+2",
+              "damage": 26
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 5
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Swarm",
+              "value": 5
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 398,
+          "techRequirement": "spinal-wave-motion-cannon-05"
+        },
+        {
+          "id": "light-vortex-cannon",
+          "name": "Light Vortex Cannon",
+          "ranges": [
+            {
+              "accuracy": "N/A",
+              "damage": "8d6"
+            },
+            {
+              "accuracy": "N/A",
+              "damage": "6-4d6"
+            },
+            {
+              "accuracy": "N/A",
+              "damage": "2d6"
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 6
+            },
+            {
+              "name": "Area"
+            },
+            {
+              "name": "Fragile"
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MH2",
+          "cost": 0,
+          "techRequirement": "light-vortex-cannon"
+        },
+        {
+          "id": "medium-vortex-cannon",
+          "name": "Medium Vortex Cannon",
+          "ranges": [
+            {
+              "accuracy": "N/A",
+              "damage": "10d6"
+            },
+            {
+              "accuracy": "N/A",
+              "damage": "8-6d6"
+            },
+            {
+              "accuracy": "N/A",
+              "damage": "4-2d6"
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 8
+            },
+            {
+              "name": "Area"
+            },
+            {
+              "name": "Fragile"
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MH4",
+          "cost": 0,
+          "techRequirement": "medium-vortex-cannon"
+        },
+        {
+          "id": "heavy-vortex-cannon",
+          "name": "Heavy Vortex Cannon",
+          "ranges": [
+            {
+              "accuracy": "N/A",
+              "damage": "12d6"
+            },
+            {
+              "accuracy": "N/A",
+              "damage": "10-8d6"
+            },
+            {
+              "accuracy": "N/A",
+              "damage": "6-2d6"
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 10
+            },
+            {
+              "name": "Area"
+            },
+            {
+              "name": "Fragile"
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MH6",
+          "cost": 0,
+          "techRequirement": "heavy-vortex-cannon"
+        }
+      ]
+    },
+    {
+      "name": "Kintetic/Particle",
+      "weapons": [
+        {
+          "id": "light-plasma-cannon",
+          "name": "Light Plasma Cannon",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Durable",
+              "value": 3
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Charge to Blast"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 17,
+          "techRequirement": "light-plasma-cannon"
+        },
+        {
+          "id": "heavy-plasma-cannon",
+          "name": "Heavy Plasma Cannon",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 4
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 2
+            },
+            {
+              "name": "Durable",
+              "value": 4
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Charge to Blast"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 34,
+          "techRequirement": "heavy-plasma-cannon"
+        },
+        {
+          "id": "spinal-plasma-cannon-01",
+          "name": "Spinal Plasma Cannon 01",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 3,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 2
+            },
+            {
+              "name": "Durable",
+              "value": 6
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 51,
+          "techRequirement": "spinal-plasma-cannon-01"
+        },
+        {
+          "id": "spinal-plasma-cannon-02",
+          "name": "Spinal Plasma Cannon 02",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 3,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 2
+            },
+            {
+              "name": "Durable",
+              "value": 6
+            },
+            {
+              "name": "Repeat",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 56,
+          "techRequirement": "spinal-plasma-cannon-02"
+        },
+        {
+          "id": "spinal-plasma-cannon-03",
+          "name": "Spinal Plasma Cannon 03",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 3,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 2
+            },
+            {
+              "name": "Durable",
+              "value": 6
+            },
+            {
+              "name": "Repeat",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 61,
+          "techRequirement": "spinal-plasma-cannon-03"
+        },
+        {
+          "id": "spinal-plasma-cannon-04",
+          "name": "Spinal Plasma Cannon 04",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 3,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 2
+            },
+            {
+              "name": "Durable",
+              "value": 6
+            },
+            {
+              "name": "Repeat",
+              "value": 4
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 66,
+          "techRequirement": "spinal-plasma-cannon-04"
+        },
+        {
+          "id": "spinal-plasma-cannon-05",
+          "name": "Spinal Plasma Cannon 05",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 3,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 2
+            },
+            {
+              "name": "Durable",
+              "value": 6
+            },
+            {
+              "name": "Repeat",
+              "value": 5
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 71,
+          "techRequirement": "spinal-plasma-cannon-05"
+        },
+        {
+          "id": "magnetic-ring",
+          "name": "Magnetic Ring",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 8
+            },
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 7
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 4,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Durable",
+              "value": 5
+            },
+            {
+              "name": "Salvo",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MH2",
+          "cost": 153,
+          "techRequirement": "magnetic-ring"
+        },
+        {
+          "id": "pd-magnetic-ring",
+          "name": "PD Magnetic Ring",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": 6,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Durable",
+              "value": 2
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Smart"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 11,
+          "techRequirement": "pd-magnetic-ring"
+        },
+        {
+          "id": "spinal-corona-cannon-01",
+          "name": "Spinal Corona Cannon 01",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 5
+            },
+            {
+              "accuracy": "+2",
+              "damage": 5
+            },
+            {
+              "accuracy": "+1",
+              "damage": 5
+            },
+            {
+              "accuracy": "+0",
+              "damage": 4
+            },
+            {
+              "accuracy": "-1",
+              "damage": 4
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Swarm",
+              "value": 10
+            },
+            {
+              "name": "Fragile"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 553,
+          "techRequirement": "spinal-corona-cannon-01"
+        },
+        {
+          "id": "spinal-corona-cannon-02",
+          "name": "Spinal Corona Cannon 02",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 5
+            },
+            {
+              "accuracy": "+2",
+              "damage": 5
+            },
+            {
+              "accuracy": "+1",
+              "damage": 5
+            },
+            {
+              "accuracy": "+0",
+              "damage": 4
+            },
+            {
+              "accuracy": "-1",
+              "damage": 4
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 2
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Swarm",
+              "value": 10
+            },
+            {
+              "name": "Fragile"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 608,
+          "techRequirement": "spinal-corona-cannon-02"
+        },
+        {
+          "id": "spinal-corona-cannon-03",
+          "name": "Spinal Corona Cannon 03",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 6
+            },
+            {
+              "accuracy": "+2",
+              "damage": 6
+            },
+            {
+              "accuracy": "+1",
+              "damage": 6
+            },
+            {
+              "accuracy": "+0",
+              "damage": 5
+            },
+            {
+              "accuracy": "-1",
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 3
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Salvo",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Swarm",
+              "value": 10
+            },
+            {
+              "name": "Fragile"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 664,
+          "techRequirement": "spinal-corona-cannon-03"
+        },
+        {
+          "id": "spinal-corona-cannon-04",
+          "name": "Spinal Corona Cannon 04",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 6
+            },
+            {
+              "accuracy": "+2",
+              "damage": 6
+            },
+            {
+              "accuracy": "+1",
+              "damage": 6
+            },
+            {
+              "accuracy": "+0",
+              "damage": 5
+            },
+            {
+              "accuracy": "-1",
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 4
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Salvo",
+              "value": 4
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Swarm",
+              "value": 10
+            },
+            {
+              "name": "Fragile"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 719,
+          "techRequirement": "spinal-corona-cannon-04"
+        },
+        {
+          "id": "spinal-corona-cannon-05",
+          "name": "Spinal Corona Cannon 05",
+          "ranges": [
+            {
+              "accuracy": "+2",
+              "damage": 7
+            },
+            {
+              "accuracy": "+2",
+              "damage": 7
+            },
+            {
+              "accuracy": "+1",
+              "damage": 7
+            },
+            {
+              "accuracy": "+0",
+              "damage": 6
+            },
+            {
+              "accuracy": "-1",
+              "damage": 6
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 5
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Salvo",
+              "value": 5
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Swarm",
+              "value": 10
+            },
+            {
+              "name": "Fragile"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 774,
+          "techRequirement": "spinal-corona-cannon-05"
+        }
+      ]
+    },
+    {
+      "name": "Particle",
+      "weapons": [
+        {
+          "id": "electron-gun",
+          "name": "Electron Gun",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": 4,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [],
+          "hardpoint": "UHP",
+          "cost": 6,
+          "techRequirement": "electron-gun"
+        },
+        {
+          "id": "electron-repeater",
+          "name": "Electron Repeater",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": 4,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 6,
+          "techRequirement": "electron-repeater"
+        },
+        {
+          "id": "torac",
+          "name": "TORAC",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": 5,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge to Strafe"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 8,
+          "techRequirement": "torac"
+        },
+        {
+          "id": "pd-torac",
+          "name": "PD TORAC",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 3,
+          "techRequirement": "pd-torac"
+        },
+        {
+          "id": "linac",
+          "name": "LINAC",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge"
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Safe"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 12,
+          "techRequirement": "linac"
+        },
+        {
+          "id": "neutron-beam",
+          "name": "Neutron Beam",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 8
+            },
+            {
+              "accuracy": 5,
+              "damage": 6
+            },
+            {
+              "accuracy": 2,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Beam"
+            },
+            {
+              "name": "Cascade"
+            },
+            {
+              "name": "One-shot"
+            },
+            {
+              "name": "Overload"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 23,
+          "techRequirement": "neutron-beam"
+        },
+        {
+          "id": "h-torac",
+          "name": "H TORAC",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 3
+            },
+            {
+              "accuracy": 7,
+              "damage": 3
+            },
+            {
+              "accuracy": 6,
+              "damage": 2
+            },
+            {
+              "accuracy": 6,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge"
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            },
+            {
+              "name": "Cascade"
+            },
+            {
+              "name": "Overload"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 12,
+          "techRequirement": "h-torac"
+        },
+        {
+          "id": "tur-linac",
+          "name": "TUR LINAC",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 5
+            },
+            {
+              "accuracy": 3,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge"
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Safe"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 29,
+          "techRequirement": "spinal-tur-linac-01"
+        },
+        {
+          "id": "pd-tur-linac",
+          "name": "PD TUR LINAC",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Terminal"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 4,
+          "techRequirement": "pd-torac"
+        },
+        {
+          "id": "pulse-accelerator",
+          "name": "Pulse Accelerator",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 14
+            },
+            {
+              "accuracy": 6,
+              "damage": 12
+            },
+            {
+              "accuracy": 5,
+              "damage": 10
+            },
+            {
+              "accuracy": 5,
+              "damage": 7
+            },
+            {
+              "accuracy": 4,
+              "damage": 5
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Cascade"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 51,
+          "techRequirement": "linac"
+        },
+        {
+          "id": "muon-gun",
+          "name": "Muon Gun",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 8
+            },
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Beam"
+            },
+            {
+              "name": "Cascade"
+            },
+            {
+              "name": "Overload"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 34,
+          "techRequirement": "muon-projector"
+        },
+        {
+          "id": "spinal-hadron-cannon-01",
+          "name": "Spinal Hadron Cannon 01",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 10
+            },
+            {
+              "accuracy": 6,
+              "damage": 10
+            },
+            {
+              "accuracy": 5,
+              "damage": 9
+            },
+            {
+              "accuracy": 4,
+              "damage": 8
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Salvo",
+              "value": 1
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 41,
+          "techRequirement": "hadron-cannon"
+        },
+        {
+          "id": "spinal-hadron-cannon-02",
+          "name": "Spinal Hadron Cannon 02",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 10
+            },
+            {
+              "accuracy": 6,
+              "damage": 10
+            },
+            {
+              "accuracy": 5,
+              "damage": 9
+            },
+            {
+              "accuracy": 4,
+              "damage": 8
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 2
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 45,
+          "techRequirement": "hadron-cannon"
+        },
+        {
+          "id": "spinal-hadron-cannon-03",
+          "name": "Spinal Hadron Cannon 03",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 10
+            },
+            {
+              "accuracy": 6,
+              "damage": 10
+            },
+            {
+              "accuracy": 5,
+              "damage": 9
+            },
+            {
+              "accuracy": 4,
+              "damage": 8
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 3
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Salvo",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 49,
+          "techRequirement": "hadron-cannon"
+        },
+        {
+          "id": "spinal-hadron-cannon-04",
+          "name": "Spinal Hadron Cannon 04",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 10
+            },
+            {
+              "accuracy": 6,
+              "damage": 10
+            },
+            {
+              "accuracy": 5,
+              "damage": 9
+            },
+            {
+              "accuracy": 4,
+              "damage": 8
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 4
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Salvo",
+              "value": 4
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 53,
+          "techRequirement": "hadron-cannon"
+        },
+        {
+          "id": "spinal-hadron-cannon-05",
+          "name": "Spinal Hadron Cannon 05",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 10
+            },
+            {
+              "accuracy": 6,
+              "damage": 10
+            },
+            {
+              "accuracy": 5,
+              "damage": 9
+            },
+            {
+              "accuracy": 4,
+              "damage": 8
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 5
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Salvo",
+              "value": 5
+            },
+            {
+              "name": "Blast"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 57,
+          "techRequirement": "hadron-cannon"
+        },
+        {
+          "id": "graviton-cannon",
+          "name": "Graviton Cannon",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 10,
+          "techRequirement": "spinal-graviton-beam-01"
+        },
+        {
+          "id": "pd-graviton-cannon",
+          "name": "PD Graviton Cannon",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 2,
+          "techRequirement": "spinal-graviton-beam-01"
+        },
+        {
+          "id": "spinal-graviton-projector-01",
+          "name": "Spinal Graviton Projector 01",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": 3,
+              "damage": 2
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 1
+            },
+            {
+              "name": "See Description"
+            },
+            {
+              "name": "Steps down Blast/Strafe/None for None/Rotate/Push up to an number of hexes/hexfaces equal to hits - maximum equals charge. Movement is in the direction of attack. displace as if thrusting. Recirculating is a cool word from chips' page for puling"
+            },
+            {
+              "name": "could use"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 20,
+          "techRequirement": "spinal-graviton-beam-01"
+        },
+        {
+          "id": "spinal-graviton-projector-02",
+          "name": "Spinal Graviton Projector 02",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 4
+            },
+            {
+              "accuracy": 3,
+              "damage": 3
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 2
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 25,
+          "techRequirement": "spinal-graviton-beam-02"
+        },
+        {
+          "id": "spinal-graviton-projector-03",
+          "name": "Spinal Graviton Projector 03",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 7
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 3
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 31,
+          "techRequirement": "spinal-graviton-beam-03"
+        },
+        {
+          "id": "spinal-graviton-projector-04",
+          "name": "Spinal Graviton Projector 04",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 8
+            },
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 6
+            },
+            {
+              "accuracy": 5,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 4
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 4
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 37,
+          "techRequirement": "spinal-graviton-beam-04"
+        },
+        {
+          "id": "spinal-graviton-projector-05",
+          "name": "Spinal Graviton Projector 05",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 8
+            },
+            {
+              "accuracy": 8,
+              "damage": 7
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 5,
+              "damage": 4
+            }
+          ],
+          "notes": [
+            {
+              "name": "Charge",
+              "value": 5
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 44,
+          "techRequirement": "spinal-graviton-beam-05"
+        }
+      ]
+    },
+    {
+      "name": "Particle/LASER",
+      "weapons": [
+        {
+          "id": "particle-collimator",
+          "name": "Particle Collimator",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "PHP",
+          "cost": 17,
+          "techRequirement": "laser-coupled-particle-beam"
+        },
+        {
+          "id": "pd-particle-collimator",
+          "name": "PD Particle Collimator",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": 5,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "UHP",
+          "cost": 3,
+          "techRequirement": "laser-coupled-particle-pd"
+        },
+        {
+          "id": "revlac-collimator",
+          "name": "REVLAC Collimator",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 8,
+              "damage": 7
+            },
+            {
+              "accuracy": 7,
+              "damage": 9
+            },
+            {
+              "accuracy": 6,
+              "damage": 12
+            },
+            {
+              "accuracy": 5,
+              "damage": 16
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 12
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "MH2",
+          "cost": 62,
+          "techRequirement": "relativistic-particle-beam"
+        },
+        {
+          "id": "pd-revlac-collimator",
+          "name": "PD REVLAC Collimator",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 1
+            },
+            {
+              "accuracy": 7,
+              "damage": 1
+            },
+            {
+              "accuracy": 5,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 8
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": "SHP",
+          "cost": 4,
+          "techRequirement": "pd-relativistic-particle-beam"
+        },
+        {
+          "id": "particle-maser",
+          "name": "Particle MASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": 3,
+              "damage": 0
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 12,
+          "techRequirement": "laser-coupled-particle-beam"
+        },
+        {
+          "id": "pd-particle-maser",
+          "name": "PD Particle MASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": 5,
+              "damage": 0
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 2,
+          "techRequirement": "laser-coupled-particle-pd"
+        },
+        {
+          "id": "revlac-maser",
+          "name": "REVLAC MASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 8,
+              "damage": 6
+            },
+            {
+              "accuracy": 7,
+              "damage": 8
+            },
+            {
+              "accuracy": 5,
+              "damage": 10
+            },
+            {
+              "accuracy": 4,
+              "damage": 14
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 12
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 47,
+          "techRequirement": "relativistic-particle-beam"
+        },
+        {
+          "id": "pd-revlac-maser",
+          "name": "PD REVLAC MASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 1
+            },
+            {
+              "accuracy": 7,
+              "damage": 0
+            },
+            {
+              "accuracy": 5,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 8
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 2,
+          "techRequirement": "pd-relativistic-particle-beam"
+        },
+        {
+          "id": "particle-uvaser",
+          "name": "Particle UVASER",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 6,
+              "damage": 4
+            },
+            {
+              "accuracy": 4,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 16,
+          "techRequirement": "laser-coupled-particle-beam"
+        },
+        {
+          "id": "pd-particle-uvaser",
+          "name": "PD Particle UVASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 3
+            },
+            {
+              "accuracy": 5,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 4,
+          "techRequirement": "laser-coupled-particle-pd"
+        },
+        {
+          "id": "revlac-uvaser",
+          "name": "REVLAC UVASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 7
+            },
+            {
+              "accuracy": 8,
+              "damage": 7
+            },
+            {
+              "accuracy": 7,
+              "damage": 9
+            },
+            {
+              "accuracy": 6,
+              "damage": 11
+            },
+            {
+              "accuracy": 4,
+              "damage": 15
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 12
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 54,
+          "techRequirement": "relativistic-particle-beam"
+        },
+        {
+          "id": "pd-revlac-uvaser",
+          "name": "PD REVLAC UVASER",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": 7,
+              "damage": 1
+            },
+            {
+              "accuracy": 5,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 8
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 5,
+          "techRequirement": "pd-relativistic-particle-beam"
+        },
+        {
+          "id": "particle-fel",
+          "name": "Particle FEL",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 8
+            },
+            {
+              "accuracy": 7,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 22,
+          "techRequirement": "laser-coupled-particle-beam"
+        },
+        {
+          "id": "pd-particle-fel",
+          "name": "PD Particle FEL",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 4
+            },
+            {
+              "accuracy": 6,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 6,
+          "techRequirement": "laser-coupled-particle-pd"
+        },
+        {
+          "id": "revlac-fel",
+          "name": "REVLAC FEL",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 8
+            },
+            {
+              "accuracy": 9,
+              "damage": 8
+            },
+            {
+              "accuracy": 7,
+              "damage": 10
+            },
+            {
+              "accuracy": 6,
+              "damage": 12
+            },
+            {
+              "accuracy": 5,
+              "damage": 15
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 12
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 64,
+          "techRequirement": "relativistic-particle-beam"
+        },
+        {
+          "id": "pd-revlac-fel",
+          "name": "PD REVLAC FEL",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 3
+            },
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 8
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 8,
+          "techRequirement": "pd-relativistic-particle-beam"
+        },
+        {
+          "id": "particle-haser",
+          "name": "Particle HASER",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 10
+            },
+            {
+              "accuracy": 7,
+              "damage": 7
+            },
+            {
+              "accuracy": 7,
+              "damage": 5
+            },
+            {
+              "accuracy": 4,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 3
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 28,
+          "techRequirement": "laser-coupled-particle-beam"
+        },
+        {
+          "id": "pd-particle-haser",
+          "name": "PD Particle HASER",
+          "ranges": [
+            {
+              "accuracy": 10,
+              "damage": 6
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 2
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Charge to Strafe"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 9,
+          "techRequirement": "laser-coupled-particle-pd"
+        },
+        {
+          "id": "revlac-haser",
+          "name": "REVLAC HASER",
+          "ranges": [
+            {
+              "accuracy": 10,
+              "damage": 10
+            },
+            {
+              "accuracy": 9,
+              "damage": 9
+            },
+            {
+              "accuracy": 8,
+              "damage": 10
+            },
+            {
+              "accuracy": 6,
+              "damage": 13
+            },
+            {
+              "accuracy": 5,
+              "damage": 16
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 12
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 72,
+          "techRequirement": "relativistic-particle-beam"
+        },
+        {
+          "id": "pd-revlac-haser",
+          "name": "PD REVLAC HASER",
+          "ranges": [
+            {
+              "accuracy": 10,
+              "damage": 5
+            },
+            {
+              "accuracy": 8,
+              "damage": 3
+            },
+            {
+              "accuracy": 6,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 8
+            },
+            {
+              "name": "Antimissile"
+            },
+            {
+              "name": "Repeat",
+              "value": 1
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Beam"
+            }
+          ],
+          "hardpoint": null,
+          "cost": 12,
+          "techRequirement": "pd-relativistic-particle-beam"
+        },
+        {
+          "id": "false-vacuum-projector",
+          "name": "False Vacuum Projector",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": "N/A"
+            },
+            {
+              "accuracy": 8,
+              "damage": "N/A"
+            },
+            {
+              "accuracy": 7,
+              "damage": "N/A"
+            },
+            {
+              "accuracy": 7,
+              "damage": "N/A"
+            },
+            {
+              "accuracy": 7,
+              "damage": "N/A"
+            }
+          ],
+          "notes": [
+            {
+              "name": "Energy",
+              "value": 20
+            },
+            {
+              "name": "Hybrid"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Safe"
+            },
+            {
+              "name": "Fragile"
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "MHP",
+          "cost": 408,
+          "techRequirement": "spinal-false-vacuum-projector-01"
+        }
+      ]
+    },
+    {
+      "name": "Troops",
+      "weapons": [
+        {
+          "id": "light-weapons",
+          "name": "Light Weapons",
+          "ranges": [
+            {
+              "accuracy": 6,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antipersonnel"
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": 2,
+          "techRequirement": "troop-light-weapons"
+        },
+        {
+          "id": "heavy-weapons",
+          "name": "Heavy Weapons",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antipersonnel"
+            },
+            {
+              "name": "Charge to Strafe"
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": 1,
+          "techRequirement": "troop-heavy-weapons"
+        },
+        {
+          "id": "anti-tank-weapons",
+          "name": "Anti-Tank Weapons",
+          "ranges": [
+            {
+              "accuracy": 7,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antipersonnel"
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Strafe"
+            },
+            {
+              "name": "Smart"
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": 2,
+          "techRequirement": "troop-anti-tank-weapons"
+        },
+        {
+          "id": "nuclear-weapons",
+          "name": "Nuclear Weapons",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antipersonnel"
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Salvo",
+              "value": 3
+            },
+            {
+              "name": "Blast"
+            },
+            {
+              "name": "Smart"
+            },
+            {
+              "name": "One-shot"
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": 5,
+          "techRequirement": "troop-nuclear-weapons"
+        },
+        {
+          "id": "demolition-weapons",
+          "name": "Demolition Weapons",
+          "ranges": [
+            {
+              "accuracy": 5,
+              "damage": 3
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "One-shot"
+            },
+            {
+              "name": "See Description"
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": null,
+          "techRequirement": "troop-heavy-weapons"
+        },
+        {
+          "id": "coil-weapons",
+          "name": "Coil Weapons",
+          "ranges": [
+            {
+              "accuracy": "+1",
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antipersonnel"
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Steer",
+              "value": 1
+            },
+            {
+              "name": "Swarm",
+              "value": 3
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": 11,
+          "techRequirement": "troop-coilgun"
+        },
+        {
+          "id": "particle-weapons",
+          "name": "Particle Weapons",
+          "ranges": [
+            {
+              "accuracy": 9,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antipersonnel"
+            },
+            {
+              "name": "Charge to Blast"
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": 2,
+          "techRequirement": "troop-torac"
+        },
+        {
+          "id": "laser-weapons",
+          "name": "LASER Weapons",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 1
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antipersonnel"
+            },
+            {
+              "name": "Salvo",
+              "value": 2
+            },
+            {
+              "name": "Strafe"
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": 3,
+          "techRequirement": "troop-laser-weapons"
+        },
+        {
+          "id": "plasma-weapons",
+          "name": "Plasma Weapons",
+          "ranges": [
+            {
+              "accuracy": 8,
+              "damage": 2
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            },
+            {
+              "accuracy": null,
+              "damage": null
+            }
+          ],
+          "notes": [
+            {
+              "name": "Antipersonnel"
+            },
+            {
+              "name": "Projectile"
+            },
+            {
+              "name": "Seek"
+            },
+            {
+              "name": "Durable",
+              "value": 2
+            },
+            {
+              "name": "Charge to Blast"
+            },
+            {
+              "name": "Smart"
+            }
+          ],
+          "hardpoint": "THP",
+          "cost": 2,
+          "techRequirement": "troop-plasma"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1537 @@
+{
+  "intelligence-models": {
+    "name": "Intelligence Models",
+    "category": "Information Technology",
+    "abbreviation": "IT0",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Basic artificial intelligence and data processing systems"
+  },
+  "quantum-integration": {
+    "name": "Quantum Integration",
+    "category": "Information Technology",
+    "abbreviation": "IT1",
+    "cost": 30,
+    "prerequisites": [
+      "intelligence-models"
+    ],
+    "description": "Integration of quantum computing with classical systems"
+  },
+  "living-network": {
+    "name": "Living Network",
+    "category": "Information Technology",
+    "abbreviation": "IT2",
+    "cost": 60,
+    "prerequisites": [
+      "quantum-integration"
+    ],
+    "description": "Self-adapting and evolving network systems"
+  },
+  "oracle-machines": {
+    "name": "Oracle Machines",
+    "category": "Information Technology",
+    "abbreviation": "IT3",
+    "cost": 90,
+    "prerequisites": [
+      "living-network"
+    ],
+    "description": "Predictive computational systems with near-perfect accuracy"
+  },
+  "conformal-field-computing": {
+    "name": "Conformal Field Computing",
+    "category": "Information Technology",
+    "abbreviation": "IT4",
+    "cost": 120,
+    "prerequisites": [
+      "oracle-machines"
+    ],
+    "description": "Computing systems based on conformal field theory"
+  },
+  "relativistic-simulation": {
+    "name": "Relativistic Simulation",
+    "category": "Information Technology",
+    "abbreviation": "IT5",
+    "cost": 150,
+    "prerequisites": [
+      "conformal-field-computing"
+    ],
+    "description": "Simulation systems accounting for relativistic effects"
+  },
+  "chemomechanical": {
+    "name": "Chemomechanical",
+    "category": "Energy Generation",
+    "abbreviation": "EG0",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Basic chemical and mechanical energy generation"
+  },
+  "fission": {
+    "name": "Fission",
+    "category": "Energy Generation",
+    "abbreviation": "EG1",
+    "cost": 30,
+    "prerequisites": [
+      "chemomechanical"
+    ],
+    "description": "Nuclear fission power generation"
+  },
+  "fusion": {
+    "name": "Fusion",
+    "category": "Energy Generation",
+    "abbreviation": "EG2",
+    "cost": 60,
+    "prerequisites": [
+      "fission"
+    ],
+    "description": "Controlled nuclear fusion power systems"
+  },
+  "antimatter": {
+    "name": "Antimatter",
+    "category": "Energy Generation",
+    "abbreviation": "EG3",
+    "cost": 90,
+    "prerequisites": [
+      "fusion"
+    ],
+    "description": "Antimatter containment and power generation"
+  },
+  "singularity": {
+    "name": "Singularity",
+    "category": "Energy Generation",
+    "abbreviation": "EG4",
+    "cost": 120,
+    "prerequisites": [
+      "antimatter"
+    ],
+    "description": "Controlled singularity power extraction"
+  },
+  "zero-point-vacuum": {
+    "name": "Zero Point Vacuum",
+    "category": "Energy Generation",
+    "abbreviation": "EG5",
+    "cost": 150,
+    "prerequisites": [
+      "singularity"
+    ],
+    "description": "Zero-point energy harvesting from quantum vacuum"
+  },
+  "automation": {
+    "name": "Automation",
+    "category": "Materials Science",
+    "abbreviation": "MS0",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Basic industrial automation and manufacturing"
+  },
+  "microgravity-engineering": {
+    "name": "Microgravity Engineering",
+    "category": "Materials Science",
+    "abbreviation": "MS1",
+    "cost": 30,
+    "prerequisites": [
+      "automation"
+    ],
+    "description": "Engineering and manufacturing in microgravity environments"
+  },
+  "atomic-manufacturing": {
+    "name": "Atomic Manufacturing",
+    "category": "Materials Science",
+    "abbreviation": "MS2",
+    "cost": 60,
+    "prerequisites": [
+      "microgravity-engineering"
+    ],
+    "description": "Precision manufacturing at the atomic level"
+  },
+  "metamaterials": {
+    "name": "Metamaterials",
+    "category": "Materials Science",
+    "abbreviation": "MS3",
+    "cost": 90,
+    "prerequisites": [
+      "atomic-manufacturing"
+    ],
+    "description": "Artificially structured materials with novel properties"
+  },
+  "chronal-condensates": {
+    "name": "Chronal Condensates",
+    "category": "Materials Science",
+    "abbreviation": "MS4",
+    "cost": 120,
+    "prerequisites": [
+      "metamaterials"
+    ],
+    "description": "Time-affecting material states and condensates"
+  },
+  "boson-mastery": {
+    "name": "Boson Mastery",
+    "category": "Materials Science",
+    "abbreviation": "MS5",
+    "cost": 150,
+    "prerequisites": [
+      "chronal-condensates"
+    ],
+    "description": "Complete control over bosonic matter states"
+  },
+  "heavy-cannon": {
+    "name": "Heavy Cannon",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Heavy kinetic projectile weapons"
+  },
+  "light-cannon": {
+    "name": "Light Cannon",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Light kinetic projectile weapons"
+  },
+  "nuclear-cannon": {
+    "name": "Nuclear Cannon",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-cannon"
+    ],
+    "description": "Nuclear-enhanced kinetic weapons"
+  },
+  "pd-gun-pack": {
+    "name": "PD Gun Pack",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Point defense gun systems"
+  },
+  "pd-chaingun": {
+    "name": "PD Chaingun",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Rapid-fire point defense systems"
+  },
+  "troop-light-weapons": {
+    "name": "Troop Light Weapons",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Personal light weapons for troops"
+  },
+  "troop-heavy-weapons": {
+    "name": "Troop Heavy Weapons",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Heavy weapons for infantry units"
+  },
+  "troop-anti-tank-weapons": {
+    "name": "Troop Anti-Tank Weapons",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Anti-armor weapons for ground forces"
+  },
+  "troop-nuclear-weapons": {
+    "name": "Troop Nuclear Weapons",
+    "category": "Gun",
+    "cost": 0,
+    "prerequisites": [],
+    "description": "Tactical nuclear weapons for troops"
+  },
+  "heavy-chemrail": {
+    "name": "Heavy Chemrail",
+    "category": "Kinetic - Chemrail",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-cannon"
+    ],
+    "description": "Heavy chemical-assisted railgun systems"
+  },
+  "nuclear-chemrail": {
+    "name": "Nuclear Chemrail",
+    "category": "Kinetic - Chemrail",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-chemrail"
+    ],
+    "description": "Nuclear-enhanced chemrail technology"
+  },
+  "light-chemrail": {
+    "name": "Light Chemrail",
+    "category": "Kinetic - Chemrail",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-chemrail"
+    ],
+    "description": "Light chemical-assisted railgun systems"
+  },
+  "pd-chemrail": {
+    "name": "PD Chemrail",
+    "category": "Kinetic - Chemrail",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-chemrail"
+    ],
+    "description": "Point defense chemrail systems"
+  },
+  "heavy-railgun": {
+    "name": "Heavy Railgun",
+    "category": "Kinetic - Railgun",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-chemrail"
+    ],
+    "description": "Heavy electromagnetic railgun systems"
+  },
+  "medium-railgun": {
+    "name": "Medium Railgun",
+    "category": "Kinetic - Railgun",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-railgun"
+    ],
+    "description": "Medium electromagnetic railgun systems"
+  },
+  "light-railgun": {
+    "name": "Light Railgun",
+    "category": "Kinetic - Railgun",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-railgun"
+    ],
+    "description": "Light electromagnetic railgun systems"
+  },
+  "pd-railgun": {
+    "name": "PD Railgun",
+    "category": "Kinetic - Railgun",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-railgun"
+    ],
+    "description": "Point defense railgun systems"
+  },
+  "heavy-coilgun": {
+    "name": "Heavy Coilgun",
+    "category": "Kinetic - Coilgun",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-chemrail"
+    ],
+    "description": "Heavy magnetic coilgun systems"
+  },
+  "nuclear-coilgun": {
+    "name": "Nuclear Coilgun",
+    "category": "Kinetic - Coilgun",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-coilgun"
+    ],
+    "description": "Nuclear-enhanced coilgun technology"
+  },
+  "light-coilgun": {
+    "name": "Light Coilgun",
+    "category": "Kinetic - Coilgun",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-coilgun"
+    ],
+    "description": "Light magnetic coilgun systems"
+  },
+  "pd-coilgun": {
+    "name": "PD Coilgun",
+    "category": "Kinetic - Coilgun",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-coilgun"
+    ],
+    "description": "Point defense coilgun systems"
+  },
+  "spinal-coilgun-01": {
+    "name": "Spinal Coilgun-01",
+    "category": "Kinetic - Coilgun",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-coilgun"
+    ],
+    "description": "First generation spinal-mount coilgun"
+  },
+  "spinal-coilgun-02": {
+    "name": "Spinal Coilgun-02",
+    "category": "Kinetic - Coilgun",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-coilgun-01"
+    ],
+    "description": "Second generation spinal-mount coilgun"
+  },
+  "spinal-coilgun-03": {
+    "name": "Spinal Coilgun-03",
+    "category": "Kinetic - Coilgun",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-coilgun-01"
+    ],
+    "description": "Third generation spinal-mount coilgun"
+  },
+  "spinal-coilgun-04": {
+    "name": "Spinal Coilgun-04",
+    "category": "Kinetic - Coilgun",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-coilgun-01"
+    ],
+    "description": "Fourth generation spinal-mount coilgun"
+  },
+  "spinal-coilgun-05": {
+    "name": "Spinal Coilgun-05",
+    "category": "Kinetic - Coilgun",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-coilgun-01"
+    ],
+    "description": "Fifth generation spinal-mount coilgun"
+  },
+  "troop-coilgun": {
+    "name": "Troop Coilgun",
+    "category": "Kinetic - Miniature Coilgun",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-coilgun"
+    ],
+    "description": "Personal coilgun weapons for troops",
+    "specialRequirement": "Tier3"
+  },
+  "heavy-macron-gun": {
+    "name": "Heavy Macron Gun",
+    "category": "Kinetic - Macron Gun",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-railgun"
+    ],
+    "description": "Heavy particle acceleration weapons"
+  },
+  "light-macron-gun": {
+    "name": "Light Macron Gun",
+    "category": "Kinetic - Macron Gun",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-macron-gun"
+    ],
+    "description": "Light particle acceleration weapons"
+  },
+  "heavy-helical-driver": {
+    "name": "Heavy Helical Driver",
+    "category": "Kinetic - Helical Driver",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-railgun",
+      "heavy-coilgun"
+    ],
+    "description": "Heavy helical magnetic acceleration systems"
+  },
+  "nuclear-helical-driver": {
+    "name": "Nuclear Helical Driver",
+    "category": "Kinetic - Helical Driver",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-helical-driver"
+    ],
+    "description": "Nuclear-enhanced helical driver technology"
+  },
+  "light-helical-driver": {
+    "name": "Light Helical Driver",
+    "category": "Kinetic - Helical Driver",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-helical-driver"
+    ],
+    "description": "Light helical magnetic acceleration systems"
+  },
+  "pd-helical-driver": {
+    "name": "PD Helical Driver",
+    "category": "Kinetic - Helical Driver",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-helical-driver"
+    ],
+    "description": "Point defense helical driver systems"
+  },
+  "spinal-helical-driver-01": {
+    "name": "Spinal Helical Driver-01",
+    "category": "Kinetic - Helical Driver",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-helical-driver"
+    ],
+    "description": "First generation spinal-mount helical driver"
+  },
+  "spinal-helical-driver-02": {
+    "name": "Spinal Helical Driver-02",
+    "category": "Kinetic - Helical Driver",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-helical-driver-01"
+    ],
+    "description": "Second generation spinal-mount helical driver"
+  },
+  "spinal-helical-driver-03": {
+    "name": "Spinal Helical Driver-03",
+    "category": "Kinetic - Helical Driver",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-helical-driver-01"
+    ],
+    "description": "Third generation spinal-mount helical driver"
+  },
+  "spinal-helical-driver-04": {
+    "name": "Spinal Helical Driver-04",
+    "category": "Kinetic - Helical Driver",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-helical-driver-01"
+    ],
+    "description": "Fourth generation spinal-mount helical driver"
+  },
+  "spinal-helical-driver-05": {
+    "name": "Spinal Helical Driver-05",
+    "category": "Kinetic - Helical Driver",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-helical-driver-01"
+    ],
+    "description": "Fifth generation spinal-mount helical driver"
+  },
+  "spinal-thermonuclear-torch-01": {
+    "name": "Spinal Thermonuclear Torch-01",
+    "category": "Kinetic - Thermonuclear Torch",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-macron-gun"
+    ],
+    "description": "First generation spinal thermonuclear torch"
+  },
+  "spinal-thermonuclear-torch-02": {
+    "name": "Spinal Thermonuclear Torch-02",
+    "category": "Kinetic - Thermonuclear Torch",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-thermonuclear-torch-01"
+    ],
+    "description": "Second generation spinal thermonuclear torch"
+  },
+  "spinal-thermonuclear-torch-03": {
+    "name": "Spinal Thermonuclear Torch-03",
+    "category": "Kinetic - Thermonuclear Torch",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-thermonuclear-torch-01"
+    ],
+    "description": "Third generation spinal thermonuclear torch"
+  },
+  "spinal-thermonuclear-torch-04": {
+    "name": "Spinal Thermonuclear Torch-04",
+    "category": "Kinetic - Thermonuclear Torch",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-thermonuclear-torch-01"
+    ],
+    "description": "Fourth generation spinal thermonuclear torch"
+  },
+  "spinal-thermonuclear-torch-05": {
+    "name": "Spinal Thermonuclear Torch-05",
+    "category": "Kinetic - Thermonuclear Torch",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-thermonuclear-torch-01"
+    ],
+    "description": "Fifth generation spinal thermonuclear torch"
+  },
+  "thermonuclear-cluster-warhead": {
+    "name": "Thermonuclear Cluster Warhead",
+    "category": "Kinetic - Thermonuclear Torch",
+    "cost": 0,
+    "prerequisites": [
+      "spinal-thermonuclear-torch-01"
+    ],
+    "description": "Cluster warhead with thermonuclear payloads"
+  },
+  "disruptor": {
+    "name": "Disruptor",
+    "category": "Kinetic - Disruptor",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-macron-gun"
+    ],
+    "description": "Matter-disrupting weapon systems"
+  },
+  "disruptor-warhead": {
+    "name": "Disruptor Warhead",
+    "category": "Kinetic - Disruptor",
+    "cost": 0,
+    "prerequisites": [
+      "disruptor"
+    ],
+    "description": "Warheads with disruptor technology"
+  },
+  "heavy-field-effect-gun": {
+    "name": "Heavy Field Effect Gun",
+    "category": "Kinetic - Field Effect Gun",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-helical-driver"
+    ],
+    "description": "Heavy field-manipulation weapon systems",
+    "specialRequirement": "zero-point-vacuum"
+  },
+  "light-field-effect-gun": {
+    "name": "Light Field Effect Gun",
+    "category": "Kinetic - Field Effect Gun",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-field-effect-gun"
+    ],
+    "description": "Light field-manipulation weapon systems"
+  },
+  "light-vortex-cannon": {
+    "name": "Light Vortex Cannon",
+    "category": "Kinetic - Vortex Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-field-effect-gun"
+    ],
+    "description": "Light vortex generation weapons",
+    "specialRequirement": "zero-point-vacuum"
+  },
+  "medium-vortex-cannon": {
+    "name": "Medium Vortex Cannon",
+    "category": "Kinetic - Vortex Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "light-vortex-cannon"
+    ],
+    "description": "Medium vortex generation weapons"
+  },
+  "heavy-vortex-cannon": {
+    "name": "Heavy Vortex Cannon",
+    "category": "Kinetic - Vortex Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "medium-vortex-cannon"
+    ],
+    "description": "Heavy vortex generation weapons"
+  },
+  "vortex-warhead": {
+    "name": "Vortex Warhead",
+    "category": "Kinetic - Vortex Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-vortex-cannon"
+    ],
+    "description": "Warheads with vortex generation capability"
+  },
+  "spinal-wave-motion-cannon-01": {
+    "name": "Spinal Wave-motion Cannon-01",
+    "category": "Kinetic - Wave-motion Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-field-effect-gun"
+    ],
+    "description": "First generation spinal wave-motion cannon",
+    "specialRequirement": "zero-point-vacuum"
+  },
+  "spinal-wave-motion-cannon-02": {
+    "name": "Spinal Wave-motion Cannon-02",
+    "category": "Kinetic - Wave-motion Cannon",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-wave-motion-cannon-01"
+    ],
+    "description": "Second generation spinal wave-motion cannon"
+  },
+  "spinal-wave-motion-cannon-03": {
+    "name": "Spinal Wave-motion Cannon-03",
+    "category": "Kinetic - Wave-motion Cannon",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-wave-motion-cannon-01"
+    ],
+    "description": "Third generation spinal wave-motion cannon"
+  },
+  "spinal-wave-motion-cannon-04": {
+    "name": "Spinal Wave-motion Cannon-04",
+    "category": "Kinetic - Wave-motion Cannon",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-wave-motion-cannon-01"
+    ],
+    "description": "Fourth generation spinal wave-motion cannon"
+  },
+  "spinal-wave-motion-cannon-05": {
+    "name": "Spinal Wave-motion Cannon-05",
+    "category": "Kinetic - Wave-motion Cannon",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-wave-motion-cannon-01"
+    ],
+    "description": "Fifth generation spinal wave-motion cannon"
+  },
+  "heavy-chemical-laser": {
+    "name": "Heavy Chemical LASER",
+    "category": "LASER - Ordnance",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-cannon"
+    ],
+    "description": "Heavy chemical laser weapon systems"
+  },
+  "light-chemical-laser": {
+    "name": "Light Chemical LASER",
+    "category": "LASER - Ordnance",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-chemical-laser"
+    ],
+    "description": "Light chemical laser weapon systems"
+  },
+  "pd-chemical-laser": {
+    "name": "PD Chemical LASER",
+    "category": "LASER - Ordnance",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-chemical-laser"
+    ],
+    "description": "Point defense chemical laser systems"
+  },
+  "chemlaser-warhead": {
+    "name": "ChemLASER Warhead",
+    "category": "LASER - Ordnance",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-chemical-laser"
+    ],
+    "description": "Chemical laser warhead systems"
+  },
+  "heavy-optical-aperture": {
+    "name": "Heavy Optical Aperture",
+    "category": "LASER - Basic Collimator",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-chemical-laser"
+    ],
+    "description": "Heavy optical focusing systems"
+  },
+  "light-optical-aperture": {
+    "name": "Light Optical Aperture",
+    "category": "LASER - Basic Collimator",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-optical-aperture"
+    ],
+    "description": "Light optical focusing systems"
+  },
+  "pd-optical-aperture": {
+    "name": "PD Optical Aperture",
+    "category": "LASER - Basic Collimator",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-optical-aperture"
+    ],
+    "description": "Point defense optical focusing systems"
+  },
+  "heavy-multiplex-aperture": {
+    "name": "Heavy Multiplex Aperture",
+    "category": "LASER - Multiplex Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-optical-aperture"
+    ],
+    "description": "Heavy multiplexed laser focusing systems"
+  },
+  "light-multiplex-aperture": {
+    "name": "Light Multiplex Aperture",
+    "category": "LASER - Multiplex Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-multiplex-aperture"
+    ],
+    "description": "Light multiplexed laser focusing systems"
+  },
+  "pd-multiplex-aperture": {
+    "name": "PD Multiplex Aperture",
+    "category": "LASER - Multiplex Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-multiplex-aperture"
+    ],
+    "description": "Point defense multiplexed laser focusing systems"
+  },
+  "heavy-array-aperture": {
+    "name": "Heavy Array Aperture",
+    "category": "LASER - Phased Array Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-multiplex-aperture"
+    ],
+    "description": "Heavy phased array laser systems"
+  },
+  "light-array-aperture": {
+    "name": "Light Array Aperture",
+    "category": "LASER - Phased Array Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-array-aperture"
+    ],
+    "description": "Light phased array laser systems"
+  },
+  "pd-array-aperture": {
+    "name": "PD Array Aperture",
+    "category": "LASER - Phased Array Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-array-aperture"
+    ],
+    "description": "Point defense phased array laser systems"
+  },
+  "heavy-ub-aperture": {
+    "name": "Heavy UB Aperture",
+    "category": "LASER - Uninterrupted Beam Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-array-aperture"
+    ],
+    "description": "Heavy uninterrupted beam laser systems"
+  },
+  "light-ub-aperture": {
+    "name": "Light UB Aperture",
+    "category": "LASER - Uninterrupted Beam Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-ub-aperture"
+    ],
+    "description": "Light uninterrupted beam laser systems"
+  },
+  "pd-ub-aperture": {
+    "name": "PD UB Aperture",
+    "category": "LASER - Uninterrupted Beam Aperture",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-ub-aperture"
+    ],
+    "description": "Point defense uninterrupted beam laser systems"
+  },
+  "magnetron-maser-generator-01": {
+    "name": "Magnetron MASER Generator-01",
+    "category": "LASER - Generator",
+    "abbreviation": "MASER01",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-chemical-laser"
+    ],
+    "description": "First generation magnetron MASER systems",
+    "specialRequirement": "fusion"
+  },
+  "magnetron-maser-generator-02": {
+    "name": "Magnetron MASER Generator-02",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "magnetron-maser-generator-01"
+    ],
+    "description": "Second generation magnetron MASER systems"
+  },
+  "magnetron-maser-generator-03": {
+    "name": "Magnetron MASER Generator-03",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "magnetron-maser-generator-01"
+    ],
+    "description": "Third generation magnetron MASER systems"
+  },
+  "magnetron-maser-generator-04": {
+    "name": "Magnetron MASER Generator-04",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "magnetron-maser-generator-01"
+    ],
+    "description": "Fourth generation magnetron MASER systems"
+  },
+  "magnetron-maser-generator-05": {
+    "name": "Magnetron MASER Generator-05",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "magnetron-maser-generator-01"
+    ],
+    "description": "Fifth generation magnetron MASER systems"
+  },
+  "excimer-uvaser-generator-01": {
+    "name": "Excimer UVASER Generator-01",
+    "category": "LASER - Generator",
+    "abbreviation": "UVASER01",
+    "cost": 0,
+    "prerequisites": [
+      "magnetron-maser-generator-01"
+    ],
+    "description": "First generation excimer UVASER systems",
+    "specialRequirement": "fusion"
+  },
+  "excimer-uvaser-generator-02": {
+    "name": "Excimer UVASER Generator-02",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "excimer-uvaser-generator-01"
+    ],
+    "description": "Second generation excimer UVASER systems"
+  },
+  "excimer-uvaser-generator-03": {
+    "name": "Excimer UVASER Generator-03",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "excimer-uvaser-generator-01"
+    ],
+    "description": "Third generation excimer UVASER systems"
+  },
+  "excimer-uvaser-generator-04": {
+    "name": "Excimer UVASER Generator-04",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "excimer-uvaser-generator-01"
+    ],
+    "description": "Fourth generation excimer UVASER systems"
+  },
+  "excimer-uvaser-generator-05": {
+    "name": "Excimer UVASER Generator-05",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "excimer-uvaser-generator-01"
+    ],
+    "description": "Fifth generation excimer UVASER systems"
+  },
+  "fel-generator-01": {
+    "name": "FEL Generator-01",
+    "category": "LASER - Generator",
+    "abbreviation": "FEL01",
+    "cost": 0,
+    "prerequisites": [
+      "excimer-uvaser-generator-01"
+    ],
+    "description": "First generation free electron laser systems",
+    "specialRequirement": "antimatter"
+  },
+  "fel-generator-02": {
+    "name": "FEL Generator-02",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "fel-generator-01"
+    ],
+    "description": "Second generation free electron laser systems"
+  },
+  "fel-generator-03": {
+    "name": "FEL Generator-03",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "fel-generator-01"
+    ],
+    "description": "Third generation free electron laser systems"
+  },
+  "fel-generator-04": {
+    "name": "FEL Generator-04",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "fel-generator-01"
+    ],
+    "description": "Fourth generation free electron laser systems"
+  },
+  "fel-generator-05": {
+    "name": "FEL Generator-05",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "fel-generator-01"
+    ],
+    "description": "Fifth generation free electron laser systems"
+  },
+  "haser-generator-01": {
+    "name": "HASER Generator-01",
+    "category": "LASER - Generator",
+    "abbreviation": "HASER01",
+    "cost": 0,
+    "prerequisites": [
+      "fel-generator-01"
+    ],
+    "description": "First generation hyperon laser systems",
+    "specialRequirement": "zero-point-vacuum"
+  },
+  "haser-generator-02": {
+    "name": "HASER Generator-02",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "haser-generator-01"
+    ],
+    "description": "Second generation hyperon laser systems"
+  },
+  "haser-generator-03": {
+    "name": "HASER Generator-03",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "haser-generator-01"
+    ],
+    "description": "Third generation hyperon laser systems"
+  },
+  "haser-generator-04": {
+    "name": "HASER Generator-04",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "haser-generator-01"
+    ],
+    "description": "Fourth generation hyperon laser systems"
+  },
+  "haser-generator-05": {
+    "name": "HASER Generator-05",
+    "category": "LASER - Generator",
+    "cost": 6,
+    "prerequisites": [
+      "haser-generator-01"
+    ],
+    "description": "Fifth generation hyperon laser systems"
+  },
+  "hyperon-warhead": {
+    "name": "Hyperon Warhead",
+    "category": "LASER - Generator",
+    "cost": 0,
+    "prerequisites": [
+      "haser-generator-01"
+    ],
+    "description": "Hyperon-based warhead systems"
+  },
+  "troop-laser-weapons": {
+    "name": "Troop LASER Weapons",
+    "category": "LASER - Miniature",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-multiplex-aperture"
+    ],
+    "description": "Personal laser weapons for troops",
+    "specialRequirement": "Tier3"
+  },
+  "electron-gun": {
+    "name": "Electron Gun",
+    "category": "Particle - Electron Gun",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-cannon"
+    ],
+    "description": "Basic electron beam weapon systems"
+  },
+  "electron-repeater": {
+    "name": "Electron Repeater",
+    "category": "Particle - Electron Gun",
+    "cost": 0,
+    "prerequisites": [
+      "electron-gun"
+    ],
+    "description": "Rapid-fire electron beam systems"
+  },
+  "linac": {
+    "name": "LINAC",
+    "category": "Particle - Linear Accelerator",
+    "cost": 0,
+    "prerequisites": [
+      "electron-gun"
+    ],
+    "description": "Linear particle acceleration systems"
+  },
+  "torac": {
+    "name": "TORAC",
+    "category": "Particle - Toroidal Accelerator",
+    "cost": 0,
+    "prerequisites": [
+      "electron-gun"
+    ],
+    "description": "Toroidal particle acceleration systems"
+  },
+  "pd-torac": {
+    "name": "PD TORAC",
+    "category": "Particle - Toroidal Accelerator",
+    "cost": 0,
+    "prerequisites": [
+      "torac"
+    ],
+    "description": "Point defense toroidal accelerator systems"
+  },
+  "neutron-beam": {
+    "name": "Neutron Beam",
+    "category": "Particle - Neutron Ordnance",
+    "cost": 0,
+    "prerequisites": [
+      "electron-gun"
+    ],
+    "description": "Neutron beam weapon systems"
+  },
+  "neutron-beam-warhead": {
+    "name": "Neutron Beam Warhead",
+    "category": "Particle - Neutron Ordnance",
+    "cost": 0,
+    "prerequisites": [
+      "neutron-beam"
+    ],
+    "description": "Neutron beam warhead systems"
+  },
+  "spinal-tur-linac-01": {
+    "name": "Spinal TUR-LINAC-01",
+    "category": "Particle - Transuranic Linear Accelerator",
+    "cost": 0,
+    "prerequisites": [
+      "linac"
+    ],
+    "description": "First generation transuranic linear accelerator"
+  },
+  "spinal-tur-linac-02": {
+    "name": "Spinal TUR-LINAC-02",
+    "category": "Particle - Transuranic Linear Accelerator",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-tur-linac-01"
+    ],
+    "description": "Second generation transuranic linear accelerator"
+  },
+  "spinal-tur-linac-03": {
+    "name": "Spinal TUR-LINAC-03",
+    "category": "Particle - Transuranic Linear Accelerator",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-tur-linac-01"
+    ],
+    "description": "Third generation transuranic linear accelerator"
+  },
+  "spinal-tur-linac-04": {
+    "name": "Spinal TUR-LINAC-04",
+    "category": "Particle - Transuranic Linear Accelerator",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-tur-linac-01"
+    ],
+    "description": "Fourth generation transuranic linear accelerator"
+  },
+  "spinal-tur-linac-05": {
+    "name": "Spinal TUR-LINAC-05",
+    "category": "Particle - Transuranic Linear Accelerator",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-tur-linac-01"
+    ],
+    "description": "Fifth generation transuranic linear accelerator"
+  },
+  "troop-torac": {
+    "name": "Troop TORAC",
+    "category": "Particle - Miniature Toroidal Accelerator",
+    "cost": 0,
+    "prerequisites": [
+      "torac"
+    ],
+    "description": "Personal toroidal accelerator weapons for troops",
+    "specialRequirement": "Tier3"
+  },
+  "h-torac": {
+    "name": "H-TORAC",
+    "category": "Particle - Hydrogen Toroidal Accelerator",
+    "cost": 0,
+    "prerequisites": [
+      "torac"
+    ],
+    "description": "Hydrogen-optimized toroidal accelerator systems"
+  },
+  "muon-projector": {
+    "name": "Muon Projector",
+    "category": "Particle - Muon Projector",
+    "cost": 0,
+    "prerequisites": [
+      "h-torac"
+    ],
+    "description": "Muon particle projection systems"
+  },
+  "pd-muon-projector": {
+    "name": "PD Muon Projector",
+    "category": "Particle - Muon Projector",
+    "cost": 0,
+    "prerequisites": [
+      "muon-projector"
+    ],
+    "description": "Point defense muon projection systems"
+  },
+  "hadron-cannon": {
+    "name": "Hadron Cannon",
+    "category": "Particle - Hadron Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "spinal-tur-linac-01"
+    ],
+    "description": "Hadron particle cannon systems"
+  },
+  "spinal-graviton-beam-01": {
+    "name": "Spinal Graviton Beam-01",
+    "category": "Particle - Graviton Beam",
+    "cost": 0,
+    "prerequisites": [
+      "hadron-cannon"
+    ],
+    "description": "First generation graviton beam systems"
+  },
+  "spinal-graviton-beam-02": {
+    "name": "Spinal Graviton Beam-02",
+    "category": "Particle - Graviton Beam",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-graviton-beam-01"
+    ],
+    "description": "Second generation graviton beam systems"
+  },
+  "spinal-graviton-beam-03": {
+    "name": "Spinal Graviton Beam-03",
+    "category": "Particle - Graviton Beam",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-graviton-beam-01"
+    ],
+    "description": "Third generation graviton beam systems"
+  },
+  "spinal-graviton-beam-04": {
+    "name": "Spinal Graviton Beam-04",
+    "category": "Particle - Graviton Beam",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-graviton-beam-01"
+    ],
+    "description": "Fourth generation graviton beam systems"
+  },
+  "spinal-graviton-beam-05": {
+    "name": "Spinal Graviton Beam-05",
+    "category": "Particle - Graviton Beam",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-graviton-beam-01"
+    ],
+    "description": "Fifth generation graviton beam systems"
+  },
+  "heavy-photolytic-xraser": {
+    "name": "Heavy Photolytic XRASER",
+    "category": "LASER/Kinetic - XRASER",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-railgun",
+      "excimer-uvaser-generator-01"
+    ],
+    "description": "Heavy X-ray laser systems with kinetic enhancement"
+  },
+  "light-photolytic-xraser": {
+    "name": "Light Photolytic XRASER",
+    "category": "LASER/Kinetic - XRASER",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-photolytic-xraser"
+    ],
+    "description": "Light X-ray laser systems with kinetic enhancement"
+  },
+  "advanced-photolytic-xraser": {
+    "name": "Advanced Photolytic XRASER",
+    "category": "LASER/Kinetic - Advanced XRASER",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-photolytic-xraser"
+    ],
+    "description": "Advanced X-ray laser systems"
+  },
+  "heavy-z-pinch-graser": {
+    "name": "Heavy Z-Pinch GRASER",
+    "category": "LASER/Kinetic - GRASER",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-photolytic-xraser"
+    ],
+    "description": "Heavy gamma-ray laser systems"
+  },
+  "light-z-pinch-graser": {
+    "name": "Light Z-Pinch GRASER",
+    "category": "LASER/Kinetic - GRASER",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-z-pinch-graser"
+    ],
+    "description": "Light gamma-ray laser systems"
+  },
+  "advanced-z-pinch-graser": {
+    "name": "Advanced Z-Pinch GRASER",
+    "category": "LASER/Kinetic - Advanced GRASER",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-z-pinch-graser"
+    ],
+    "description": "Advanced gamma-ray laser systems"
+  },
+  "pulsar-cannon": {
+    "name": "PULSAR Cannon",
+    "category": "LASER/Kinetic - Star Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-z-pinch-graser"
+    ],
+    "description": "Pulsar-inspired energy weapon systems"
+  },
+  "blitzar-cannon": {
+    "name": "BLITZAR Cannon",
+    "category": "LASER/Kinetic - Star Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "pulsar-cannon"
+    ],
+    "description": "Blitzar-inspired energy weapon systems"
+  },
+  "quasar-cannon": {
+    "name": "QUASAR Cannon",
+    "category": "LASER/Kinetic - Star Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "blitzar-cannon"
+    ],
+    "description": "Quasar-inspired energy weapon systems"
+  },
+  "heavy-plasma-cannon": {
+    "name": "Heavy Plasma Cannon",
+    "category": "Kinetic/Particle - Plasma Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "nuclear-coilgun",
+      "torac"
+    ],
+    "description": "Heavy plasma acceleration systems"
+  },
+  "light-plasma-cannon": {
+    "name": "Light Plasma Cannon",
+    "category": "Kinetic/Particle - Plasma Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-plasma-cannon"
+    ],
+    "description": "Light plasma acceleration systems"
+  },
+  "spinal-plasma-cannon-01": {
+    "name": "Spinal Plasma Cannon-01",
+    "category": "Kinetic/Particle - Plasma Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-plasma-cannon"
+    ],
+    "description": "First generation spinal plasma cannon"
+  },
+  "spinal-plasma-cannon-02": {
+    "name": "Spinal Plasma Cannon-02",
+    "category": "Kinetic/Particle - Plasma Cannon",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-plasma-cannon-01"
+    ],
+    "description": "Second generation spinal plasma cannon"
+  },
+  "spinal-plasma-cannon-03": {
+    "name": "Spinal Plasma Cannon-03",
+    "category": "Kinetic/Particle - Plasma Cannon",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-plasma-cannon-01"
+    ],
+    "description": "Third generation spinal plasma cannon"
+  },
+  "spinal-plasma-cannon-04": {
+    "name": "Spinal Plasma Cannon-04",
+    "category": "Kinetic/Particle - Plasma Cannon",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-plasma-cannon-01"
+    ],
+    "description": "Fourth generation spinal plasma cannon"
+  },
+  "spinal-plasma-cannon-05": {
+    "name": "Spinal Plasma Cannon-05",
+    "category": "Kinetic/Particle - Plasma Cannon",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-plasma-cannon-01"
+    ],
+    "description": "Fifth generation spinal plasma cannon"
+  },
+  "plasma-bottle-warhead": {
+    "name": "Plasma Bottle Warhead",
+    "category": "Kinetic/Particle - Plasma Cannon",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-plasma-cannon"
+    ],
+    "description": "Contained plasma warhead systems"
+  },
+  "troop-plasma": {
+    "name": "Troop Plasma",
+    "category": "Kinetic/Particle - Miniature Plasma",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-plasma-cannon"
+    ],
+    "description": "Personal plasma weapons for troops"
+  },
+  "magnetic-ring": {
+    "name": "Magnetic Ring",
+    "category": "Kinetic/Particle - MARS",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-plasma-cannon"
+    ],
+    "description": "Magnetically accelerated ring projectile systems"
+  },
+  "pd-magnetic-ring": {
+    "name": "PD Magnetic Ring",
+    "category": "Kinetic/Particle - MARS",
+    "cost": 0,
+    "prerequisites": [
+      "magnetic-ring"
+    ],
+    "description": "Point defense magnetic ring systems"
+  },
+  "spinal-corona-cannon-01": {
+    "name": "Spinal Corona Cannon-01",
+    "category": "Kinetic/Particle - MARS",
+    "cost": 0,
+    "prerequisites": [
+      "magnetic-ring"
+    ],
+    "description": "First generation spinal corona cannon"
+  },
+  "spinal-corona-cannon-02": {
+    "name": "Spinal Corona Cannon-02",
+    "category": "Kinetic/Particle - MARS",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-corona-cannon-01"
+    ],
+    "description": "Second generation spinal corona cannon"
+  },
+  "spinal-corona-cannon-03": {
+    "name": "Spinal Corona Cannon-03",
+    "category": "Kinetic/Particle - MARS",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-corona-cannon-01"
+    ],
+    "description": "Third generation spinal corona cannon"
+  },
+  "spinal-corona-cannon-04": {
+    "name": "Spinal Corona Cannon-04",
+    "category": "Kinetic/Particle - MARS",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-corona-cannon-01"
+    ],
+    "description": "Fourth generation spinal corona cannon"
+  },
+  "spinal-corona-cannon-05": {
+    "name": "Spinal Corona Cannon-05",
+    "category": "Kinetic/Particle - MARS",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-corona-cannon-01"
+    ],
+    "description": "Fifth generation spinal corona cannon"
+  },
+  "laser-coupled-particle-beam": {
+    "name": "LASER Coupled Particle Beam",
+    "category": "Particle/LASER - Coupled Beam",
+    "cost": 0,
+    "prerequisites": [
+      "heavy-multiplex-aperture",
+      "linac"
+    ],
+    "description": "LASER-guided particle beam systems"
+  },
+  "laser-coupled-particle-pd": {
+    "name": "LASER Coupled Particle PD",
+    "category": "Particle/LASER - Coupled Beam",
+    "cost": 0,
+    "prerequisites": [
+      "laser-coupled-particle-beam"
+    ],
+    "description": "Point defense LASER-coupled particle systems"
+  },
+  "relativistic-particle-beam": {
+    "name": "Relativistic Particle Beam",
+    "category": "Particle/LASER - Relativistic Beam",
+    "cost": 0,
+    "prerequisites": [
+      "laser-coupled-particle-beam"
+    ],
+    "description": "Relativistic particle acceleration systems"
+  },
+  "pd-relativistic-particle-beam": {
+    "name": "PD Relativistic Particle Beam",
+    "category": "Particle/LASER - Relativistic Beam",
+    "cost": 0,
+    "prerequisites": [
+      "relativistic-particle-beam"
+    ],
+    "description": "Point defense relativistic particle systems"
+  },
+  "spinal-false-vacuum-projector-01": {
+    "name": "Spinal False Vacuum Projector-01",
+    "category": "Particle/LASER - False Vacuum Projector",
+    "cost": 0,
+    "prerequisites": [
+      "relativistic-particle-beam"
+    ],
+    "description": "First generation false vacuum projection system"
+  },
+  "spinal-false-vacuum-projector-02": {
+    "name": "Spinal False Vacuum Projector-02",
+    "category": "Particle/LASER - False Vacuum Projector",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-false-vacuum-projector-01"
+    ],
+    "description": "Second generation false vacuum projection system"
+  },
+  "spinal-false-vacuum-projector-03": {
+    "name": "Spinal False Vacuum Projector-03",
+    "category": "Particle/LASER - False Vacuum Projector",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-false-vacuum-projector-01"
+    ],
+    "description": "Third generation false vacuum projection system"
+  },
+  "spinal-false-vacuum-projector-04": {
+    "name": "Spinal False Vacuum Projector-04",
+    "category": "Particle/LASER - False Vacuum Projector",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-false-vacuum-projector-01"
+    ],
+    "description": "Fourth generation false vacuum projection system"
+  },
+  "spinal-false-vacuum-projector-05": {
+    "name": "Spinal False Vacuum Projector-05",
+    "category": "Particle/LASER - False Vacuum Projector",
+    "cost": 6,
+    "prerequisites": [
+      "spinal-false-vacuum-projector-01"
+    ],
+    "description": "Fifth generation false vacuum projection system"
+  }
+}

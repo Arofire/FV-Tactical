@@ -6,8 +6,11 @@ class NodeSystem {
         this.tempConnection = null;
         this.isDragging = false;
         this.dragStartNode = null;
+        this.isReconnecting = false;
+        this.reconnectionData = null;
         this.connectionSelectionMenu = null;
         this.connectionSelectionMenuDismissHandler = null;
+        this.lastSnapTargetElement = null;  // Track last highlighted snap target for cleanup
         
         this.setupEventListeners();
     }
@@ -39,6 +42,72 @@ class NodeSystem {
         if (!node) return;
         this.destroyConnectionSelectionMenu();
         
+        // Check if this is an input node with an existing connection
+        if (node.type === 'input' && node.connections && node.connections.size > 0) {
+            // Pick up the existing connection instead of creating a new one
+            const connectionId = Array.from(node.connections)[0];
+            const existingConnection = this.connections.get(connectionId);
+            
+            if (existingConnection) {
+                // Find the other end of the connection (the anchor node)
+                const sourceNode = this.getNodeById(existingConnection.sourceNodeId);
+                const targetNode = this.getNodeById(existingConnection.targetNodeId);
+                const anchorNode = (sourceNode.id === nodeId) ? targetNode : sourceNode;
+                
+                if (!anchorNode) return;
+                
+                // Mark this as a reconnection operation
+                this.isReconnecting = true;
+                this.reconnectionData = {
+                    originalConnectionId: connectionId,
+                    originalConnection: existingConnection,
+                    draggedNodeId: nodeId,
+                    draggedNode: node,
+                    anchorNodeId: anchorNode.id,
+                    anchorNode: anchorNode
+                };
+                
+                // Keep the original connection element but mark it as being dragged
+                const connectionElement = document.getElementById(connectionId);
+                if (connectionElement) {
+                    connectionElement.classList.add('dragging');
+                }
+                
+                // Temporarily remove the connection from the node's tracking to make it appear disconnected
+                const connectedNode = this.getNodeById(nodeId);
+                if (connectedNode) {
+                    connectedNode.connections.delete(connectionId);
+                }
+                
+                // Update the input node's visual state to disconnected
+                this.updateNodeConnectionState(nodeId);
+                
+                // Deselect any selected connections
+                this.deselectAllConnections();
+                
+                // Start dragging - use the connection element as the temp connection
+                this.isDragging = true;
+                this.dragStartNode = anchorNode.id;
+                
+                const anchorPos = this.getNodeAbsolutePosition(anchorNode.id);
+                
+                this.tempConnection = {
+                    element: connectionElement,  // Reuse the original connection element
+                    startNodeId: anchorNode.id,
+                    startPos: anchorPos,
+                    startNodeType: anchorNode.type,
+                    isPickedUpConnection: true  // Flag to indicate this is a picked-up connection
+                };
+                
+                this.updateTempConnection(event);
+                
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+        }
+        
+        // Normal behavior: create a new temporary connection
         this.isDragging = true;
         this.dragStartNode = nodeId;
         
@@ -49,9 +118,11 @@ class NodeSystem {
         event.stopPropagation();
     }
 
+
     createTempConnection(startNodeId, event) {
+        const startNode = this.getNodeById(startNodeId);
         const startPos = this.getNodeAbsolutePosition(startNodeId);
-        if (!startPos) return;
+        if (!startPos || !startNode) return;
         
         // Create SVG line element
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -60,7 +131,8 @@ class NodeSystem {
         this.tempConnection = {
             element: line,
             startNodeId: startNodeId,
-            startPos: startPos
+            startPos: startPos,
+            startNodeType: startNode.type  // Store whether it's input or output
         };
         
         this.svg.appendChild(line);
@@ -68,19 +140,86 @@ class NodeSystem {
     }
 
     updateTempConnection(event) {
-    if (!this.tempConnection) return;
+        if (!this.tempConnection) return;
 
-    const endPoint = this.clientToWorld(event.clientX, event.clientY);
+        const endPoint = this.clientToWorld(event.clientX, event.clientY);
         if (!endPoint) return;
-        const endX = endPoint.x;
-        const endY = endPoint.y;
+        let endX = endPoint.x;
+        let endY = endPoint.y;
 
-        const path = this.createBezierPath(
-            this.tempConnection.startPos.x,
-            this.tempConnection.startPos.y,
-            endX,
-            endY
-        );
+        // Find a compatible node under the cursor for snapping
+        let snapNode = null;
+        const targetElement = document.elementFromPoint(event.clientX, event.clientY);
+        
+        // Skip over connection lines to find potential target nodes
+        let checkElement = targetElement;
+        let tempHiddenElements = [];
+        while (checkElement && checkElement.classList.contains('connection-line')) {
+            checkElement.style.pointerEvents = 'none';
+            tempHiddenElements.push(checkElement);
+            checkElement = document.elementFromPoint(event.clientX, event.clientY);
+        }
+        
+        // Restore pointer events
+        tempHiddenElements.forEach(el => el.style.pointerEvents = '');
+        
+        // Check if we found a node and if it's compatible
+        if (checkElement && checkElement.id && checkElement.id.startsWith('widget-') && 
+            checkElement.classList.contains('node')) {
+            const targetNodeId = checkElement.id;
+            const startNode = this.getNodeById(this.tempConnection.startNodeId);
+            const targetNode = this.getNodeById(targetNodeId);
+            
+            // Check if nodes are compatible for connection
+            if (startNode && targetNode &&
+                startNode.id !== targetNode.id &&
+                startNode.widgetId !== targetNode.widgetId &&
+                startNode.type !== targetNode.type &&
+                this.areNodeTypesCompatible(startNode.nodeType, targetNode.nodeType)) {
+                
+                snapNode = targetNode;
+                // Snap the end point to the target node's center
+                const targetPos = this.getNodeAbsolutePosition(targetNodeId);
+                if (targetPos) {
+                    endX = targetPos.x;
+                    endY = targetPos.y;
+                }
+                
+                // Highlight the compatible node
+                checkElement.classList.add('snap-target');
+            }
+        }
+        
+        // Clear snap target highlighting from any previously highlighted node
+        if (this.lastSnapTargetElement && this.lastSnapTargetElement !== checkElement) {
+            this.lastSnapTargetElement.classList.remove('snap-target');
+        }
+        if (snapNode) {
+            this.lastSnapTargetElement = checkElement;
+        } else {
+            this.lastSnapTargetElement = null;
+        }
+
+        // For input nodes, we want the path to go from node (left) to cursor (right)
+        // but with control points that curve as if expecting a connection from the right
+        let path;
+        if (this.tempConnection.startNodeType === 'input') {
+            path = this.createBezierPath(
+                this.tempConnection.startPos.x,
+                this.tempConnection.startPos.y,
+                endX,
+                endY,
+                true  // isInputNode flag - reverses control points
+            );
+        } else {
+            path = this.createBezierPath(
+                this.tempConnection.startPos.x,
+                this.tempConnection.startPos.y,
+                endX,
+                endY,
+                false
+            );
+        }
         
         this.tempConnection.element.setAttribute('d', path);
     }
@@ -90,24 +229,67 @@ class NodeSystem {
         
         this.isDragging = false;
         const sourceNodeId = this.dragStartNode;
+        const isPickedUpConnection = this.tempConnection.isPickedUpConnection;
         
-        // Find target node under mouse
-        const targetElement = document.elementFromPoint(event.clientX, event.clientY);
+        // Find target node under mouse, excluding connection lines and the temp connection itself
+        let targetElement = document.elementFromPoint(event.clientX, event.clientY);
+        
+        // Skip over connection lines to find the node underneath
+        while (targetElement && targetElement.classList.contains('connection-line')) {
+            targetElement.style.pointerEvents = 'none';
+            targetElement = document.elementFromPoint(event.clientX, event.clientY);
+            targetElement.style.pointerEvents = '';
+        }
+        
         const targetNodeId = targetElement?.id;
         
+        // If we were reconnecting, remove the old connection first
+        if (this.isReconnecting && this.reconnectionData) {
+            this.removeConnection(this.reconnectionData.originalConnectionId);
+        }
+        
         if (targetNodeId && targetNodeId.startsWith('widget-') && 
-            targetElement.classList.contains('node') &&
-            this.canConnect(sourceNodeId, targetNodeId)) {
+            targetElement.classList.contains('node')) {
             
             // Create actual connection honoring input/output direction
             this.connectNodesRespectingDirection(sourceNodeId, targetNodeId);
         } else {
-            // Connection ended in empty space - create compatible widget
-            this.createWidgetFromConnection(sourceNodeId, event);
+            // Connection ended in empty space
+            if (!this.isReconnecting) {
+                // Normal drag to empty space - create compatible widget
+                this.createWidgetFromConnection(sourceNodeId, event);
+            }
+            // If we were reconnecting and dropped in empty space, the connection was already removed
         }
         
-        // Clean up temporary connection
-        if (this.tempConnection.element) {
+        // Clean up reconnection state
+        if (this.isReconnecting && this.reconnectionData) {
+            // If the connection still exists, restore it visually and to the node's tracking
+            const connectionElement = document.getElementById(this.reconnectionData.originalConnectionId);
+            if (connectionElement && this.connections.has(this.reconnectionData.originalConnectionId)) {
+                connectionElement.classList.remove('dragging');
+                // Restore the connection to the dragged node's tracking
+                const draggedNode = this.getNodeById(this.reconnectionData.draggedNodeId);
+                if (draggedNode) {
+                    draggedNode.connections.add(this.reconnectionData.originalConnectionId);
+                    this.updateNodeConnectionState(this.reconnectionData.draggedNodeId);
+                }
+                // Update to proper position
+                this.updateConnectionElement(this.connections.get(this.reconnectionData.originalConnectionId));
+            }
+        }
+        
+        this.isReconnecting = false;
+        this.reconnectionData = null;
+        
+        // Clear snap target highlighting
+        if (this.lastSnapTargetElement) {
+            this.lastSnapTargetElement.classList.remove('snap-target');
+            this.lastSnapTargetElement = null;
+        }
+        
+        // Clean up temporary connection (but only if it's not a picked-up connection that we're reusing)
+        if (this.tempConnection.element && !isPickedUpConnection) {
             this.tempConnection.element.remove();
         }
         this.tempConnection = null;
@@ -128,38 +310,18 @@ class NodeSystem {
         // Can't connect input to input or output to output
         if (sourceNode.type === targetNode.type) return false;
         
-        // Check if connection already exists
+        // Check if connection already exists (but allow it during reconnection)
         const connectionId = this.getConnectionId(sourceNodeId, targetNodeId);
-        if (this.connections.has(connectionId)) return false;
+        if (this.connections.has(connectionId) && !this.isReconnecting) return false;
         
         // Check node type compatibility
         return this.areNodeTypesCompatible(sourceNode.nodeType, targetNode.nodeType);
     }
 
     areNodeTypesCompatible(type1, type2) {
-        const compatibilityMap = {
-            'power': ['power'],
-            'weapon': ['weapon'],
-            'magazine': ['weapon'],
-            'component': ['component'],
-            'data': ['data'],
-            'loadout': ['loadout'],
-            'powerplant': ['powerplant'],
-            'statistics': ['statistics'],
-            'outfit': ['outfit'],
-            'ship-class': ['ship-class'],
-            'information': ['information'],
-            'core': ['core'],
-            'berth': ['berth'],
-            'outfit-hull': ['outfit-hull'],
-            'loadout-hull': ['loadout-hull'],
-            'staff': ['staff'],
-            'troop': ['troop'],
-            'craft': ['craft']
-        };
-        
-        return compatibilityMap[type1]?.includes(type2) || 
-               compatibilityMap[type2]?.includes(type1);
+        // New system: nodes connect if they share the same name
+        // This allows flexible connections between any widgets
+        return type1 === type2;
     }
 
     createConnection(sourceNodeId, targetNodeId) {
@@ -214,12 +376,6 @@ class NodeSystem {
             line.classList.add(sourceNode.nodeType);
         }
         
-        // Add click handler for selection
-        line.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.selectConnection(connection.id);
-        });
-        
         // Add context menu
         line.addEventListener('contextmenu', (e) => {
             e.preventDefault();
@@ -243,16 +399,28 @@ class NodeSystem {
         element.setAttribute('d', path);
     }
 
-    createBezierPath(x1, y1, x2, y2) {
+    createBezierPath(x1, y1, x2, y2, isInputNode = false) {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const curvature = Math.min(distance * 0.3, 100);
         
-        const cpx1 = x1 + curvature;
-        const cpy1 = y1;
-        const cpx2 = x2 - curvature;
-        const cpy2 = y2;
+        // For input nodes: the path goes node (left) -> cursor (right)
+        // Control points should curve LEFT from node, and RIGHT to cursor (opposite of output)
+        let cpx1, cpy1, cpx2, cpy2;
+        if (isInputNode) {
+            cpx1 = x1 - curvature;  // Extend LEFT from the input node
+            cpy1 = y1;
+            cpx2 = x2 + curvature;  // Approach from RIGHT to the cursor
+            cpy2 = y2;
+        } else {
+            // For output nodes: the path goes node (left) -> cursor (right)
+            // Control points curve RIGHT from node, and LEFT to cursor
+            cpx1 = x1 + curvature;  // Extend RIGHT from the output node
+            cpy1 = y1;
+            cpx2 = x2 - curvature;  // Approach from LEFT to the cursor
+            cpy2 = y2;
+        }
         
         return `M ${x1} ${y1} C ${cpx1} ${cpy1}, ${cpx2} ${cpy2}, ${x2} ${y2}`;
     }
@@ -468,8 +636,11 @@ class NodeSystem {
         const transform = window.app?.workspaceTransform || { scale: 1, translateX: 0, translateY: 0 };
         const screenX = clientX - rect.left;
         const screenY = clientY - rect.top;
-        const worldX = (screenX / transform.scale) - transform.translateX;
-        const worldY = (screenY / transform.scale) - transform.translateY;
+        // Convert screen coordinates to canvas/world coordinates
+        // screen = (world * scale) + translate
+        // world = (screen - translate) / scale
+        const worldX = (screenX - transform.translateX) / transform.scale;
+        const worldY = (screenY - transform.translateY) / transform.scale;
         return { x: worldX, y: worldY };
     }
 
@@ -509,16 +680,11 @@ class NodeSystem {
             missiles: 'Missile Design',
             outfit: 'Ship Outfit',
             loadouts: 'Equipment Loadout',
-            powerplants: 'Powerplant',
-            factories: 'Factory',
-            shipyards: 'Shipyard',
             shipCore: 'Ship Core',
             shipBerth: 'Ship Berths',
             shipHulls: 'Hull Plan',
             statistics: 'Statistics Hub',
-            reroute: 'Reroute Node',
-            power: 'Power',
-            data: 'Data'
+            reroute: 'Reroute Node'
         };
 
         compatibleWidgets.forEach((widgetType) => {
@@ -615,7 +781,21 @@ class NodeSystem {
     connectNodesRespectingDirection(nodeIdA, nodeIdB) {
         const nodeA = this.getNodeById(nodeIdA);
         const nodeB = this.getNodeById(nodeIdB);
-        if (!nodeA || !nodeB) return;
+        
+        if (!nodeA || !nodeB) {
+            return;
+        }
+
+        // Validate nodes are compatible
+        if (nodeA.widgetId === nodeB.widgetId) {
+            return;  // Same widget
+        }
+        if (nodeA.type === nodeB.type) {
+            return;  // Both same direction (input/output)
+        }
+        if (!this.areNodeTypesCompatible(nodeA.nodeType, nodeB.nodeType)) {
+            return;  // Different node types
+        }
 
         if (nodeA.type === 'output' && nodeB.type === 'input') {
             this.createConnection(nodeIdA, nodeIdB);
@@ -646,81 +826,74 @@ class NodeSystem {
     }
     
     getCompatibleWidgetTypes(nodeType, nodeDirection) {
-        // Define compatible widget types for different node types
-        const compatibilityMap = {
-            'power': {
-                'input': ['powerplants'],
-                'output': ['ship', 'craft']
-            },
-            'weapon': {
-                'input': ['missiles'],
-                'output': ['loadouts']
-            },
-            'component': {
-                'input': ['factories'],
-                'output': ['ship', 'craft', 'troops']
-            },
-            'magazine': {
-                'input': ['loadouts'],
-                'output': ['ship', 'craft']
-            },
-            'loadout': {
-                'input': ['ship'],
-                'output': ['loadouts']
-            },
-            'powerplant': {
-                'input': ['powerplants'],
-                'output': ['ship', 'craft']
-            },
-            'data': {
-                'input': ['ship', 'craft', 'troops'],
-                'output': ['factories', 'shipyards']
+        // New system: find all widget types that have nodes matching this node name
+        // and have the opposite direction (input connects to output, vice versa)
+        const oppositeDirection = nodeDirection === 'input' ? 'output' : 'input';
+        
+        // Define node configurations for each widget type
+        const widgetNodeConfig = {
+            'ship': {
+                inputs: ['Class'],
+                outputs: ['Class', 'Statistics']
             },
             'outfit': {
-                'input': ['ship'],
-                'output': ['outfit']
-            },
-            'statistics': {
-                'input': ['ship', 'outfit'],
-                'output': ['statistics']
-            },
-            'ship-class': {
-                'input': ['ship'],
-                'output': ['ship']
-            },
-            'core': {
-                'input': ['shipCore'],
-                'output': ['outfit']
-            },
-            'berth': {
-                'input': ['outfit'],
-                'output': ['shipBerth']
-            },
-            'outfit-hull': {
-                'input': ['outfit'],
-                'output': ['shipHulls']
-            },
-            'loadout-hull': {
-                'input': ['loadouts'],
-                'output': ['shipHulls']
-            },
-            'staff': {
-                'input': ['shipBerth'],
-                'output': ['shipHulls']
-            },
-            'troop': {
-                'input': ['troops'],
-                'output': ['shipBerth']
+                inputs: ['Class', 'Core'],
+                outputs: ['Outfit', 'Statistics']
             },
             'craft': {
-                'input': ['craft'],
-                'output': ['loadouts']
+                inputs: ['Core'],
+                outputs: ['Craft']
+            },
+            'troops': {
+                inputs: [],
+                outputs: ['Troop']
+            },
+            'missiles': {
+                inputs: [],
+                outputs: ['Weapon']
+            },
+            'loadouts': {
+                inputs: ['Class', 'Craft', 'Weapon'],
+                outputs: ['Loadout']
+            },
+            'shipCore': {
+                inputs: [],
+                outputs: ['Core']
+            },
+            'shipBerth': {
+                inputs: ['Outfit', 'Troop'],
+                outputs: ['Berth']
+            },
+            'shipHulls': {
+                inputs: ['Outfit', 'Berth', 'Loadout'],
+                outputs: ['Statistics']
+            },
+            'statistics': {
+                inputs: ['Statistics'],
+                outputs: []
+            },
+            'reroute': {
+                inputs: [],
+                outputs: []
             }
         };
-
-        const base = compatibilityMap[nodeType]?.[nodeDirection] || [];
-        const results = Array.from(new Set([...base, 'reroute']));
-        return results;
+        
+        const compatibleWidgets = [];
+        
+        // Find widgets that have matching nodes in the opposite direction
+        for (const [widgetType, config] of Object.entries(widgetNodeConfig)) {
+            const nodesToCheck = oppositeDirection === 'input' ? config.inputs : config.outputs;
+            if (nodesToCheck.includes(nodeType)) {
+                compatibleWidgets.push(widgetType);
+            }
+        }
+        
+        // Always include reroute as an option
+        if (!compatibleWidgets.includes('reroute')) {
+            compatibleWidgets.push('reroute');
+        }
+        
+        return compatibleWidgets;
     }
     
     findCompatibleNode(widget, sourceNode) {

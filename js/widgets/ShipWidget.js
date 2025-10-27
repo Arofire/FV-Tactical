@@ -252,8 +252,7 @@ class ShipWidget extends Widget {
         const node = this.nodes.get(nodeId);
         if (node && node.nodeType === 'ship-class') {
             this.updateSubclassState();
-        }
-        this.queuePreflightCheck();
+    }
     }
 
     notifyShipChildrenToRefresh() {
@@ -266,6 +265,19 @@ class ShipWidget extends Widget {
             });
         }
         this.queuePreflightCheck();
+    }
+    
+    notifyOutfitChildrenToRefresh(methodName = 'handleParentTechRequirementChange') {
+        if (!this.children || this.children.size === 0 || !window.widgetManager) return;
+        this.children.forEach(childId => {
+            const childWidget = window.widgetManager.getWidget(childId);
+            if (childWidget && childWidget.type === 'outfit') {
+                const fn = childWidget?.[methodName];
+                if (typeof fn === 'function') {
+                    fn.call(childWidget, this);
+                }
+            }
+        });
     }
 
     onParentLinked(parentWidget) {
@@ -316,7 +328,7 @@ class ShipWidget extends Widget {
         const roleInputValue = this.getRoleInputValue();
         
         this.setSectionContent(informationSection, `
-            <div class="ship-information-header widget-sticky-header" id="${this.id}-information-header">
+            <div class="ship-information-header" id="${this.id}-information-header">
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-operational" ${this.shipData.operational ? 'checked' : ''}> Operational</label>
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-tech" ${this.shipData.ignoreTechRequirements ? 'checked' : ''}> Ignore Tech</label>
                 <div class="ship-dvp">
@@ -476,14 +488,18 @@ class ShipWidget extends Widget {
         if (this._eventsBound) return;
         this._eventsBound = true;
         
-        const nameInput = document.getElementById(`${this.id}-name`);
-        const notesInput = document.getElementById(`${this.id}-class-notes`);
-        const ignoreTechCheckbox = document.getElementById(`${this.id}-ignore-tech`);
-        const operationalCheckbox = document.getElementById(`${this.id}-operational`);
-    const dvpInput = document.getElementById(`${this.id}-dvp-cost`);
-    const roleSelect = document.getElementById(`${this.id}-role-select`);
-    const customRoleInput = document.getElementById(`${this.id}-role-custom`);
-    const roleToggleBtn = document.getElementById(`${this.id}-role-toggle`);
+        // Use widget element's querySelector for elements within this widget
+        // This is more reliable than document.getElementById
+        const getElement = (id) => this.element?.querySelector(`#${id}`);
+        
+        const nameInput = getElement(`${this.id}-name`);
+        const notesInput = getElement(`${this.id}-class-notes`);
+        const ignoreTechCheckbox = getElement(`${this.id}-ignore-tech`);
+        const operationalCheckbox = getElement(`${this.id}-operational`);
+    const dvpInput = getElement(`${this.id}-dvp-cost`);
+    const roleSelect = getElement(`${this.id}-role-select`);
+    const customRoleInput = getElement(`${this.id}-role-custom`);
+    const roleToggleBtn = getElement(`${this.id}-role-toggle`);
     this.roleSelectElement = roleSelect;
     this.roleCustomInput = customRoleInput;
     this.roleToggleButton = roleToggleBtn;
@@ -505,6 +521,7 @@ class ShipWidget extends Widget {
             ignoreTechCheckbox.addEventListener('change', (e) => {
                 this.shipData.ignoreTechRequirements = e.target.checked;
                 this.queuePreflightCheck();
+                this.notifyOutfitChildrenToRefresh();
             });
         }
         if (operationalCheckbox) {
@@ -977,49 +994,31 @@ class ShipWidget extends Widget {
         };
 
         const nodeIds = {
-            classInput: `${this.id}-node-input-ship-class`,
-            statsOutput: `${this.id}-node-output-statistics`,
-            subclassOutput: `${this.id}-node-output-ship-class`,
-            outfitOutput: `${this.id}-node-output-outfit`,
-            loadoutOutput: `${this.id}-node-output-loadout`
+            classInput: `${this.id}-node-input-class`,
+            classOutput: `${this.id}-node-output-class`,
+            statsOutput: `${this.id}-node-output-statistics`
         };
 
-        ensureNode('input', 'ship-class', 'Class', 0, 0.25, {
+        ensureNode('input', 'Class', 'Class', 0, 0.25, {
             nodeId: nodeIds.classInput,
             anchorId: 'ship-information',
             sectionId: 'information',
             minSpacing: 36
         });
 
-        ensureNode('output', 'statistics', 'Stats', 1, 0.25, {
-            nodeId: nodeIds.statsOutput,
+        ensureNode('output', 'Class', 'Class', 1, 0.25, {
+            nodeId: nodeIds.classOutput,
             anchorId: 'ship-information',
             sectionId: 'information',
             anchorOffset: 20,
             minSpacing: 32
         });
 
-        ensureNode('output', 'ship-class', 'Subclass', 1, 0.55, {
-            nodeId: nodeIds.subclassOutput,
+        ensureNode('output', 'Statistics', 'Statistics', 1, 0.4, {
+            nodeId: nodeIds.statsOutput,
             anchorId: 'ship-information',
             sectionId: 'information',
             anchorOffset: 40,
-            minSpacing: 32
-        });
-
-        ensureNode('output', 'outfit', 'Outfit', 1, 0.4, {
-            nodeId: nodeIds.outfitOutput,
-            anchorId: 'ship-composition',
-            sectionId: 'composition',
-            anchorOffset: -30,
-            minSpacing: 32
-        });
-
-        ensureNode('output', 'loadout', 'Loadout', 1, 0.65, {
-            nodeId: nodeIds.loadoutOutput,
-            anchorId: 'ship-composition',
-            sectionId: 'composition',
-            anchorOffset: 30,
             minSpacing: 32
         });
 

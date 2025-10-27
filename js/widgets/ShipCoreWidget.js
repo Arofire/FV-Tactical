@@ -28,7 +28,7 @@ class ShipCoreWidget extends Widget {
 
     createNodes() {
         this.clearNodes();
-        this.addNode('output', 'core', 'Core', 1, 0.4, {
+        this.addNode('output', 'Core', 'Core', 1, 0.4, {
             sectionId: 'info',
             anchorId: `${this.id}-info`
         });

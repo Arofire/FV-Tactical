@@ -66,7 +66,7 @@ class MissilesWidget extends Widget {
 
     createNodes() {
         this.clearNodes();
-        this.addNode('output', 'weapon', 'Weapon', 1, 0.4, {
+        this.addNode('output', 'Weapon', 'Weapon', 1, 0.4, {
             sectionId: 'design',
             anchorId: `${this.id}-design`
         });
