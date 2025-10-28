@@ -37,10 +37,8 @@ class FVTacticalApp {
         console.log('FVTacticalApp: Tech tree initialized');
         this.updateEmpireDisplay();
         
-        // Try to load saved data
-        this.loadSavedData();
-        
-        // Enable auto-save
+        // Enable auto-save (saves to localStorage in the background)
+        // Note: Manual import/export via buttons takes precedence over auto-save
         this.dataManager.enableAutoSave(
             this.empire,
             () => this.widgetManager.widgets,
@@ -51,6 +49,57 @@ class FVTacticalApp {
         this.preflightCheck.runCheck();
         
         console.log('FV-Tactical initialized successfully');
+    }
+
+    loadSavedData() {
+        try {
+            const savedData = this.dataManager.loadFromLocalStorage();
+            if (!savedData) {
+                console.log('No saved data found');
+                return;
+            }
+
+            console.log('Loading saved data...');
+            
+            // Restore empire data
+            if (savedData.empire) {
+                Object.assign(this.empire, savedData.empire);
+                this.updateEmpireDisplay();
+                console.log('Empire data restored');
+            }
+
+            // Restore widgets
+            if (savedData.widgets && Array.isArray(savedData.widgets)) {
+                console.log(`Restoring ${savedData.widgets.length} widgets...`);
+                for (const widgetData of savedData.widgets) {
+                    try {
+                        const widget = this.createWidget(widgetData.type, widgetData.x, widgetData.y);
+                        if (widget && widgetData.data) {
+                            // Load serialized data (position, internal state, etc.)
+                            widget.fromJSON(widgetData);
+                        }
+                    } catch (error) {
+                        console.error(`Failed to restore widget of type ${widgetData.type}:`, error);
+                    }
+                }
+                console.log('Widgets restored');
+            }
+
+            // Restore connections
+            if (savedData.connections && Array.isArray(savedData.connections)) {
+                console.log(`Restoring ${savedData.connections.length} connections...`);
+                this.nodeSystem.fromJSON(savedData.connections);
+                console.log('Connections restored');
+            }
+
+            // Update UI
+            if (this.updateMinimap) {
+                this.updateMinimap();
+            }
+            console.log('Saved data loaded successfully');
+        } catch (error) {
+            console.error('Error loading saved data:', error);
+        }
     }
 
     setupUI() {
@@ -808,7 +857,7 @@ class FVTacticalApp {
             { type: 'troops', label: 'Troop Unit' },
             { type: 'missiles', label: 'Missile Design' },
             { type: 'outfit', label: 'Ship Outfit' },
-            { type: 'loadouts', label: 'Equipment Loadout' },
+            { type: 'loadouts', label: 'Loadout' },
             { type: 'shipCore', label: 'Ship Core' },
             { type: 'shipBerth', label: 'Ship Berths' },
             { type: 'shipHulls', label: 'Hull Plan' },

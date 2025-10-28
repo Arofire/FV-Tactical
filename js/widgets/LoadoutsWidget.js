@@ -46,18 +46,23 @@ class LoadoutsWidget extends Widget {
     createNodes() {
         this.clearNodes();
 
-        this.addNode('input', 'Class', 'Class', 0, 0.2, {
+        this.addNode('input', 'Outfit', 'Outfit', 0, 0.15, {
             sectionId: 'config',
             anchorId: `${this.id}-config`
         });
 
-        this.addNode('input', 'Craft', 'Craft', 0, 0.45, {
+        this.addNode('input', 'Class', 'Class', 0, 0.35, {
+            sectionId: 'config',
+            anchorId: `${this.id}-config`
+        });
+
+        this.addNode('input', 'Craft', 'Craft', 0, 0.55, {
             sectionId: 'config',
             anchorId: `${this.id}-config`,
             anchorOffset: 32
         });
 
-        this.addNode('input', 'Weapon', 'Weapon', 0, 0.65, {
+        this.addNode('input', 'Weapon', 'Weapon', 0, 0.75, {
             sectionId: 'config',
             anchorId: `${this.id}-config`,
             anchorOffset: 64

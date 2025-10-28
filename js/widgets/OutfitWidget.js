@@ -56,6 +56,11 @@ class OutfitWidget extends Widget {
                 spinal: '',
                 offensive: [],
                 defensive: []
+            },
+            attachments: {
+                clamp: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 },
+                tether: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 },
+                adapter: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 }
             }
         };
 
@@ -339,34 +344,15 @@ class OutfitWidget extends Widget {
         `);
         sectionsContainer.appendChild(roleSection.section);
         
-        // Create Hardpoints section
-        const hardpointsSection = this.createSection('hardpoints', 'Hardpoints');
-        const hardpointsContent = hardpointsSection.contentContainer;
-        hardpointsContent.id = `${this.id}-hardpoints-section`;
-        const hardpointRows = this.hardpointDefinitions.map(({ key }) => `
-            <tr>
-                <td>${key}</td>
-                <td id="${this.id}-hp-base-${key}">${this.outfitData.hardpoints.base[key]}</td>
-                <td><input type="number" id="${this.id}-hp-merge-${key}" min="0" step="3" value="${this.outfitData.hardpoints.merge[key]}"></td>
-                <td><input type="number" id="${this.id}-hp-split-${key}" min="0" step="1" value="${this.outfitData.hardpoints.split[key]}"></td>
-            </tr>
-        `).join('');
-        this.setSectionContent(hardpointsSection, `
-            <table class="hardpoints-table">
-                <thead>
-                    <tr>
-                        <th>Hardpoint</th>
-                        <th>Base</th>
-                        <th>Merge (−3)</th>
-                        <th>Split (+1)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${hardpointRows}
-                </tbody>
-            </table>
+        // Create Propulsion section
+        const propulsionSection = this.createSection('propulsion', 'Propulsion');
+        this.setSectionContent(propulsionSection, `
+            <div class="input-group">
+                <label>Remass</label>
+                <div class="stat-display" id="${this.id}-remass-display">0</div>
+            </div>
         `);
-        sectionsContainer.appendChild(hardpointsSection.section);
+        sectionsContainer.appendChild(propulsionSection.section);
         
         // Create Systems section
         const systemsSection = this.createSection('systems', 'Systems');
@@ -390,6 +376,13 @@ class OutfitWidget extends Widget {
         this.setSectionContent(weaponsSection, this.renderWeaponsSection());
         sectionsContainer.appendChild(weaponsSection.section);
 
+        // Create Attachment section
+        const attachmentSection = this.createSection('attachment', 'Attachment');
+        const attachmentContent = attachmentSection.contentContainer;
+        attachmentContent.id = `${this.id}-attachment-section`;
+        this.setSectionContent(attachmentSection, this.renderAttachmentSection());
+        sectionsContainer.appendChild(attachmentSection.section);
+
         this.setupEventListeners();
         this.registerLayoutAnchors();
         this.updateHardpointHeader();
@@ -404,6 +397,7 @@ class OutfitWidget extends Widget {
             { id: 'outfit-meta', selector: `#${this.id}-meta` },
             { id: 'outfit-role', selector: `#${this.id}-role` },
             { id: 'outfit-hardpoints', selector: `#${this.id}-hardpoints` },
+            { id: 'outfit-propulsion', selector: `#${this.id}-propulsion` },
             { id: 'outfit-systems', selector: `#${this.id}-systems` },
             { id: 'outfit-features', selector: `#${this.id}-features` },
             { id: 'outfit-weapons', selector: `#${this.id}-weapons` }
@@ -484,6 +478,7 @@ class OutfitWidget extends Widget {
         this.setupHardpointControls();
         this.setupSystemsEventListeners();
         this.setupWeaponsEventListeners();
+        this.setupAttachmentEventListeners();
     }
 
     applyRoleMode(mode) {
@@ -515,7 +510,7 @@ class OutfitWidget extends Widget {
 
         if (roleToggle) {
             if (mode === 'dropdown') {
-                roleToggle.textContent = '✏️';
+                roleToggle.textContent = '🖉';
                 roleToggle.title = 'Use custom role';
             } else {
                 roleToggle.textContent = '🌳';
@@ -542,6 +537,7 @@ class OutfitWidget extends Widget {
                     this.outfitData.hardpoints.merge[key] = value;
                     this.updateHardpointHeader();
                     this.refreshSummary();
+                    this.onOutfitDataChanged();
                 });
             }
 
@@ -552,20 +548,56 @@ class OutfitWidget extends Widget {
                     this.outfitData.hardpoints.split[key] = value;
                     this.updateHardpointHeader();
                     this.refreshSummary();
+                    this.onOutfitDataChanged();
                 });
             }
         });
     }
 
     updateHardpointHeader() {
+        let hasNegativeHardpoints = false;
+        
         this.hardpointDefinitions.forEach(({ key }) => {
             const base = this.outfitData.hardpoints.base[key] || 0;
             const merged = this.outfitData.hardpoints.merge[key] || 0;
             const split = this.outfitData.hardpoints.split[key] || 0;
-            const value = Math.max(0, base - merged + split);
+            
+            // Calculate total attachments consumed
+            const clampAttachments = this.outfitData.attachments.clamp[key] || 0;
+            const tetherAttachments = this.outfitData.attachments.tether[key] || 0;
+            const adapterAttachments = this.outfitData.attachments.adapter[key] || 0;
+            const totalAttachments = clampAttachments + tetherAttachments + adapterAttachments;
+            
+            // Allow negative values instead of flooring to 0
+            const value = base - merged + split - totalAttachments;
+            if (value < 0) {
+                hasNegativeHardpoints = true;
+            }
+            
             const valueEl = document.getElementById(`${this.id}-hp-value-${key}`);
             if (valueEl) valueEl.textContent = value;
         });
+        
+        // Update preflight check for hardpoint requirements
+        this.updatePreflightHardpointCheck(hasNegativeHardpoints);
+    }
+    
+    updatePreflightHardpointCheck(hasNegativeHardpoints) {
+        if (!window.preflightCheck) return;
+        
+        // Clear any previous hardpoint requirement errors for this widget
+        const currentIssues = window.preflightCheck.widgetIssues.get(this.id);
+        if (currentIssues) {
+            currentIssues.errors = currentIssues.errors.filter(err => err.message !== 'Widget does not meet hardpoint requirements');
+        }
+        
+        // Add error if any hardpoint is negative
+        if (hasNegativeHardpoints) {
+            window.preflightCheck.addError('Widget does not meet hardpoint requirements', this.id);
+        }
+        
+        // Trigger preflight check update
+        window.preflightCheck.runCheck();
     }
 
     updateHardpointBaseDisplay() {
@@ -581,6 +613,11 @@ class OutfitWidget extends Widget {
         if (el) el.textContent = this.outfitData.stats.shipyardMonths ?? 0;
     }
 
+    updateRemassDisplay() {
+        const el = document.getElementById(`${this.id}-remass-display`);
+        if (el) el.textContent = this.outfitData.stats.remass ?? 0;
+    }
+
     renderSystemsSection() {
         return `
             <div class="system-hulls-info">
@@ -594,7 +631,6 @@ class OutfitWidget extends Widget {
             <div class="widget-tabs">
                 <button class="widget-tab active" data-tab="modules">System Modules</button>
                 <button class="widget-tab" data-tab="heat">Heat Management</button>
-                <button class="widget-tab" data-tab="summary">Summary</button>
             </div>
             <div class="widget-tab-content active" id="${this.id}-modules-tab">
                 <div class="modules-section">
@@ -643,23 +679,15 @@ class OutfitWidget extends Widget {
                     </div>
                 </div>
             </div>
-            <div class="widget-tab-content" id="${this.id}-summary-tab">
-                <div class="systems-summary">
-                    <h5>Systems Summary</h5>
-                    <div class="summary-stats" id="${this.id}-summary-stats"></div>
-                </div>
-            </div>
         `;
     }
 
     renderSystemsContent() {
         const available = document.getElementById(`${this.id}-available-modules`);
         const installed = document.getElementById(`${this.id}-installed-modules`);
-        const summary = document.getElementById(`${this.id}-summary-stats`);
 
         if (available) available.innerHTML = this.renderAvailableModules();
         if (installed) installed.innerHTML = this.renderInstalledModules();
-        if (summary) summary.innerHTML = this.renderSummaryStats();
         this.updateHullBar();
     }
 
@@ -708,21 +736,6 @@ class OutfitWidget extends Widget {
         }).join('');
     }
 
-    renderSummaryStats() {
-        const modules = this.outfitData.systemsData.modules;
-        const utilityModules = modules.filter(m => this.moduleTypes[m.moduleId]?.category === 'utility').length;
-        const warfareModules = modules.filter(m => this.moduleTypes[m.moduleId]?.category === 'warfare').length;
-        const propulsionModules = modules.filter(m => this.moduleTypes[m.moduleId]?.category === 'propulsion').length;
-        const totalHeat = this.outfitData.systemsData.heatManagement.magneticSystems + this.outfitData.systemsData.heatManagement.demonSystems;
-        return `
-            <div class="stat-item"><label>Utility Modules:</label><span>${utilityModules}</span></div>
-            <div class="stat-item"><label>Warfare Modules:</label><span>${warfareModules}</span></div>
-            <div class="stat-item"><label>Propulsion Modules:</label><span>${propulsionModules}</span></div>
-            <div class="stat-item"><label>Heat Management Systems:</label><span>${totalHeat}</span></div>
-            <div class="stat-item"><label>System Hulls Used:</label><span>${this.outfitData.systemsData.usedSystemHulls} / ${this.outfitData.systemsData.availableSystemHulls}</span></div>
-        `;
-    }
-
     setupSystemsEventListeners() {
         const tabs = this.element.querySelectorAll('.widget-tab');
         tabs.forEach(btn => {
@@ -766,10 +779,6 @@ class OutfitWidget extends Widget {
         const contents = this.element.querySelectorAll('.widget-tab-content');
         tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
         contents.forEach(section => section.classList.toggle('active', section.id === `${this.id}-${tab}-tab`));
-        if (tab === 'summary') {
-            const summary = document.getElementById(`${this.id}-summary-stats`);
-            if (summary) summary.innerHTML = this.renderSummaryStats();
-        }
     }
 
     canInstallModule(moduleId) {
@@ -1216,49 +1225,112 @@ class OutfitWidget extends Widget {
     }
 
     onParentLinked(parentWidget) {
-        if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
-            this.parentShipWidget = parentWidget;
-            this.applyParentInheritance(parentWidget);
-        }
+        // No longer using parent widget hierarchy for Class data
+        // Class data comes through node connections instead
     }
 
     onParentUnlinked(parentWidget) {
-        if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
-            if (this.parentShipWidget === parentWidget) {
-                this.parentShipWidget = null;
-            }
-            this.resetInheritedValues();
-        }
+        // No longer using parent widget hierarchy for Class data
     }
 
-    applyParentInheritance(shipWidget) {
-        if (shipWidget && (shipWidget.type === 'ship' || shipWidget.type === 'shipPrototype')) {
-            this.parentShipWidget = shipWidget;
+    handleNodeConnectionChange(nodeId) {
+        super.handleNodeConnectionChange(nodeId);
+        // When any node connection changes, update derived data
+        this.syncClassData();
+    }
+
+    onParentDataChanged(parentWidgetId) {
+        // When a parent widget's data changes, pull fresh data
+        console.log(`[OutfitWidget ${this.id}] Parent changed (${parentWidgetId}), syncing Class data...`);
+        this.syncClassData();
+    }
+
+    /**
+     * Called whenever significant outfit data changes
+     * Notifies children that depend on this outfit's data
+     */
+    onOutfitDataChanged() {
+        this.notifyChildrenOfChange();
+    }
+
+    /**
+     * Pull all Class widget data from the Class input node connection
+     * Replaces manual applyParentInheritance method with generic node-based approach
+     */
+    syncClassData() {
+        // Get data connected to the Class input node
+        const classNodeDataArray = this.getConnectedDataByNodeType('Class');
+        console.log(`[OutfitWidget ${this.id}] getConnectedDataByNodeType('Class') returned:`, classNodeDataArray);
+        
+        const classNodeData = classNodeDataArray[0];
+        
+        if (!classNodeData) {
+            // No class connected, reset to defaults
+            console.log(`[OutfitWidget ${this.id}] No Class data connected, resetting values`);
+            this.resetInheritedValues();
+            return;
         }
-        const shipData = shipWidget?.shipData || {};
-        const stats = shipData.statistics || {};
-        const hulls = shipData.hullComposition || {};
 
-        // Mirror ignoreTechRequirements flag from parent ship
-        this.ignoreTechRequirements = shipData.ignoreTechRequirements ?? false;
+        console.log(`[OutfitWidget ${this.id}] classNodeData:`, classNodeData);
 
-        this.outfitData.stats.cargo = stats.cargo ?? 0;
-        this.outfitData.stats.remass = stats.remass ?? hulls.remass ?? 0;
-        this.outfitData.stats.shipyardMonths = stats.shipyardMonths ?? 0;
-        this.outfitData.stats.systemHulls = hulls.system ?? 0;
-        this.outfitData.stats.powerplantHulls = hulls.powerplant ?? 0;
+        // classNodeData.data is the ShipWidget's getSerializedData(), which has shipData nested
+        const fullData = classNodeData.data;
+        if (!fullData) {
+            console.log(`[OutfitWidget ${this.id}] fullData is empty/null`);
+            return;
+        }
 
-        const hardpointsBase = shipData.hardpointsBase || shipData.hardpoints || {};
-        this.hardpointDefinitions.forEach(({ key }) => {
-            this.outfitData.hardpoints.base[key] = hardpointsBase[key] ?? this.outfitData.hardpoints.base[key] ?? 0;
+        console.log(`[OutfitWidget ${this.id}] fullData keys:`, Object.keys(fullData));
+
+        // Extract the shipData from the connected widget
+        const classData = fullData.shipData || fullData;
+
+        console.log(`[OutfitWidget ${this.id}] Synced Class data:`, {
+            ignoreTechRequirements: classData.ignoreTechRequirements,
+            hardpointsUHP: classData.hardpoints?.UHP,
+            systemHulls: classData.hullComposition?.system,
+            remass: classData.resources?.remass
         });
 
-        this.updateHardpointBaseDisplay();
+        // Mirror ignoreTechRequirements flag from class widget
+        this.ignoreTechRequirements = classData.ignoreTechRequirements ?? false;
+
+        // Update hardpoint base values from Class hardpoints
+        // ShipWidget stores hardpoints as { UHP, SHP, PHP, MHP, ... }
+        // We need to update our base hardpoints to match
+        if (classData.hardpoints) {
+            this.hardpointDefinitions.forEach(({ key }) => {
+                const value = classData.hardpoints[key] ?? 0;
+                if (!this.outfitData.hardpoints.base) {
+                    this.outfitData.hardpoints.base = {};
+                }
+                this.outfitData.hardpoints.base[key] = value;
+            });
+        }
+
+        // Update shipyard months from Class system hulls
+        if (classData.hullComposition?.system) {
+            this.outfitData.stats.systemHulls = classData.hullComposition.system;
+            this.outfitData.stats.shipyardMonths = classData.hullComposition.system;
+        }
+
+        // Update Remass from Class resources
+        if (classData.resources?.remass !== undefined) {
+            this.outfitData.stats.remass = classData.resources.remass;
+        }
+
+        // Update other inherited stats
+        this.outfitData.stats.cargo = classData.resources?.cargo ?? 0;
+        this.outfitData.stats.powerplantHulls = classData.hullComposition?.powerplant ?? 0;
+
+        this.updateHardpointHeader();
         this.updateShipyardMonths();
+        this.updateRemassDisplay();
         this.refreshWeaponDropdowns();
     }
 
     resetInheritedValues() {
+        // Reset inherited values when Class connection is removed
         this.ignoreTechRequirements = false;
         this.outfitData.stats.cargo = 0;
         this.outfitData.stats.remass = 0;
@@ -1270,26 +1342,12 @@ class OutfitWidget extends Widget {
         });
         this.updateHardpointBaseDisplay();
         this.updateShipyardMonths();
+        this.updateRemassDisplay();
         this.refreshWeaponDropdowns();
-    }
-
-    handleParentTechRequirementChange(parentWidget) {
-        // Mirror the ignoreTechRequirements flag from parent
-        if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
-            this.ignoreTechRequirements = parentWidget.shipData?.ignoreTechRequirements ?? false;
-            // Refresh weapons to apply new filtering
-            this.refreshWeaponDropdowns();
-        }
     }
 
     createNodes() {
         this.clearNodes();
-
-        this.addNode('input', 'Class', 'Class', 0, 0.2, {
-            anchorId: 'outfit-meta',
-            sectionId: 'meta',
-            minSpacing: 32
-        });
 
         this.addNode('input', 'Core', 'Core', 0, 0.4, {
             anchorId: 'outfit-meta',
@@ -1298,11 +1356,10 @@ class OutfitWidget extends Widget {
             minSpacing: 32
         });
 
-        this.addNode('output', 'Outfit', 'Outfit', 1, 0.2, {
+        this.addNode('input', 'Class', 'Class', 0, 0.2, {
             anchorId: 'outfit-meta',
             sectionId: 'meta',
-            minSpacing: 32,
-            anchorOffset: 48
+            minSpacing: 32
         });
 
         this.addNode('output', 'Statistics', 'Statistics', 1, 0.35, {
@@ -1310,6 +1367,13 @@ class OutfitWidget extends Widget {
             sectionId: 'meta',
             anchorOffset: 80,
             minSpacing: 32
+        });
+
+        this.addNode('output', 'Outfit', 'Outfit', 1, 0.2, {
+            anchorId: 'outfit-meta',
+            sectionId: 'meta',
+            minSpacing: 32,
+            anchorOffset: 48
         });
 
         this.reflowNodes();
@@ -1399,6 +1463,11 @@ class OutfitWidget extends Widget {
                     merge: { ...this.outfitData.hardpoints.merge, ...(data.outfitData.hardpoints?.merge || {}) },
                     split: { ...this.outfitData.hardpoints.split, ...(data.outfitData.hardpoints?.split || {}) }
                 },
+                attachments: {
+                    clamp: { ...this.outfitData.attachments.clamp, ...(data.outfitData.attachments?.clamp || {}) },
+                    tether: { ...this.outfitData.attachments.tether, ...(data.outfitData.attachments?.tether || {}) },
+                    adapter: { ...this.outfitData.attachments.adapter, ...(data.outfitData.attachments?.adapter || {}) }
+                },
                 stats: { ...this.outfitData.stats, ...(data.outfitData.stats || {}) },
                 systemsData: {
                     availableSystemHulls: data.outfitData.systemsData?.availableSystemHulls ?? this.outfitData.systemsData.availableSystemHulls,
@@ -1417,6 +1486,14 @@ class OutfitWidget extends Widget {
             };
             this.roleMode = this.outfitData.roleMode || (this.outfitData.customRole ? 'custom' : 'dropdown');
             this.ensureRoleAvailable(this.outfitData.role);
+            
+            // Reset hardpoint base values when loading serialized data
+            // If this widget is connected to a class, syncClassData() will restore correct values
+            // If not connected, hardpoints should be 0 (not inherited from parent outfit)
+            this.hardpointDefinitions.forEach(({ key }) => {
+                this.outfitData.hardpoints.base[key] = 0;
+            });
+            
             this.syncFormFromData();
         }
     }
@@ -1430,6 +1507,7 @@ class OutfitWidget extends Widget {
 
         this.updateHardpointBaseDisplay();
         this.updateShipyardMonths();
+        this.updateRemassDisplay();
 
         const roleSelect = document.getElementById(`${this.id}-role-select`);
         const roleCustom = document.getElementById(`${this.id}-role-custom`);
@@ -1438,7 +1516,21 @@ class OutfitWidget extends Widget {
         this.applyRoleMode(this.outfitData.customRole ? 'custom' : 'dropdown');
 
         this.renderSystemsContent();
-        this.initializeWeaponsContent();
+        this.refreshWeaponDropdowns();
+        this.refreshAttachmentSection();
+        
+        // Sync any connected Class node data
+        this.syncClassData();
+    }
+
+    refreshAttachmentSection() {
+        const attachmentSection = document.getElementById(`${this.id}-attachment-section`);
+        if (attachmentSection) {
+            attachmentSection.innerHTML = this.renderAttachmentSection();
+            // Re-attach event listeners after refreshing
+            this._attachmentListenersAttached = false;
+            this.setupAttachmentEventListeners();
+        }
     }
 
     updateTitle(text) {
@@ -1572,5 +1664,60 @@ class OutfitWidget extends Widget {
         badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
         badge.textContent = text;
         return badge;
+    }
+
+    renderAttachmentSection() {
+        const attachmentTypes = ['Clamp', 'Tether', 'Adapter'];
+        const hardpointTypes = ['UHP', 'SHP', 'PHP', 'MHP'];
+        
+        let html = `<table class="weapons-table"><thead><tr><th>Type</th>`;
+        
+        // Add column headers
+        attachmentTypes.forEach(type => {
+            html += `<th>${type}</th>`;
+        });
+        html += `</tr></thead><tbody>`;
+        
+        // Add rows for each hardpoint type
+        hardpointTypes.forEach(hp => {
+            html += `<tr><td>${hp}</td>`;
+            attachmentTypes.forEach(type => {
+                const dataKey = type.toLowerCase();
+                const currentValue = this.outfitData.attachments[dataKey][hp] || 0;
+                html += `<td><input type="number" min="0" step="1" value="${currentValue}" class="attachment-spinbox" data-type="${dataKey}" data-hp="${hp}"></td>`;
+            });
+            html += `</tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        return html;
+    }
+
+    setupAttachmentEventListeners() {
+        const attachmentSection = document.getElementById(`${this.id}-attachment-section`);
+        if (!attachmentSection) {
+            return;
+        }
+        
+        // Check if listeners are already attached to prevent duplicates
+        if (this._attachmentListenersAttached) {
+            return;
+        }
+        this._attachmentListenersAttached = true;
+
+        // Event delegation for attachment spinboxes
+        attachmentSection.addEventListener('change', (e) => {
+            if (e.target.classList.contains('attachment-spinbox')) {
+                const { type, hp } = e.target.dataset;
+                const newValue = parseInt(e.target.value, 10) || 0;
+                
+                if (this.outfitData.attachments[type]) {
+                    this.outfitData.attachments[type][hp] = newValue;
+                    
+                    // Update hardpoint header to reflect new remaining hardpoints
+                    this.updateHardpointHeader();
+                }
+            }
+        });
     }
 }

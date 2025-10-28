@@ -679,7 +679,7 @@ class NodeSystem {
             troops: 'Troop Unit',
             missiles: 'Missile Design',
             outfit: 'Ship Outfit',
-            loadouts: 'Equipment Loadout',
+            loadouts: 'Loadout',
             shipCore: 'Ship Core',
             shipBerth: 'Ship Berths',
             shipHulls: 'Hull Plan',
@@ -853,7 +853,7 @@ class NodeSystem {
                 outputs: ['Weapon']
             },
             'loadouts': {
-                inputs: ['Class', 'Craft', 'Weapon'],
+                inputs: ['Outfit', 'Class', 'Craft', 'Weapon'],
                 outputs: ['Loadout']
             },
             'shipCore': {

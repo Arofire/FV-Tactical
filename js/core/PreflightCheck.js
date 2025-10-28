@@ -5,25 +5,40 @@ class PreflightCheck {
         this.widgetManager = widgetManager;
         this.nodeSystem = nodeSystem;
         
-    this.alerts = [];
-    this.warnings = [];
+        this.alerts = [];
+        this.warnings = [];
         this.errors = [];
         this.techRequirements = [];
         
         // Track issues by widget ID
-    this.widgetIssues = new Map(); // widgetId -> { alerts: [], warnings: [], errors: [], techRequirements: [] }
+        this.widgetIssues = new Map(); // widgetId -> { alerts: [], warnings: [], errors: [], techRequirements: [] }
+        this.checkedWidgetsThisRun = new Set(); // Track which widgets were checked this run
         
         // New floating overlay elements
         this.preflightToggle = document.getElementById('preflightControl');
         this.preflightOverlay = document.getElementById('preflightOverlay');
         this.preflightIssues = document.getElementById('preflightIssues');
         this.preflightSummary = document.getElementById('preflightSummary');
-        this.preflightMinimizeBtn = document.getElementById('preflightMinimizeBtn');
         
-    // Initialize toggle state (load persisted)
-    const persisted = localStorage.getItem('preflightExpanded');
-    this.isExpanded = persisted ? persisted === 'true' : false;
-    this.initToggle();
+        // Badge buttons for filtering
+        this.badgeAlerts = document.getElementById('badgeAlerts');
+        this.badgeWarnings = document.getElementById('badgeWarnings');
+        this.badgeErrors = document.getElementById('badgeErrors');
+        
+        // Track which issue types are visible
+        this.visibleIssueTypes = new Set(['alert', 'warning', 'error']);
+        
+        // Cache last known badge states to prevent unnecessary DOM updates
+        this.lastBadgeStates = {
+            alerts: -1,
+            warnings: -1,
+            errors: -1,
+            alertsVisible: null,
+            warningsVisible: null,
+            errorsVisible: null
+        };
+        
+        this.initBadgeToggle();
         
         // Track previous issues for animation
         this.previousIssues = new Map(); // issueId -> issueData
@@ -36,10 +51,12 @@ class PreflightCheck {
         this.errors = [];
         this.techRequirements = [];
         this.widgetIssues.clear();
+        this.checkedWidgetsThisRun.clear();
         
         // Check all widgets
         if (this.widgetManager) {
             for (const widget of this.widgetManager.widgets.values()) {
+                this.checkedWidgetsThisRun.add(widget.id);
                 this.checkWidget(widget);
             }
         }
@@ -169,8 +186,9 @@ class PreflightCheck {
             : Object.values(hull || {}).reduce((sum, count) => sum + count, 0);
 
         // Connection expectations for new node layout
-        const outfitConnections = this.countNodeConnections(widget, 'outfit', 'output');
-        if (outfitConnections === 0) {
+        // Ship outputs Class connections to Outfit widgets
+        const classConnections = this.countNodeConnections(widget, 'Class', 'output');
+        if (classConnections === 0) {
             this.addWarning(`Ship "${widget.title}" requires an Outfit connection`, widget.id);
         }
 
@@ -220,11 +238,6 @@ class PreflightCheck {
                     );
                 }
             });
-        }
-        
-        // Basic hull validation
-        if (totalHulls === 0) {
-            this.addWarning(`Ship "${widget.title}" has no hull sections`, widget.id);
         }
     }
 
@@ -358,19 +371,16 @@ class PreflightCheck {
     }
 
     checkOutfitWidget(widget) {
-        const classLinks = this.countNodeConnections(widget, 'outfit', 'input');
+        // Outfit receives Class input from Ship widgets
+        const classLinks = this.countNodeConnections(widget, 'Class', 'input');
         if (classLinks === 0) {
             this.addError(`Outfit "${widget.title}" must connect to a Ship Class`, widget.id);
         }
 
-        const coreLinks = this.countNodeConnections(widget, 'core', 'input');
+        // Outfit receives Core input from ShipCore widgets
+        const coreLinks = this.countNodeConnections(widget, 'Core', 'input');
         if (coreLinks === 0) {
             this.addError(`Outfit "${widget.title}" requires at least one Ship Core`, widget.id);
-        }
-
-        const berthLinks = this.countNodeConnections(widget, 'berth', 'output');
-        if (berthLinks === 0) {
-            this.addWarning(`Outfit "${widget.title}" is not providing any Berth plans`, widget.id);
         }
 
         const hullLinks = this.countNodeConnections(widget, 'outfit-hull', 'output');
@@ -380,10 +390,12 @@ class PreflightCheck {
     }
 
     checkShipCoreWidget(widget) {
-        const coreLinks = this.countNodeConnections(widget, 'core', 'output');
-        if (coreLinks === 0) {
-            this.addAlert(`Ship core "${widget.title}" is unused`, widget.id);
+        // Only alert if the core has no connections (unused)
+        const coreLinks = this.countNodeConnections(widget, 'Core', 'output');
+        if (coreLinks > 0) {
+            return; // Has at least one connection, no alert needed
         }
+        // No connections - could add an alert here if desired
     }
 
     checkShipBerthWidget(widget) {
@@ -561,9 +573,14 @@ class PreflightCheck {
     }
 
     updateWidgetIndicators() {
-        for (const [widgetId, issues] of this.widgetIssues) {
+        // Update all widgets that were checked this run
+        for (const widgetId of this.checkedWidgetsThisRun) {
             const widget = this.widgetManager.getWidget(widgetId);
-            if (widget) {
+            if (!widget) continue;
+            
+            const issues = this.widgetIssues.get(widgetId);
+            if (issues) {
+                // Has issues - update with the issues
                 const allIssues = [
                     ...issues.alerts,
                     ...issues.errors,
@@ -576,6 +593,9 @@ class PreflightCheck {
                     allIssues,
                     issues.alerts.length
                 );
+            } else {
+                // No issues - clear the indicator
+                widget.updatePreflightIndicator(0, 0, [], 0);
             }
         }
     }
@@ -585,73 +605,144 @@ class PreflightCheck {
         this.updateFloatingIssues();
     }
 
-    initToggle() {
-        if (!this.preflightMinimizeBtn) return;
-        const toggleAction = () => {
-            this.isExpanded = !this.isExpanded;
-            localStorage.setItem('preflightExpanded', this.isExpanded);
-            this.updateToggleState();
-        };
-        
-        this.preflightMinimizeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleAction();
-        });
-        
-        this.updateToggleState();
-    }
-
-    updateToggleState() {
-        if (!this.preflightOverlay) return;
-        if (this.isExpanded) {
-            if (this.preflightToggle) this.preflightToggle.classList.add('expanded');
-            this.preflightOverlay.classList.remove('hidden');
-            if (this.preflightSummary) this.preflightSummary.classList.add('is-hidden');
-            if (this.preflightMinimizeBtn) this.preflightMinimizeBtn.textContent = '−';
-        } else {
-            if (this.preflightToggle) this.preflightToggle.classList.remove('expanded');
-            this.preflightOverlay.classList.add('hidden');
-            if (this.preflightSummary) this.preflightSummary.classList.remove('is-hidden');
-            if (this.preflightMinimizeBtn) this.preflightMinimizeBtn.textContent = '+';
+    initBadgeToggle() {
+        if (this.badgeAlerts) {
+            this.badgeAlerts.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleIssueType('alert');
+            });
+        }
+        if (this.badgeWarnings) {
+            this.badgeWarnings.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleIssueType('warning');
+            });
+        }
+        if (this.badgeErrors) {
+            this.badgeErrors.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleIssueType('error');
+            });
         }
     }
 
-    updateSummaryBadges() {
-        const summaryErrors = document.getElementById('summaryErrors');
-        const summaryWarnings = document.getElementById('summaryWarnings');
-        const summaryAlerts = document.getElementById('summaryAlerts');
-        
-        if (!summaryErrors || !summaryWarnings) return;
-        const filteredWarnings = this.warnings;
-        
-        // Convert unmet tech requirements to errors
-        const techErrors = this.techRequirements.length > 0 ? this.techRequirements : [];
-        const totalErrors = this.errors.length + techErrors.length;
+    toggleIssueType(type) {
+        if (this.visibleIssueTypes.has(type)) {
+            this.visibleIssueTypes.delete(type);
+        } else {
+            this.visibleIssueTypes.add(type);
+        }
+        this.updateBadgeStates();
+        this.updateFloatingIssuesVisibility();
+    }
 
-        if (summaryAlerts) {
-            if (this.alerts.length > 0) {
-                summaryAlerts.textContent = this.alerts.length;
-                summaryAlerts.style.display = 'inline-block';
+    updateBadgeStates() {
+        if (this.badgeAlerts) {
+            if (this.visibleIssueTypes.has('alert')) {
+                this.badgeAlerts.classList.add('active');
             } else {
-                summaryAlerts.style.display = 'none';
+                this.badgeAlerts.classList.remove('active');
             }
         }
+        if (this.badgeWarnings) {
+            if (this.visibleIssueTypes.has('warning')) {
+                this.badgeWarnings.classList.add('active');
+            } else {
+                this.badgeWarnings.classList.remove('active');
+            }
+        }
+        if (this.badgeErrors) {
+            if (this.visibleIssueTypes.has('error')) {
+                this.badgeErrors.classList.add('active');
+            } else {
+                this.badgeErrors.classList.remove('active');
+            }
+        }
+    }
+
+    updateFloatingIssuesVisibility() {
+        if (!this.preflightIssues) return;
         
-        // Update warning badge
-        if (filteredWarnings.length > 0) {
-            summaryWarnings.textContent = filteredWarnings.length;
-            summaryWarnings.style.display = 'inline-block';
-        } else {
-            summaryWarnings.style.display = 'none';
+        // Hide/show issue items based on current filter - only update cached elements
+        for (const [id, element] of this.currentIssueElements) {
+            const isAlert = element.classList.contains('alert');
+            const isWarning = element.classList.contains('warning');
+            const isError = element.classList.contains('error');
+            
+            let shouldShow = false;
+            if (isAlert && this.visibleIssueTypes.has('alert')) shouldShow = true;
+            if (isWarning && this.visibleIssueTypes.has('warning')) shouldShow = true;
+            if (isError && this.visibleIssueTypes.has('error')) shouldShow = true;
+            
+            const newDisplay = shouldShow ? '' : 'none';
+            // Only update if display value changed
+            if (element.style.display !== newDisplay) {
+                element.style.display = newDisplay;
+            }
+        }
+    }
+
+
+    updateSummaryBadges() {
+        if (!this.badgeErrors || !this.badgeWarnings) return;
+        
+        const filteredWarnings = this.warnings;
+        const techErrors = this.techRequirements.length > 0 ? this.techRequirements : [];
+        const totalErrors = this.errors.length + techErrors.length;
+        
+        // Only update if values actually changed
+        const alertsChanged = this.lastBadgeStates.alerts !== this.alerts.length;
+        const warningsChanged = this.lastBadgeStates.warnings !== filteredWarnings.length;
+        const errorsChanged = this.lastBadgeStates.errors !== totalErrors;
+        
+        const alertsShouldShow = this.alerts.length > 0;
+        const warningsShouldShow = filteredWarnings.length > 0;
+        const errorsShouldShow = totalErrors > 0;
+        
+        const alertsVisibilityChanged = this.lastBadgeStates.alertsVisible !== alertsShouldShow;
+        const warningsVisibilityChanged = this.lastBadgeStates.warningsVisible !== warningsShouldShow;
+        const errorsVisibilityChanged = this.lastBadgeStates.errorsVisible !== errorsShouldShow;
+        
+        // Update alerts badge only if changed
+        if (alertsChanged || alertsVisibilityChanged) {
+            if (this.badgeAlerts) {
+                if (alertsShouldShow) {
+                    this.badgeAlerts.textContent = this.alerts.length;
+                    this.badgeAlerts.style.display = 'inline-block';
+                } else {
+                    this.badgeAlerts.style.display = 'none';
+                }
+            }
+            this.lastBadgeStates.alerts = this.alerts.length;
+            this.lastBadgeStates.alertsVisible = alertsShouldShow;
         }
         
-        // Update error badge
-        if (totalErrors > 0) {
-            summaryErrors.textContent = totalErrors;
-            summaryErrors.style.display = 'inline-block';
-        } else {
-            summaryErrors.style.display = 'none';
+        // Update warnings badge only if changed
+        if (warningsChanged || warningsVisibilityChanged) {
+            if (warningsShouldShow) {
+                this.badgeWarnings.textContent = filteredWarnings.length;
+                this.badgeWarnings.style.display = 'inline-block';
+            } else {
+                this.badgeWarnings.style.display = 'none';
+            }
+            this.lastBadgeStates.warnings = filteredWarnings.length;
+            this.lastBadgeStates.warningsVisible = warningsShouldShow;
         }
+        
+        // Update errors badge only if changed
+        if (errorsChanged || errorsVisibilityChanged) {
+            if (errorsShouldShow) {
+                this.badgeErrors.textContent = totalErrors;
+                this.badgeErrors.style.display = 'inline-block';
+            } else {
+                this.badgeErrors.style.display = 'none';
+            }
+            this.lastBadgeStates.errors = totalErrors;
+            this.lastBadgeStates.errorsVisible = errorsShouldShow;
+        }
+        
+        // Ensure badges have the active class if they're visible
+        this.updateBadgeStates();
     }
 
     updateFloatingIssues() {
@@ -746,6 +837,9 @@ class PreflightCheck {
             this.preflightIssues.appendChild(item);
             this.currentIssueElements.set(id, item);
         });
+        
+        // Apply current visibility filter
+        this.updateFloatingIssuesVisibility();
     }
 
     focusOnSource(sourceId) {

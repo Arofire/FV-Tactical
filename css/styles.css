@@ -256,6 +256,24 @@ body {
     background: #4080f0;
 }
 
+.preflight-badge.warning active{
+    border-color: #ffaa00; 
+    background: rgba(255,170,0,0.07); 
+    color: #ffcc66; 
+}
+
+.preflight-badge.error active{
+    border-color: #ff4444; 
+    background: rgba(255,68,68,0.07); 
+    color: #ff9999; 
+}
+
+.preflight-badge.alert active{
+    border-color: #4080f0;
+    background: rgba(64,128,240,0.07);
+    color: #a8c4ff;
+}
+
 /* Main Workspace */
 .workspace {
     position: relative;

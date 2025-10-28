@@ -32,6 +32,18 @@ class Widget {
         // Layout mode
         this.layoutMode = 'legacy';
         
+        // Cache for preflight indicator to avoid unnecessary DOM updates
+        this.lastPreflightState = {
+            warnings: -1,
+            errors: -1,
+            alerts: -1,
+            issuesCount: -1,
+            visible: null
+        };
+        
+        // Data change notification system for parent-child data sync
+        this.childWidgets = new Set(); // Track connected children
+        
         // Defer creation until subclass has initialized its specific data.
         // Subclasses must call this.init() after setting their data objects.
     }
@@ -1153,45 +1165,74 @@ class Widget {
         const indicator = document.getElementById(`${this.id}-preflight`);
         if (!indicator) return;
 
-        if (warnings === 0 && errors === 0 && alerts === 0) {
+        // Check if anything actually changed
+        const hasIssues = warnings > 0 || errors > 0 || alerts > 0;
+        const visibilityChanged = this.lastPreflightState.visible !== hasIssues;
+        const countChanged = 
+            this.lastPreflightState.warnings !== warnings ||
+            this.lastPreflightState.errors !== errors ||
+            this.lastPreflightState.alerts !== alerts ||
+            this.lastPreflightState.issuesCount !== issues.length;
+        
+        // If nothing changed, skip DOM updates
+        if (!visibilityChanged && !countChanged) {
+            return;
+        }
+        
+        // Update cache
+        this.lastPreflightState.warnings = warnings;
+        this.lastPreflightState.errors = errors;
+        this.lastPreflightState.alerts = alerts;
+        this.lastPreflightState.issuesCount = issues.length;
+        this.lastPreflightState.visible = hasIssues;
+        
+        // Hide indicator if no issues
+        if (!hasIssues) {
             indicator.style.display = 'none';
             return;
         }
         
-        indicator.style.display = 'flex';
-        indicator.innerHTML = '';
-
-        if (alerts > 0) {
-            const alertBadge = document.createElement('span');
-            alertBadge.className = 'preflight-badge alert';
-            alertBadge.textContent = alerts;
-            alertBadge.title = `${alerts} alert${alerts > 1 ? 's' : ''}`;
-            indicator.appendChild(alertBadge);
+        // Update visibility only if changed
+        if (visibilityChanged) {
+            indicator.style.display = 'flex';
         }
         
-        if (warnings > 0) {
-            const warningBadge = document.createElement('span');
-            warningBadge.className = 'preflight-badge warning';
-            warningBadge.textContent = warnings;
-            warningBadge.title = `${warnings} warning${warnings > 1 ? 's' : ''}`;
-            indicator.appendChild(warningBadge);
-        }
+        // Only rebuild badges if counts changed
+        if (countChanged) {
+            indicator.innerHTML = '';
 
-        if (errors > 0) {
-            const errorBadge = document.createElement('span');
-            errorBadge.className = 'preflight-badge error';
-            errorBadge.textContent = errors;
-            errorBadge.title = `${errors} error${errors > 1 ? 's' : ''}`;
-            indicator.appendChild(errorBadge);
-        }
-        
-        if (issues.length > 0) {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'preflight-tooltip';
-            tooltip.innerHTML = issues.map(issue => 
-                `<div class="preflight-issue ${issue.type}">${issue.message}</div>`
-            ).join('');
-            indicator.appendChild(tooltip);
+            if (alerts > 0) {
+                const alertBadge = document.createElement('span');
+                alertBadge.className = 'preflight-badge alert';
+                alertBadge.textContent = alerts;
+                alertBadge.title = `${alerts} alert${alerts > 1 ? 's' : ''}`;
+                indicator.appendChild(alertBadge);
+            }
+            
+            if (warnings > 0) {
+                const warningBadge = document.createElement('span');
+                warningBadge.className = 'preflight-badge warning';
+                warningBadge.textContent = warnings;
+                warningBadge.title = `${warnings} warning${warnings > 1 ? 's' : ''}`;
+                indicator.appendChild(warningBadge);
+            }
+
+            if (errors > 0) {
+                const errorBadge = document.createElement('span');
+                errorBadge.className = 'preflight-badge error';
+                errorBadge.textContent = errors;
+                errorBadge.title = `${errors} error${errors > 1 ? 's' : ''}`;
+                indicator.appendChild(errorBadge);
+            }
+            
+            if (issues.length > 0) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'preflight-tooltip';
+                tooltip.innerHTML = issues.map(issue => 
+                    `<div class="preflight-issue ${issue.type}">${issue.message}</div>`
+                ).join('');
+                indicator.appendChild(tooltip);
+            }
         }
     }
 
@@ -1525,7 +1566,7 @@ class Widget {
         this.loadSerializedData(data.data || {});
 
         if (this.minimizeButton) {
-            this.minimizeButton.innerHTML = this.minimized ? '▴' : '▾';
+            this.minimizeButton.innerHTML = this.minimized ? '□' : '−';
             this.minimizeButton.title = this.minimized ? 'Restore widget' : 'Minimize widget';
         }
 
@@ -1670,6 +1711,224 @@ class Widget {
                 window.app.updateMinimap();
             }
         }
+    }
+
+    /**
+     * Notify all child widgets that this widget's data has changed
+     * Children will pull fresh data from their connected input nodes
+     * Call this whenever your widget's data changes significantly
+     * Example: Call after user edits in ShipWidget → all connected OutfitWidgets get notified
+     */
+    notifyChildrenOfChange() {
+        if (!this.children || this.children.size === 0) return;
+        
+        for (const childId of this.children) {
+            const childWidget = window.widgetManager?.getWidget(childId);
+            if (childWidget && typeof childWidget.onParentDataChanged === 'function') {
+                // Notify child of parent data change
+                childWidget.onParentDataChanged(this.id);
+            }
+        }
+    }
+
+    /**
+     * Hook for child widgets to respond when parent data changes
+     * Override this in child widgets to refresh their derived data
+     * @param {string} parentWidgetId - ID of parent widget that changed
+     */
+    onParentDataChanged(parentWidgetId) {
+        // To be overridden by child widgets
+        // Example in OutfitWidget:
+        //   onParentDataChanged(parentWidgetId) {
+        //       this.syncClassData();
+        //   }
+    }
+
+    /**
+     * Generic method to get parent widget data via connection hierarchy
+     * Returns all serialized data from a parent of specified type
+     * Automatically includes all fields that parent defines in getSerializedData()
+     * @param {string} parentType - Widget type to search for (e.g., 'ship', 'outfit')
+     * @returns {object|null} Complete serialized data from parent or null if not found
+     */
+    getParentData(parentType) {
+        if (!this.parents || this.parents.size === 0) return null;
+        
+        for (const parentId of this.parents) {
+            const parent = window.widgetManager?.getWidget(parentId);
+            if (parent && parent.type === parentType && typeof parent.getSerializedData === 'function') {
+                return parent.getSerializedData();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get data connected to a specific input node
+     * Supports multiple connections to nodes with the same name (e.g., two "Weapon" inputs)
+     * Each connection is individually addressable and distinct
+     * @param {string} nodeId - The input node ID (e.g., 'widget-xxx-input:Weapon-1')
+     * @returns {object|null} The data from the widget connected to this specific node
+     */
+    getConnectedNodeData(nodeId) {
+        if (!nodeId || !window.nodeSystem) return null;
+        
+        const node = window.nodeSystem.getNodeById(nodeId);
+        if (!node) {
+            console.warn(`[Widget.getConnectedNodeData] Node not found: ${nodeId}`);
+            return null;
+        }
+        
+        if (!node.connections || node.connections.size === 0) {
+            console.warn(`[Widget.getConnectedNodeData] Node ${nodeId} has no connections`);
+            return null;
+        }
+        
+        // Input nodes have single connection (after ensureSingleInputConnection)
+        const connectionId = Array.from(node.connections)[0];
+        const connection = window.nodeSystem.connections.get(connectionId);
+        if (!connection) {
+            console.warn(`[Widget.getConnectedNodeData] Connection ${connectionId} not found`);
+            return null;
+        }
+        
+        // Find which node is the source (output)
+        // For input nodes, we want the other end of the connection
+        const isInputNode = node.type === 'input';
+        const sourceNodeId = isInputNode ? connection.sourceNodeId : connection.targetNodeId;
+        const sourceNode = window.nodeSystem.getNodeById(sourceNodeId);
+        if (!sourceNode) {
+            console.warn(`[Widget.getConnectedNodeData] Source node ${sourceNodeId} not found`);
+            return null;
+        }
+        
+        // Get the source widget
+        const sourceWidget = window.widgetManager?.getWidget(sourceNode.widgetId);
+        if (!sourceWidget) {
+            console.warn(`[Widget.getConnectedNodeData] Source widget ${sourceNode.widgetId} not found`);
+            return null;
+        }
+        
+        if (typeof sourceWidget.getSerializedData !== 'function') {
+            console.warn(`[Widget.getConnectedNodeData] Source widget has no getSerializedData method`);
+            return null;
+        }
+        
+        const data = sourceWidget.getSerializedData();
+        console.log(`[Widget.getConnectedNodeData] Got data from ${sourceWidget.id}:`, data);
+        return data;
+    }
+
+    /**
+     * Get data from all inputs of a specific nodeType
+     * For widgets with multiple inputs of same type (e.g., multiple "Weapon" inputs)
+     * Returns array of connected data in order
+     * @param {string} nodeType - The node type to search for (e.g., 'Weapon', 'Craft', 'Core')
+     * @returns {Array<object>} Array of connected data, one per matching input node
+     */
+    getConnectedDataByNodeType(nodeType) {
+        const results = [];
+        
+        if (!this.nodes) return results;
+        
+        // Find all input nodes matching this type, in order
+        const matchingNodes = Array.from(this.nodes.values())
+            .filter(n => n.type === 'input' && n.nodeType === nodeType)
+            .sort((a, b) => {
+                // Sort by node ID to maintain consistent order
+                // Nodes like "widget-xxx-input:Weapon-1", "widget-xxx-input:Weapon-2"
+                const aIndex = parseInt(a.id.split('-').pop()) || 0;
+                const bIndex = parseInt(b.id.split('-').pop()) || 0;
+                return aIndex - bIndex;
+            });
+        
+        console.log(`[Widget.getConnectedDataByNodeType] Looking for ${nodeType} in widget ${this.id}, found ${matchingNodes.length} matching nodes`);
+        
+        for (const node of matchingNodes) {
+            console.log(`[Widget.getConnectedDataByNodeType] Processing node ${node.id}, connections: ${node.connections.size}`);
+            const data = this.getConnectedNodeData(node.id);
+            if (data) {
+                results.push({
+                    nodeId: node.id,
+                    nodeLabel: node.label,
+                    data: data
+                });
+            }
+        }
+        
+        console.log(`[Widget.getConnectedDataByNodeType] Returning ${results.length} results for ${nodeType}`);
+        return results;
+    }
+
+    /**
+     * Generic method to get all parent widget data
+     * Returns map of parent type -> serialized data for ALL parents
+     * Useful for widgets with multiple parent types
+     * @returns {Map<string, object>} Map of parent type to their complete data
+     */
+    getAllParentData() {
+        const parentDataMap = new Map();
+        
+        if (!this.parents || this.parents.size === 0) return parentDataMap;
+        
+        for (const parentId of this.parents) {
+            const parent = window.widgetManager?.getWidget(parentId);
+            if (parent && typeof parent.getSerializedData === 'function') {
+                const key = parent.type;
+                const data = parent.getSerializedData();
+                // If multiple parents of same type, store as array
+                if (parentDataMap.has(key)) {
+                    const existing = parentDataMap.get(key);
+                    if (Array.isArray(existing)) {
+                        existing.push(data);
+                    } else {
+                        parentDataMap.set(key, [existing, data]);
+                    }
+                } else {
+                    parentDataMap.set(key, data);
+                }
+            }
+        }
+        return parentDataMap;
+    }
+
+    /**
+     * Cache parent data snapshot for quick reference
+     * Call this in onParentLinked() to store a complete copy of parent state
+     * Automatically updated whenever parent changes via node connections
+     * @param {string} parentType - Type of parent to cache (e.g., 'ship')
+     * @returns {object|null} The cached data or null if parent not found
+     */
+    cacheParentData(parentType = null) {
+        if (!this.parentDataCache) {
+            this.parentDataCache = new Map();
+        }
+        
+        if (parentType) {
+            const data = this.getParentData(parentType);
+            if (data) {
+                this.parentDataCache.set(parentType, JSON.parse(JSON.stringify(data))); // Deep clone
+                return this.parentDataCache.get(parentType);
+            }
+            return null;
+        } else {
+            // Cache all parent data
+            const allData = this.getAllParentData();
+            for (const [type, data] of allData) {
+                this.parentDataCache.set(type, JSON.parse(JSON.stringify(data))); // Deep clone
+            }
+            return this.parentDataCache;
+        }
+    }
+
+    /**
+     * Get cached parent data
+     * @param {string} parentType - Type of parent data to retrieve
+     * @returns {object|null} Previously cached data or null
+     */
+    getCachedParentData(parentType) {
+        if (!this.parentDataCache) return null;
+        return this.parentDataCache.get(parentType) || null;
     }
 
     loadSerializedData(data) {

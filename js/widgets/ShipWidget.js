@@ -15,7 +15,6 @@ class ShipWidget extends Widget {
             role: 'corvette',
             customRole: '',
             description: '',
-            designNotes: '',
             appearance: '',
             text2imgPrompt: '',
             developmentCost: null,
@@ -29,18 +28,18 @@ class ShipWidget extends Widget {
                 powerplant: 0,
                 emplacement: 0
             },
-            // Ten foundational tech requirement flags (placeholders)
+            // Ten foundational tech requirement flags
             foundations: {
-                structural: false,
-                propulsion: false,
-                power: false,
-                heat: false,
-                lifeSupport: false,
-                navigation: false,
-                sensors: false,
-                weapons: false,
-                defense: false,
-                logistics: false
+                magazineDensity: false,
+                hangarDensity: false,
+                supplyRatingEfficiency: false,
+                commonComplexArmour: false,
+                biomechanicalRegeneration: false,
+                intelligentMetamaterials: false,
+                limitedLiveStructure: false,
+                oracleInferencing: false,
+                defensiveAtomicStructure: false,
+                metamaterialForging: false
             },
             operational: false,
             powerAndPropulsion: {
@@ -98,9 +97,24 @@ class ShipWidget extends Widget {
         ];
         // Order & keys for foundations checkboxes
         this.foundationKeys = [
-            'structural', 'propulsion', 'power', 'heat', 'lifeSupport',
-            'navigation', 'sensors', 'weapons', 'defense', 'logistics'
+            'magazineDensity', 'hangarDensity', 'supplyRatingEfficiency', 'commonComplexArmour',
+            'biomechanicalRegeneration', 'intelligentMetamaterials', 'limitedLiveStructure', 'oracleInferencing',
+            'defensiveAtomicStructure', 'metamaterialForging'
         ];
+        
+        // Labels for foundations
+        this.foundationLabels = {
+            magazineDensity: 'Magazine Density',
+            hangarDensity: 'Hangar Density',
+            supplyRatingEfficiency: 'Supply Rating Efficiency',
+            commonComplexArmour: 'Common Complex Armour',
+            biomechanicalRegeneration: 'Biomechanical Regeneration',
+            intelligentMetamaterials: 'Intelligent Metamaterials',
+            limitedLiveStructure: 'Limited Live Structure',
+            oracleInferencing: 'Oracle Inferencing',
+            defensiveAtomicStructure: 'Defensive Atomic Structure',
+            metamaterialForging: 'Metamaterial Forging'
+        };
         
         this.lockedHullTotal = null;
         this.isSubclass = false;
@@ -294,6 +308,11 @@ class ShipWidget extends Widget {
         }
     }
 
+    notifyShipDataChanged() {
+        console.log(`[ShipWidget ${this.id}] Data changed, notifying all children...`);
+        this.notifyChildrenOfChange();
+    }
+
     getTotalHulls() {
         this.queuePreflightCheck();
         return Object.values(this.shipData.hullComposition).reduce((sum, count) => sum + count, 0);
@@ -350,10 +369,6 @@ class ShipWidget extends Widget {
                     <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '🖉' : '🌳'}</button>
                 </div>
             </div>
-            <div class="input-group" id="${this.id}-notes-group">
-                <label>Class Notes</label>
-                <textarea id="${this.id}-class-notes" placeholder="Design notes, doctrine, or operational directives...">${this.shipData.designNotes}</textarea>
-            </div>
         `);
         sectionsContainer.appendChild(informationSection.section);
         
@@ -367,7 +382,7 @@ class ShipWidget extends Widget {
                 ${this.foundationKeys.map(key => `
                     <label class="foundation-item">
                         <input type="checkbox" id="${this.id}-foundation-${key}" ${this.shipData.foundations[key] ? 'checked' : ''}>
-                        ${key.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase())}
+                        ${this.foundationLabels[key]}
                     </label>
                 `).join('')}
             </div>
@@ -493,10 +508,9 @@ class ShipWidget extends Widget {
         const getElement = (id) => this.element?.querySelector(`#${id}`);
         
         const nameInput = getElement(`${this.id}-name`);
-        const notesInput = getElement(`${this.id}-class-notes`);
         const ignoreTechCheckbox = getElement(`${this.id}-ignore-tech`);
         const operationalCheckbox = getElement(`${this.id}-operational`);
-    const dvpInput = getElement(`${this.id}-dvp-cost`);
+        const dvpInput = getElement(`${this.id}-dvp-cost`);
     const roleSelect = getElement(`${this.id}-role-select`);
     const customRoleInput = getElement(`${this.id}-role-custom`);
     const roleToggleBtn = getElement(`${this.id}-role-toggle`);
@@ -511,17 +525,11 @@ class ShipWidget extends Widget {
                 this.queuePreflightCheck();
             });
         }
-        if (notesInput) {
-            notesInput.addEventListener('input', (e) => {
-                this.shipData.designNotes = e.target.value;
-                this.queuePreflightCheck();
-            });
-        }
         if (ignoreTechCheckbox) {
             ignoreTechCheckbox.addEventListener('change', (e) => {
                 this.shipData.ignoreTechRequirements = e.target.checked;
                 this.queuePreflightCheck();
-                this.notifyOutfitChildrenToRefresh();
+                this.notifyShipDataChanged();
             });
         }
         if (operationalCheckbox) {
@@ -587,6 +595,7 @@ class ShipWidget extends Widget {
                 this.shipData.customRole = '';
                 this.roleMode = 'dropdown';
                 this.queuePreflightCheck();
+                this.notifyShipDataChanged();
             });
         }
 
@@ -596,6 +605,7 @@ class ShipWidget extends Widget {
                 this.shipData.customRole = value;
                 this.shipData.role = value;
                 this.queuePreflightCheck();
+                this.notifyShipDataChanged();
             });
             customRoleInput.addEventListener('change', (e) => {
                 this.ensureRoleAvailable(e.target.value);
@@ -617,6 +627,7 @@ class ShipWidget extends Widget {
                     this.applyRoleMode('dropdown');
                 }
                 this.queuePreflightCheck();
+                this.notifyShipDataChanged();
             });
         }
 
@@ -648,6 +659,7 @@ class ShipWidget extends Widget {
                 this.reflowNodes();
                 this.updateStats();
                 this.notifyShipChildrenToRefresh();
+                this.notifyShipDataChanged();
             };
             input.addEventListener('input', (e) => updateHull(e.target.value));
             input.addEventListener('change', (e) => updateHull(e.target.value));
@@ -661,6 +673,7 @@ class ShipWidget extends Widget {
                 this.reflowNodes();
                 this.updateStats();
                 this.notifyShipChildrenToRefresh();
+                this.notifyShipDataChanged();
             };
             cargoRemassSlider.addEventListener('input', (e) => handleSliderChange(e.target.value));
             cargoRemassSlider.addEventListener('change', (e) => handleSliderChange(e.target.value));
@@ -858,7 +871,6 @@ class ShipWidget extends Widget {
         // Use base class helper for simple fields
         const simpleFields = {
             'name': { id: 'name', type: 'text' },
-            'designNotes': { id: 'class-notes', type: 'text' },
             'ignoreTechRequirements': { id: 'ignore-tech', type: 'checkbox' },
             'operational': { id: 'operational', type: 'checkbox' },
             'developmentCost': { id: 'dvp-cost', type: 'number' }
@@ -899,7 +911,6 @@ class ShipWidget extends Widget {
         // Use base class helper for simple fields
         const simpleFields = {
             'name': { id: 'name', type: 'text' },
-            'designNotes': { id: 'class-notes', type: 'text' },
             'ignoreTechRequirements': { id: 'ignore-tech', type: 'checkbox' },
             'operational': { id: 'operational', type: 'checkbox' },
             'developmentCost': { id: 'dvp-cost', type: 'number' }
@@ -1006,19 +1017,19 @@ class ShipWidget extends Widget {
             minSpacing: 36
         });
 
-        ensureNode('output', 'Class', 'Class', 1, 0.25, {
-            nodeId: nodeIds.classOutput,
-            anchorId: 'ship-information',
-            sectionId: 'information',
-            anchorOffset: 20,
-            minSpacing: 32
-        });
-
         ensureNode('output', 'Statistics', 'Statistics', 1, 0.4, {
             nodeId: nodeIds.statsOutput,
             anchorId: 'ship-information',
             sectionId: 'information',
             anchorOffset: 40,
+            minSpacing: 32
+        });
+
+        ensureNode('output', 'Class', 'Class', 1, 0.25, {
+            nodeId: nodeIds.classOutput,
+            anchorId: 'ship-information',
+            sectionId: 'information',
+            anchorOffset: 20,
             minSpacing: 32
         });
 
