@@ -20,6 +20,11 @@ class PreflightCheck {
         this.preflightIssues = document.getElementById('preflightIssues');
         this.preflightSummary = document.getElementById('preflightSummary');
         
+        // Start preflight issues panel in minimized state
+        if (this.preflightOverlay) {
+            this.preflightOverlay.classList.add('hidden');
+        }
+        
         // Badge buttons for filtering
         this.badgeAlerts = document.getElementById('badgeAlerts');
         this.badgeWarnings = document.getElementById('badgeWarnings');
@@ -606,6 +611,17 @@ class PreflightCheck {
     }
 
     initBadgeToggle() {
+        // Toggle preflight panel visibility when clicking on the control header
+        if (this.preflightToggle) {
+            this.preflightToggle.addEventListener('click', () => {
+                if (this.preflightOverlay) {
+                    this.preflightOverlay.classList.toggle('hidden');
+                }
+            });
+            // Make the header look clickable
+            this.preflightToggle.style.cursor = 'pointer';
+        }
+        
         if (this.badgeAlerts) {
             this.badgeAlerts.addEventListener('click', (e) => {
                 e.stopPropagation();

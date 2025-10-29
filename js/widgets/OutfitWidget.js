@@ -1254,6 +1254,13 @@ class OutfitWidget extends Widget {
     }
 
     /**
+     * Called after connections are restored during load to sync connected data
+     */
+    syncConnectedData() {
+        this.syncClassData();
+    }
+
+    /**
      * Pull all Class widget data from the Class input node connection
      * Replaces manual applyParentInheritance method with generic node-based approach
      */
@@ -1520,7 +1527,13 @@ class OutfitWidget extends Widget {
         this.refreshAttachmentSection();
         
         // Sync any connected Class node data
-        this.syncClassData();
+        // Skip this during initial load when skipConnectionSync is true
+        // Connections will be synced later in Phase 3 after connections are restored
+        if (!this.skipConnectionSync) {
+            this.syncClassData();
+        } else {
+            console.log(`[OutfitWidget ${this.id}] Skipping syncClassData during load (skipConnectionSync=${this.skipConnectionSync})`);
+        }
     }
 
     refreshAttachmentSection() {

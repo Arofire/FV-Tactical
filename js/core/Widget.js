@@ -1526,7 +1526,7 @@ class Widget {
     }
 
     // Deserialization
-    fromJSON(data) {
+    fromJSON(data, skipConnectionSync = false) {
         this.x = data.x || this.x;
         this.y = data.y || this.y;
     const hasExplicitWidth = data.explicitWidth ?? true;
@@ -1563,7 +1563,12 @@ class Widget {
             this.element.classList.add('minimized');
         }
         
+        if (skipConnectionSync) {
+            console.log(`[Widget.fromJSON] Setting skipConnectionSync=true for ${this.id}`);
+        }
+        this.skipConnectionSync = skipConnectionSync;
         this.loadSerializedData(data.data || {});
+        this.skipConnectionSync = false;
 
         if (this.minimizeButton) {
             this.minimizeButton.innerHTML = this.minimized ? '□' : '−';

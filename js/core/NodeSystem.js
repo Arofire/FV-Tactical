@@ -975,30 +975,65 @@ class NodeSystem {
             let sourceId = connectionData.sourceNodeId;
             let targetId = connectionData.targetNodeId;
 
-            if (!this.getNodeById(sourceId) && connectionData.sourceWidgetId && connectionData.sourceNodeType) {
+            // Try direct node ID first
+            let sourceNode = this.getNodeById(sourceId);
+            let targetNode = this.getNodeById(targetId);
+
+            const isCore = sourceId.includes('node-output-Core') || targetId.includes('node-output-Core');
+            if (isCore) {
+                console.log(`[NodeSystem.fromJSON] CORE NODE CONNECTION: ${sourceId} -> ${targetId}`);
+            }
+            console.log(`[NodeSystem.fromJSON] Looking for connection: ${sourceId} -> ${targetId}`);
+            console.log(`  Source found: ${!!sourceNode}, Target found: ${!!targetNode}`);
+
+            // If direct IDs don't work, fall back to metadata-based lookup
+            if (!sourceNode && connectionData.sourceWidgetId && connectionData.sourceNodeType) {
                 const fallbackSource = this.findNodeByMetadata(
                     connectionData.sourceWidgetId,
                     connectionData.sourceNodeType,
                     connectionData.sourceDirection
                 );
                 if (fallbackSource) {
+                    console.log(`  Source fallback found: ${fallbackSource}`);
                     sourceId = fallbackSource;
+                    sourceNode = this.getNodeById(sourceId);
+                } else {
+                    console.warn('Failed to find source node for connection:', {
+                        widgetId: connectionData.sourceWidgetId,
+                        nodeType: connectionData.sourceNodeType,
+                        direction: connectionData.sourceDirection
+                    });
                 }
             }
 
-            if (!this.getNodeById(targetId) && connectionData.targetWidgetId && connectionData.targetNodeType) {
+            if (!targetNode && connectionData.targetWidgetId && connectionData.targetNodeType) {
                 const fallbackTarget = this.findNodeByMetadata(
                     connectionData.targetWidgetId,
                     connectionData.targetNodeType,
                     connectionData.targetDirection
                 );
                 if (fallbackTarget) {
+                    console.log(`  Target fallback found: ${fallbackTarget}`);
                     targetId = fallbackTarget;
+                    targetNode = this.getNodeById(targetId);
+                } else {
+                    console.warn('Failed to find target node for connection:', {
+                        widgetId: connectionData.targetWidgetId,
+                        nodeType: connectionData.targetNodeType,
+                        direction: connectionData.targetDirection
+                    });
                 }
             }
 
             if (sourceId && targetId && this.canConnect(sourceId, targetId)) {
+                console.log(`[NodeSystem.fromJSON] Creating connection: ${sourceId} -> ${targetId}`);
                 this.createConnection(sourceId, targetId);
+            } else if (!sourceId || !targetId) {
+                console.warn('Skipping connection - missing source or target:', {
+                    hasSource: !!sourceId,
+                    hasTarget: !!targetId,
+                    connectionData
+                });
             }
         }
     }

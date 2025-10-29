@@ -271,7 +271,14 @@ class ShipCoreWidget extends Widget {
     }
 
     renderTriangleWidget() {
-        const container = document.getElementById(`${this.id}-triangle-widget`);
+        // First try to find by current ID (normal case)
+        let container = document.getElementById(`${this.id}-triangle-widget`);
+        
+        // If not found, try to find by class within this widget (handles ID mismatch during load)
+        if (!container && this.element) {
+            container = this.element.querySelector('.core-triangle');
+        }
+        
         if (!container) {
             // Container doesn't exist yet, retry after a short delay
             setTimeout(() => this.renderTriangleWidget(), 50);
@@ -583,13 +590,23 @@ class ShipCoreWidget extends Widget {
             if (select) select.value = this.coreData[component] || '';
         });
 
-        document.getElementById(`${this.id}-reactor-value`).textContent = this.coreData.reactorValue;
-        document.getElementById(`${this.id}-engine-value`).textContent = this.coreData.engineValue;
-        document.getElementById(`${this.id}-manifold-value`).textContent = this.coreData.manifoldValue;
+        const reactorValueEl = document.getElementById(`${this.id}-reactor-value`);
+        if (reactorValueEl) reactorValueEl.textContent = this.coreData.reactorValue;
 
-        document.getElementById(`${this.id}-reactor-stability`).value = this.coreData.reactorStability;
-        document.getElementById(`${this.id}-engine-efficiency`).value = this.coreData.engineEfficiency;
-        document.getElementById(`${this.id}-manifold-efficiency`).value = this.coreData.manifoldEfficiency;
+        const engineValueEl = document.getElementById(`${this.id}-engine-value`);
+        if (engineValueEl) engineValueEl.textContent = this.coreData.engineValue;
+
+        const manifoldValueEl = document.getElementById(`${this.id}-manifold-value`);
+        if (manifoldValueEl) manifoldValueEl.textContent = this.coreData.manifoldValue;
+
+        const reactorStabilityEl = document.getElementById(`${this.id}-reactor-stability`);
+        if (reactorStabilityEl) reactorStabilityEl.value = this.coreData.reactorStability;
+
+        const engineEfficiencyEl = document.getElementById(`${this.id}-engine-efficiency`);
+        if (engineEfficiencyEl) engineEfficiencyEl.value = this.coreData.engineEfficiency;
+
+        const manifoldEfficiencyEl = document.getElementById(`${this.id}-manifold-efficiency`);
+        if (manifoldEfficiencyEl) manifoldEfficiencyEl.value = this.coreData.manifoldEfficiency;
 
         this.renderTriangleWidget();
     }

@@ -708,7 +708,8 @@ class FVTacticalApp {
         // Load empire data
         this.empire.fromJSON(data.empire);
         
-        // Recreate widgets
+        // Phase 1: Create all widgets and nodes
+        const widgets = [];
         for (const widgetData of data.widgets || []) {
             let widget;
             switch (widgetData.type) {
@@ -733,14 +734,44 @@ class FVTacticalApp {
             }
             
             if (widget) {
-                widget.fromJSON(widgetData);
+                // CRITICAL: Restore widget ID BEFORE init() so nodes are created with correct ID
+                if (widgetData.id) {
+                    widget.id = widgetData.id;
+                }
+                
+                // Initialize widget FIRST to create DOM elements and nodes
+                if (!widget.element) {
+                    widget.init();
+                }
+                
+                // Load basic data (position, size) but skip connection-dependent syncs
+                // Pass true to skip connection syncs - these will happen in Phase 3
+                widget.fromJSON(widgetData, true);
+                
+                // FIX: After loading data, recreate nodes with the correct ID
+                // This must happen AFTER fromJSON so form elements are properly initialized
+                if (widgetData.id && widget.nodes) {
+                    widget.clearNodes();
+                    widget.createNodes();
+                    widget.reflowNodes();
+                }
+                
+                // Add to manager
                 this.widgetManager.addWidget(widget);
+                widgets.push({ widget, data: widgetData });
             }
         }
         
-        // Restore connections
+        // Phase 2: Restore connections between nodes
         if (data.connections) {
             this.nodeSystem.fromJSON(data.connections);
+        }
+        
+        // Phase 3: Re-sync connection-dependent data now that connections exist
+        for (const { widget } of widgets) {
+            if (typeof widget.syncConnectedData === 'function') {
+                widget.syncConnectedData();
+            }
         }
         
         // Update UI
