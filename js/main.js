@@ -645,6 +645,14 @@ class FVTacticalApp {
         });
 
         this.updateTechTreeIndicators();
+        
+        // Notify all widgets that the tech tree has been updated
+        // This allows widgets to refresh tech-dependent content (like weapon dropdowns)
+        this.widgetManager.widgets.forEach(widget => {
+            if (typeof widget.onTechTreeUpdated === 'function') {
+                widget.onTechTreeUpdated();
+            }
+        });
     }
 
     updateEmpireDisplay() {

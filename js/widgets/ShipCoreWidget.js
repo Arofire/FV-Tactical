@@ -86,6 +86,11 @@ class ShipCoreWidget extends Widget {
             .map(([key, tech]) => ({ key, name: tech.name, ...tech }));
     }
 
+    // Called when tech tree changes - refresh tech-dependent content
+    onTechTreeUpdated() {
+        this.populateTechDropdowns();
+    }
+
     createContent(contentElement) {
         const sections = contentElement.querySelector('.widget-sections');
         

@@ -217,6 +217,11 @@ class Widget {
         return this.layoutMode === 'three-column';
     }
 
+    // Called when the tech tree changes - widgets can override to refresh tech-dependent elements
+    onTechTreeUpdated() {
+        // Base implementation - override in subclasses that have tech-dependent content
+    }
+
     createContent(contentElement) {
         // To be overridden by subclasses
         contentElement.innerHTML = '<p>Base widget content</p>';

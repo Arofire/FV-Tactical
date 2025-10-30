@@ -1206,6 +1206,16 @@ class OutfitWidget extends Widget {
         this.refreshWeaponsTable('defensive');
     }
 
+    // Called when tech tree changes - refresh tech-dependent content
+    onTechTreeUpdated() {
+        if (!this.element) return;
+        // Re-render all weapon rows to reflect current tech filtering
+        this.refreshWeaponsTable('offensive');
+        this.refreshWeaponsTable('defensive');
+        // Also refresh the spinal weapon dropdown
+        this.refreshWeaponDropdowns();
+    }
+
     getParentShipWidget() {
         if (this.parentShipWidget && this.parentShipWidget.element?.isConnected) {
             return this.parentShipWidget;

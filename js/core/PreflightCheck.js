@@ -611,7 +611,17 @@ class PreflightCheck {
     }
 
     initBadgeToggle() {
-        // Toggle preflight panel visibility when clicking on the control header
+        // Toggle preflight panel visibility when clicking on the summary area
+        if (this.preflightSummary) {
+            this.preflightSummary.addEventListener('click', () => {
+                if (this.preflightOverlay) {
+                    this.preflightOverlay.classList.toggle('hidden');
+                }
+            });
+            this.preflightSummary.style.cursor = 'pointer';
+        }
+        
+        // Also allow toggling from the control header itself
         if (this.preflightToggle) {
             this.preflightToggle.addEventListener('click', () => {
                 if (this.preflightOverlay) {
@@ -625,18 +635,30 @@ class PreflightCheck {
         if (this.badgeAlerts) {
             this.badgeAlerts.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // Open the preflight panel if it's hidden
+                if (this.preflightOverlay && this.preflightOverlay.classList.contains('hidden')) {
+                    this.preflightOverlay.classList.remove('hidden');
+                }
                 this.toggleIssueType('alert');
             });
         }
         if (this.badgeWarnings) {
             this.badgeWarnings.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // Open the preflight panel if it's hidden
+                if (this.preflightOverlay && this.preflightOverlay.classList.contains('hidden')) {
+                    this.preflightOverlay.classList.remove('hidden');
+                }
                 this.toggleIssueType('warning');
             });
         }
         if (this.badgeErrors) {
             this.badgeErrors.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // Open the preflight panel if it's hidden
+                if (this.preflightOverlay && this.preflightOverlay.classList.contains('hidden')) {
+                    this.preflightOverlay.classList.remove('hidden');
+                }
                 this.toggleIssueType('error');
             });
         }
