@@ -9,13 +9,15 @@ class ShipCoreWidget extends Widget {
             reactor: '',
             engine: '',
             manifold: '',
-            thrusterLayout: 'Standard',
-            reactorValue: 2,
-            engineValue: 2,
-            manifoldValue: 2,
+            reactorValue: 5,
+            engineValue: 5,
+            manifoldValue: 5,
             reactorStability: 2,
             engineEfficiency: 2,
-            manifoldEfficiency: 2
+            manifoldEfficiency: 2,
+            armorEfficiency: 1,
+            demoHulls: 1,
+            gears: [{ name: 'Gear 1', instability: 0 }]
         };
         this.techData = null;
         this.layoutMode = 'three-column';
@@ -111,9 +113,10 @@ class ShipCoreWidget extends Widget {
         // Powerplant section
         const powerplantSection = this.createSection('powerplant', 'Powerplant');
         powerplantSection.contentContainer.innerHTML = `
-            <div class="input-group">
+            <div class="composition-item">
                 <label for="${this.id}-powerplant">Powerplant Size</label>
-                <input type="number" min="1" step="1" id="${this.id}-powerplant" value="${this.coreData.powerplantSize}" class="spinbox-input">
+                <input type="number" min="1" step="1" id="${this.id}-powerplant" value="${this.coreData.powerplantSize}" class="hull-spin core-powerplant-size">
+                <output class="composition-value core-powerplant-value" id="${this.id}-powerplant-value" aria-label="Powerplant size"></output>
             </div>
         `;
         sections.appendChild(powerplantSection.section);
@@ -147,15 +150,6 @@ class ShipCoreWidget extends Widget {
                         ${this.getTechsByCategory('Information Technology').map(t => 
                             `<option value="${t.key}" ${this.coreData.manifold === t.key ? 'selected' : ''}>${t.name}</option>`
                         ).join('')}
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label for="${this.id}-thruster">Thruster Layout</label>
-                    <select id="${this.id}-thruster" class="component-dropdown">
-                        <option value="Standard" ${this.coreData.thrusterLayout === 'Standard' ? 'selected' : ''}>Standard</option>
-                        <option value="Retro" ${this.coreData.thrusterLayout === 'Retro' ? 'selected' : ''}>Retro</option>
-                        <option value="Gimbal" ${this.coreData.thrusterLayout === 'Gimbal' ? 'selected' : ''}>Gimbal</option>
-                        <option value="Omni" ${this.coreData.thrusterLayout === 'Omni' ? 'selected' : ''}>Omni</option>
                     </select>
                 </div>
             </div>
@@ -206,7 +200,18 @@ class ShipCoreWidget extends Widget {
         `;
         sections.appendChild(statsSection.section);
 
-        this.setupEventListeners();
+        const gearingSection = this.createSection('gearing', 'Gearing');
+        gearingSection.contentContainer.innerHTML = `
+            <div class="input-group">
+                <label for="${this.id}-demo-hulls">Simulation hulls</label>
+                <input type="number" min="1" step="1" id="${this.id}-demo-hulls" value="${this.coreData.demoHulls}" class="stat-spinbox">
+            </div>
+            <div id="${this.id}-gears" class="core-gears"></div>
+            <button type="button" id="${this.id}-add-gear" class="core-add-gear">Add gear</button>
+        `;
+        sections.appendChild(gearingSection.section);
+
+        this.renderGears();
         this.renderTriangleWidget();
     }
 
@@ -220,6 +225,7 @@ class ShipCoreWidget extends Widget {
                 this.coreData.operational = e.target.checked;
                 this.refreshSummary();
                 this.notifyChildrenOfChange();
+                this.refreshOutfitCoreAvailability();
             });
         }
 
@@ -239,9 +245,13 @@ class ShipCoreWidget extends Widget {
             });
         }
 
-        const powerplantInput = document.getElementById(`${this.id}-powerplant`);
+        const powerplantInput = this.getPowerplantInput();
         if (powerplantInput) {
             powerplantInput.addEventListener('input', (e) => {
+                if (powerplantInput.disabled || powerplantInput.readOnly) {
+                    this.refreshPowerplantSize();
+                    return;
+                }
                 this.coreData.powerplantSize = parseInt(e.target.value, 10) || 1;
                 this.refreshSummary();
                 this.notifyChildrenOfChange();
@@ -249,7 +259,7 @@ class ShipCoreWidget extends Widget {
         }
 
         // Component dropdowns
-        ['reactor', 'engine', 'manifold', 'thruster'].forEach(component => {
+        ['reactor', 'engine', 'manifold'].forEach(component => {
             const select = document.getElementById(`${this.id}-${component}`);
             if (select) {
                 select.addEventListener('change', (e) => {
@@ -265,13 +275,79 @@ class ShipCoreWidget extends Widget {
             const input = document.getElementById(`${this.id}-${stat}`);
             if (input) {
                 input.addEventListener('input', (e) => {
-                    const key = stat.replace('-', '').replace('Stability', 'Stability').replace('efficiency', 'Efficiency');
-                    const dataKey = stat.replace(/-/g, '').match(/[a-z]+/gi).map((x, i) => i === 0 ? x : x.charAt(0).toUpperCase() + x.slice(1)).join('');
+                    const dataKey = {
+                        'reactor-stability': 'reactorStability',
+                        'engine-efficiency': 'engineEfficiency',
+                        'manifold-efficiency': 'manifoldEfficiency'
+                    }[stat];
                     this.coreData[dataKey] = parseInt(e.target.value, 10) || 0;
                     this.refreshSummary();
                     this.notifyChildrenOfChange();
                 });
             }
+        });
+
+        const demoHullsInput = document.getElementById(`${this.id}-demo-hulls`);
+        if (demoHullsInput) {
+            demoHullsInput.addEventListener('input', () => {
+                this.coreData.demoHulls = Math.max(1, parseInt(demoHullsInput.value, 10) || 1);
+                demoHullsInput.value = this.coreData.demoHulls;
+                this.refreshSummary();
+                this.notifyChildrenOfChange();
+            });
+        }
+
+        const addGearButton = document.getElementById(`${this.id}-add-gear`);
+        if (addGearButton) {
+            addGearButton.addEventListener('click', () => {
+                this.coreData.gears.push({
+                    name: `Gear ${this.coreData.gears.length + 1}`,
+                    instability: 0
+                });
+                this.renderGears();
+                this.refreshSummary();
+                this.notifyChildrenOfChange();
+            });
+        }
+    }
+
+    renderGears() {
+        const container = this.element?.querySelector(`#${this.id}-gears`);
+        if (!container) return;
+        container.replaceChildren();
+        this.coreData.gears.forEach((gear, index) => {
+            const row = document.createElement('div');
+            row.className = 'core-gear-row';
+            row.innerHTML = `
+                <label>Gear ${index + 1} name
+                    <input type="text" data-gear-name="${index}">
+                </label>
+                <label>Instability
+                    <input type="number" min="0" step="1" data-gear-instability="${index}">
+                </label>
+                <button type="button" data-remove-gear="${index}" aria-label="Remove gear ${index + 1}">×</button>
+            `;
+            const nameInput = row.querySelector(`[data-gear-name="${index}"]`);
+            const instabilityInput = row.querySelector(`[data-gear-instability="${index}"]`);
+            nameInput.value = gear.name || `Gear ${index + 1}`;
+            instabilityInput.value = gear.instability ?? 0;
+            nameInput.addEventListener('input', () => {
+                gear.name = nameInput.value;
+                this.refreshSummary();
+                this.notifyChildrenOfChange();
+            });
+            instabilityInput.addEventListener('input', () => {
+                gear.instability = Math.max(0, parseInt(instabilityInput.value, 10) || 0);
+                this.refreshSummary();
+                this.notifyChildrenOfChange();
+            });
+            row.querySelector('[data-remove-gear]').addEventListener('click', () => {
+                this.coreData.gears.splice(index, 1);
+                this.renderGears();
+                this.refreshSummary();
+                this.notifyChildrenOfChange();
+            });
+            container.appendChild(row);
         });
     }
 
@@ -315,8 +391,7 @@ class ShipCoreWidget extends Widget {
         // Add mouse interaction - both click and drag
         let isDraggingIndicator = false;
         
-        const updateIndicator = (e) => this.updateTriangleIndicator(e, canvas, triangleParams, false);
-        const updateIndicatorFinal = (e) => this.updateTriangleIndicator(e, canvas, triangleParams, true);
+        const updateIndicator = (e) => this.updateTriangleIndicator(e, canvas, triangleParams);
         
         canvas.addEventListener('mousedown', (e) => {
             isDraggingIndicator = true;
@@ -339,7 +414,7 @@ class ShipCoreWidget extends Widget {
         });
         
         // Also support click for single interactions
-        canvas.addEventListener('click', (e) => updateIndicatorFinal(e));
+        canvas.addEventListener('click', updateIndicator);
     }
 
     redrawTriangleCanvas(canvas, size) {
@@ -368,11 +443,11 @@ class ShipCoreWidget extends Widget {
         ctx.closePath();
         ctx.stroke();
 
-        // Draw grid lines (15 points per axis)
+        // Draw grid lines for the 12 allocatable points between each vertex.
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 1;
-        for (let i = 1; i < 15; i++) {
-            const t = i / 15;
+        for (let i = 1; i < 12; i++) {
+            const t = i / 12;
             // Horizontal lines
             const p1 = this.lerpPoint(top, bottomLeft, t);
             const p2 = this.lerpPoint(top, bottomRight, t);
@@ -395,10 +470,9 @@ class ShipCoreWidget extends Widget {
     }
 
     drawTriangleIndicator(ctx, top, bottomLeft, bottomRight) {
-        const total = this.coreData.reactorValue + this.coreData.engineValue + this.coreData.manifoldValue;
-        const r = this.coreData.reactorValue / total;
-        const e = this.coreData.engineValue / total;
-        const m = this.coreData.manifoldValue / total;
+        const r = (this.coreData.reactorValue - 1) / 12;
+        const e = (this.coreData.engineValue - 1) / 12;
+        const m = (this.coreData.manifoldValue - 1) / 12;
 
         const pos = [
             r * top[0] + e * bottomRight[0] + m * bottomLeft[0],
@@ -411,7 +485,7 @@ class ShipCoreWidget extends Widget {
         ctx.fill();
     }
 
-    updateTriangleIndicator(e, canvas, triangleParams, isFinal = false) {
+    updateTriangleIndicator(e, canvas, triangleParams) {
         const rect = canvas.getBoundingClientRect();
         
         // Account for any CSS scale transforms on the canvas or its parents
@@ -441,27 +515,8 @@ class ShipCoreWidget extends Widget {
         y = clampedCoords[1];
 
         const { reactor, engine, manifold } = this.calculateTriangleCoordinates(x, y, top, bottomLeft, bottomRight);
-        
-        // Since we've clamped the coordinates to the triangle, the barycentric coordinates
-        // should be in the valid range [0, 1]. However, due to floating point precision,
-        // we still need to ensure they don't exceed 1 and sum to 1.
-        const total = reactor + engine + manifold;
-        
-        // Normalize so they sum to 1
-        if (total > 0) {
-            const normalizedR = reactor / total;
-            const normalizedE = engine / total;
-            const normalizedM = manifold / total;
-            
-            this.coreData.reactorValue = Math.round(normalizedR * 15);
-            this.coreData.engineValue = Math.round(normalizedE * 15);
-            this.coreData.manifoldValue = Math.round(normalizedM * 15);
-        } else {
-            // Fallback if all are zero (shouldn't happen)
-            this.coreData.reactorValue = 5;
-            this.coreData.engineValue = 5;
-            this.coreData.manifoldValue = 5;
-        }
+        const values = this.getTriangleValues([reactor, engine, manifold]);
+        [this.coreData.reactorValue, this.coreData.engineValue, this.coreData.manifoldValue] = values;
 
         document.getElementById(`${this.id}-reactor-value`).textContent = this.coreData.reactorValue;
         document.getElementById(`${this.id}-engine-value`).textContent = this.coreData.engineValue;
@@ -470,11 +525,27 @@ class ShipCoreWidget extends Widget {
         // Redraw the canvas to show updated indicator position
         this.redrawTriangleCanvas(canvas, size);
 
-        // Only update summary and notify children on final update (click or drag end)
-        if (isFinal) {
-            this.refreshSummary();
-            this.notifyChildrenOfChange();
+        this.refreshSummary();
+        this.notifyChildrenOfChange();
+    }
+
+    getTriangleValues(weights) {
+        const normalizedWeights = weights.map(weight =>
+            Number.isFinite(weight) && weight > 0 ? weight : 0
+        );
+        const total = normalizedWeights.reduce((sum, weight) => sum + weight, 0);
+        const allocations = (total > 0
+            ? normalizedWeights.map(weight => weight / total * 12)
+            : [4, 4, 4]);
+        const values = allocations.map(allocation => Math.floor(allocation));
+        const remaining = 12 - values.reduce((sum, value) => sum + value, 0);
+        const remainders = allocations
+            .map((allocation, index) => ({ index, remainder: allocation - values[index] }))
+            .sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+        for (let index = 0; index < remaining; index++) {
+            values[remainders[index].index]++;
         }
+        return values.map(value => value + 1);
     }
 
     calculateTriangleCoordinates(x, y, top, bottomLeft, bottomRight) {
@@ -561,19 +632,148 @@ class ShipCoreWidget extends Widget {
 
     createNodes() {
         this.clearNodes();
+        this.addNode('input', 'Class', 'Class', 0, 0.25, {
+            sectionId: 'header',
+            anchorId: `${this.id}-header`
+        });
         this.addNode('output', 'Core', 'Core', 1, 0.5, {
             sectionId: 'header',
             anchorId: `${this.id}-header`
         });
         this.reflowNodes();
+        this.refreshPowerplantSize();
+    }
+
+    getConnectedClassData() {
+        const linked = this.getConnectedDataByNodeType('Class')[0]?.data;
+        return linked?.shipData || linked || null;
+    }
+
+    getPowerplantInput() {
+        return this.element?.querySelector('.core-powerplant-size') || null;
+    }
+
+    getPowerplantOutput() {
+        return this.element?.querySelector('.core-powerplant-value') || null;
+    }
+
+    refreshPowerplantSize() {
+        const classInputNode = Array.from(this.nodes.values()).find(node =>
+            node.type === 'input' && node.nodeType === 'Class'
+        );
+        const isClassConnected = !!classInputNode?.connections?.size;
+        const classData = this.getConnectedClassData();
+        const powerplantInput = this.getPowerplantInput();
+        const powerplantOutput = this.getPowerplantOutput();
+        if (!isClassConnected) {
+            if (powerplantInput) {
+                powerplantInput.readOnly = false;
+                powerplantInput.disabled = false;
+                powerplantInput.min = '1';
+                powerplantInput.hidden = false;
+            }
+            if (powerplantOutput) powerplantOutput.hidden = true;
+            return;
+        }
+
+        if (powerplantInput) {
+            powerplantInput.readOnly = true;
+            powerplantInput.disabled = true;
+            powerplantInput.min = '0';
+            powerplantInput.hidden = true;
+        }
+        if (powerplantOutput) powerplantOutput.hidden = false;
+        if (!classData) return;
+        const coreHulls = Number(classData.hullComposition?.core ?? classData.hullComposition?.Core ?? 0);
+        if (!Number.isFinite(coreHulls) || coreHulls < 0) {
+            console.warn(`[ShipCoreWidget ${this.id}] Connected class has an invalid core hull count`);
+            return;
+        }
+        this.coreData.powerplantSize = Math.floor(coreHulls);
+        if (powerplantInput) {
+            powerplantInput.value = String(this.coreData.powerplantSize);
+        }
+        if (powerplantOutput) powerplantOutput.textContent = String(this.coreData.powerplantSize);
+    }
+
+    getContainmentHullCount() {
+        const classData = this.getConnectedClassData();
+        const composition = classData?.hullComposition || {};
+        const containmentHulls = Number(classData?.containmentHulls);
+        if (classData?.containmentHulls !== null && classData?.containmentHulls !== undefined &&
+            classData.containmentHulls !== '' && Number.isFinite(containmentHulls) && containmentHulls >= 0) {
+            return containmentHulls;
+        }
+        const freight = Number(composition.freight ?? composition.Freight ?? 0);
+        const tankage = Number(composition.tankage ?? composition.Tankage ?? 0);
+        return Number.isFinite(freight) && Number.isFinite(tankage)
+            ? Math.max(0, freight + tankage)
+            : 0;
+    }
+
+    getHardpointCapacity() {
+        if (!this.getConnectedClassData()) return null;
+        const containmentHulls = this.getContainmentHullCount();
+        const capacity = Math.pow(containmentHulls, 2 / 3);
+        return Math.floor(capacity + Number.EPSILON * Math.max(1, capacity));
     }
 
     getSerializedData() {
-        return { ...this.coreData };
+        return {
+            ...this.coreData,
+            hardpoints: this.getHardpointCapacity()
+        };
+    }
+
+    handleNodeConnectionChange(nodeId) {
+        super.handleNodeConnectionChange(nodeId);
+        this.refreshPowerplantSize();
+        this.notifyChildrenOfChange();
+    }
+
+    onParentLinked() {
+        this.refreshPowerplantSize();
+        this.notifyChildrenOfChange();
+    }
+
+    onParentDataChanged() {
+        this.refreshPowerplantSize();
+        this.notifyChildrenOfChange();
+    }
+
+    refreshOutfitCoreAvailability() {
+        const widgets = window.widgetManager?.getAllWidgets?.() || [];
+        for (const widget of widgets) {
+            if (widget.type !== 'outfit') continue;
+            widget.refreshCoreOptions();
+        }
+    }
+
+    notifyChildrenOfChange() {
+        super.notifyChildrenOfChange();
+        const widgets = window.widgetManager?.getAllWidgets?.() || [];
+        for (const widget of widgets) {
+            if (widget.type === 'outfit') widget.refreshSelectedCoreData(this.id);
+        }
     }
 
     loadSerializedData(data) {
-        this.coreData = { ...this.coreData, ...data };
+        this.coreData = {
+            ...this.coreData,
+            ...data,
+            operational: Boolean(data.operational || data.developed),
+            gears: Array.isArray(data.gears) ? data.gears.map(gear => ({ ...gear })) : this.coreData.gears
+        };
+        [
+            this.coreData.reactorValue,
+            this.coreData.engineValue,
+            this.coreData.manifoldValue
+        ] = this.getTriangleValues([
+            this.coreData.reactorValue,
+            this.coreData.engineValue,
+            this.coreData.manifoldValue
+        ]);
+        delete this.coreData.developed;
         this.syncFormFromData();
     }
 
@@ -587,10 +787,13 @@ class ShipCoreWidget extends Widget {
         const dvpInput = document.getElementById(`${this.id}-dvp-cost`);
         if (dvpInput) dvpInput.value = this.coreData.developmentCost ?? 0;
 
-        const powerplantInput = document.getElementById(`${this.id}-powerplant`);
+        const powerplantInput = this.getPowerplantInput();
         if (powerplantInput) powerplantInput.value = this.coreData.powerplantSize;
+        const powerplantOutput = this.getPowerplantOutput();
+        if (powerplantOutput) powerplantOutput.textContent = String(this.coreData.powerplantSize);
+        this.refreshPowerplantSize();
 
-        ['reactor', 'engine', 'manifold', 'thruster'].forEach(component => {
+        ['reactor', 'engine', 'manifold'].forEach(component => {
             const select = document.getElementById(`${this.id}-${component}`);
             if (select) select.value = this.coreData[component] || '';
         });
@@ -613,6 +816,9 @@ class ShipCoreWidget extends Widget {
         const manifoldEfficiencyEl = document.getElementById(`${this.id}-manifold-efficiency`);
         if (manifoldEfficiencyEl) manifoldEfficiencyEl.value = this.coreData.manifoldEfficiency;
 
+        const demoHullsInput = document.getElementById(`${this.id}-demo-hulls`);
+        if (demoHullsInput) demoHullsInput.value = this.coreData.demoHulls;
+        this.renderGears();
         this.renderTriangleWidget();
     }
 
@@ -651,6 +857,8 @@ class ShipCoreWidget extends Widget {
         this.addSummaryField(gridDiv, 'Reactor Stability', `${this.coreData.reactorStability}`);
         this.addSummaryField(gridDiv, 'Engine Efficiency', `${this.coreData.engineEfficiency}`);
         this.addSummaryField(gridDiv, 'Manifold Efficiency', `${this.coreData.manifoldEfficiency}`);
+        this.addSummaryField(gridDiv, 'Simulation Hulls', `${this.coreData.demoHulls}`);
+        this.addSummaryField(gridDiv, 'Gears', `${this.coreData.gears.length}`);
 
         container.appendChild(gridDiv);
     }

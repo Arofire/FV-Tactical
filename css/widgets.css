@@ -51,6 +51,30 @@
     user-select: none;
 }
 
+.widget-title-editable {
+    cursor: text;
+}
+
+.widget-title-editable:hover,
+.widget-title-editable:focus-visible {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.widget-title-input {
+    box-sizing: border-box;
+    height: 20px;
+    min-width: 0;
+    max-width: 60%;
+    padding: 2px 4px;
+    background: #252525;
+    border: 1px solid #777;
+    border-radius: 3px;
+    color: #f0f0f0;
+    font: inherit;
+}
+
 .widget-controls {
     display: flex;
     gap: 4px;
@@ -72,6 +96,52 @@
 
 .widget-control-btn:hover {
     background: #666;
+}
+
+.widget-control-btn.technology {
+    color: #f1d36b;
+    font-size: 15px;
+}
+
+.core-gears {
+    display: grid;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.core-gear-row {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) minmax(90px, 120px) 28px;
+    align-items: end;
+    gap: 8px;
+    padding: 8px;
+    background: #242424;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.core-gear-row label {
+    display: grid;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.core-gear-row input {
+    min-width: 0;
+}
+
+.core-gear-row button,
+.core-add-gear {
+    min-height: 28px;
+    background: #424242;
+    color: #eee;
+    border: 1px solid #606060;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.core-add-gear {
+    padding: 5px 10px;
 }
 
 .widget-control-btn.minimize:hover {
@@ -493,6 +563,72 @@
     gap: 12px;
 }
 
+.outfit-widget .section-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.outfit-resource-counter {
+    margin-left: auto;
+    color: #9fa8b2;
+    font-family: monospace;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.outfit-resource-used.is-over-capacity {
+    color: #ff6666;
+}
+
+.outfit-resource-capacity.has-unused-capacity {
+    color: #f0f0f0;
+}
+
+.outfit-utilities-subcategory {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid #444;
+}
+
+.outfit-utilities-subcategory-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0;
+    color: #4a90e2;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.outfit-resource-note {
+    color: #9fa8b2;
+    font-size: 11px;
+}
+
+.outfit-core-properties-grid {
+    display: grid;
+    grid-template-columns: minmax(110px, auto) minmax(0, 1fr);
+    gap: 4px 10px;
+    margin: 0;
+    font-size: 12px;
+}
+
+.outfit-core-properties-grid dt {
+    color: #9fa8b2;
+}
+
+.outfit-core-properties-grid dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
 .outfit-meta-header {
     display: flex;
     flex-direction: row;
@@ -662,16 +798,64 @@
     /* gap: 10px; */
 }
 
+.composition-section .composition-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .composition-group {
     display: flex;
     flex-direction: column;
     /* gap: 12px; */
 }
 
+.containment-relationship {
+    position: relative;
+    flex: 0 0 16px;
+    height: 16px;
+    margin: -8px 0;
+    color: #555;
+}
+
+.containment-relationship-stem,
+.containment-relationship-child {
+    position: absolute;
+    width: 1px;
+    background: currentColor;
+}
+
+.containment-relationship-stem {
+    left: 75%;
+    top: 0;
+    height: 8px;
+}
+
+.containment-relationship-branch {
+    position: absolute;
+    left: 25%;
+    right: 25%;
+    top: 8px;
+    height: 1px;
+    background: currentColor;
+}
+
+.containment-relationship-child {
+    top: 8px;
+    height: 8px;
+}
+
+.containment-relationship-child-left {
+    left: 25%;
+}
+
+.containment-relationship-child-right {
+    left: 75%;
+}
+
 .composition-item {
     background: #1a1a1a;
     border: 1px solid #444;
     border-radius: 6px;
+    min-height: 27px;
     padding-left: 8px;
     display: flex;
     flex-direction: row;
@@ -683,6 +867,19 @@
 .composition-item label {
     font-size: 12px;
     color: #ccc;
+}
+
+.composition-value {
+    padding-right: 6px;
+    color: #ccc;
+    font-size: 12px;
+}
+
+.section-title.composition-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
 }
 
 .hull-spin {
@@ -845,6 +1042,7 @@
     height: 4px;
     background: transparent;
     cursor: pointer;
+    direction: rtl;
 }
 
 .cargo-remass-slider:disabled {
@@ -1164,6 +1362,221 @@
     border: 1px solid #555;
 }
 
+.hull-plan-export {
+    flex: 0 0 auto;
+    margin-bottom: 8px;
+    padding: 7px 10px;
+    border: 1px solid #5378a6;
+    border-radius: 4px;
+    background: #294766;
+    color: #f0f5fa;
+    cursor: pointer;
+}
+
+.hull-plan-export:hover {
+    background: #345a80;
+}
+
+.hull-plan-open,
+.hull-plan-flyout-lock {
+    position: relative;
+    z-index: 2;
+    padding: 6px 9px;
+    border: 1px solid #5378a6;
+    border-radius: 4px;
+    background: #294766;
+    color: #f0f5fa;
+    cursor: pointer;
+}
+
+.hull-plan-open:hover,
+.hull-plan-flyout-lock:hover,
+.hull-plan-flyout-lock[aria-pressed="true"] {
+    background: #345a80;
+}
+
+.hull-plan-view {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.hull-plan-table,
+.hull-plan-empty,
+.hull-plan-technologies {
+    width: 100%;
+}
+
+.hull-plan-flyout[hidden] {
+    display: none;
+}
+
+.hull-plan-flyout {
+    position: fixed;
+    z-index: 10000;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    overflow: auto;
+    border: 1px solid #65788b;
+    border-radius: 6px;
+    background: #20262d;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65);
+}
+
+.hull-plan-flyout-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 7px 9px;
+    border-bottom: 1px solid #485562;
+    background: #303942;
+}
+
+.hull-plan-flyout-content {
+    width: max-content;
+    min-width: 100%;
+}
+
+.hull-plan-table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #202020;
+    border: 1px solid #444;
+    font-size: 11px;
+}
+
+.hull-plan-table caption,
+.hull-plan-technologies h4 {
+    padding: 5px 7px;
+    color: #d6e4f3;
+    background: #303942;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.hull-plan-table th,
+.hull-plan-table td {
+    padding: 5px 7px;
+    border-top: 1px solid #3b3b3b;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+}
+
+.hull-plan-table th {
+    width: 38%;
+    color: #c9c9c9;
+    font-weight: 500;
+}
+
+.hull-plan-table td {
+    color: #e0e0e0;
+}
+
+.hull-plan-table td.unavailable {
+    color: #929292;
+    font-style: italic;
+}
+
+.hull-plan-metrics-section {
+    gap: 8px;
+}
+
+.hull-plan-metrics-section .section-content {
+    gap: 0;
+}
+
+.hull-plan-metrics-section .hull-plan-table {
+    margin-top: 0;
+}
+
+.hull-plan-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: max-content;
+    border: 1px solid #444;
+    background: #171717;
+}
+
+.hull-plan-row {
+    display: flex;
+}
+
+.hull-plan-cell {
+    display: grid;
+    place-items: center;
+    flex: 0 0 30px;
+    width: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
+    aspect-ratio: 1;
+    box-sizing: border-box;
+    margin: 1px;
+    border: 1px solid #526071;
+    border-radius: 4px;
+    background: #26313c;
+    color: #e7edf3;
+}
+
+.hull-plan-row > span {
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    margin: 1px;
+}
+
+.hull-plan-cell-code {
+    color: #9cc9f1;
+    font-size: 16px;
+}
+
+.hull-plan-hangar { background: #004209; }
+.hull-plan-magazine { background: #710000; }
+.hull-plan-system { background: #5a0067; }
+.hull-plan-quantum { background: #35006b; }
+.hull-plan-emplacement { background: #3c7a00; }
+.hull-plan-armor { background: #2a2a2a; }
+.hull-plan-hardpoint { background: #424242; }
+.hull-plan-utility { background: #9a5f00; }
+.hull-plan-freight { background: #ab9000; }
+.hull-plan-tankage { background: #006088; }
+.hull-plan-core { background: #9a3d08; }
+
+.hull-plan-empty,
+.hull-plan-missing-inputs {
+    padding: 9px;
+    border: 1px dashed #505050;
+    color: #aaa;
+    font-size: 11px;
+    text-align: center;
+}
+
+.hull-plan-technologies {
+    border: 1px solid #444;
+    background: #202020;
+}
+
+.hull-plan-technologies p {
+    padding: 7px;
+    color: #ccc;
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+
 .placeholder-block {
     border: 1px dashed #424242;
     border-radius: 6px;
@@ -1171,6 +1584,9 @@
     color: #5f5f5f;
     font-size: 12px;
     text-align: center;
+}
+
+@media (max-width: 540px) {
 }
 
 /* Power and heat management stats */
@@ -1658,6 +2074,12 @@
     align-items: center;
 }
 
+.outfit-armor-control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .spinal-weapon-group h5,
 .offensive-weapons-group h5,
 .defensive-weapons-group h5 {
@@ -1850,4 +2272,13 @@
 
 .arc-popup label:hover {
     color: #4a90e2;
+}
+
+.arc-option.disabled {
+    color: #777;
+    cursor: not-allowed;
+}
+
+.arc-option.disabled input {
+    cursor: not-allowed;
 }

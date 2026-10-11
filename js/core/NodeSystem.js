@@ -395,8 +395,174 @@ class NodeSystem {
         
         if (!sourcePos || !targetPos) return;
         
-        const path = this.createBezierPath(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
+        const path = this.createRoutedPath(connection, sourcePos, targetPos);
         element.setAttribute('d', path);
+    }
+
+    createRoutedPath(connection, start, end) {
+        const source = this.getNodeById(connection.sourceNodeId);
+        const target = this.getNodeById(connection.targetNodeId);
+        const linkedWidgetIds = new Set([source?.widgetId, target?.widgetId]);
+        const obstacles = Array.from(window.widgetManager?.widgets.values() || [])
+            .filter(widget => !linkedWidgetIds.has(widget.id) && widget.element?.isConnected)
+            .map(widget => {
+                const width = widget.element.offsetWidth || widget.width;
+                const height = widget.element.offsetHeight || widget.height;
+                const padding = 16;
+                return {
+                    left: widget.x - padding,
+                    right: widget.x + width + padding,
+                    top: widget.y - padding,
+                    bottom: widget.y + height + padding
+                };
+            });
+
+        if (obstacles.length === 0) {
+            return this.createBezierPath(start.x, start.y, end.x, end.y);
+        }
+
+        const xCoordinates = new Set([start.x, end.x]);
+        const yCoordinates = new Set([start.y, end.y]);
+        obstacles.forEach(rect => {
+            xCoordinates.add(rect.left);
+            xCoordinates.add(rect.right);
+            yCoordinates.add(rect.top);
+            yCoordinates.add(rect.bottom);
+        });
+
+        const insideObstacle = (point) => obstacles.some(rect =>
+            point.x > rect.left && point.x < rect.right &&
+            point.y > rect.top && point.y < rect.bottom
+        );
+        const segmentClear = (a, b) => obstacles.every(rect => {
+            if (a.x === b.x) {
+                if (a.x <= rect.left || a.x >= rect.right) return true;
+                return Math.max(Math.min(a.y, b.y), rect.top) >=
+                    Math.min(Math.max(a.y, b.y), rect.bottom);
+            }
+            if (a.y === b.y) {
+                if (a.y <= rect.top || a.y >= rect.bottom) return true;
+                return Math.max(Math.min(a.x, b.x), rect.left) >=
+                    Math.min(Math.max(a.x, b.x), rect.right);
+            }
+            return false;
+        });
+
+        const sortedX = Array.from(xCoordinates).sort((a, b) => a - b);
+        const sortedY = Array.from(yCoordinates).sort((a, b) => a - b);
+        const points = [];
+        const pointIndices = new Map();
+        for (const x of sortedX) {
+            for (const y of sortedY) {
+                const point = { x, y };
+                if (insideObstacle(point)) continue;
+                const index = points.push(point) - 1;
+                pointIndices.set(`${x},${y}`, index);
+            }
+        }
+        const neighbors = points.map(() => []);
+        const connectVisibleNeighbors = indices => {
+            for (let i = 1; i < indices.length; i++) {
+                const previousIndex = indices[i - 1];
+                const currentIndex = indices[i];
+                if (previousIndex === undefined || currentIndex === undefined) continue;
+                const a = points[previousIndex];
+                const b = points[currentIndex];
+                if (!segmentClear(a, b)) continue;
+                const cost = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+                neighbors[previousIndex].push({ index: currentIndex, cost });
+                neighbors[currentIndex].push({ index: previousIndex, cost });
+            }
+        };
+        for (const y of sortedY) {
+            connectVisibleNeighbors(sortedX.map(x => pointIndices.get(`${x},${y}`))
+                .filter(index => index !== undefined));
+        }
+        for (const x of sortedX) {
+            connectVisibleNeighbors(sortedY.map(y => pointIndices.get(`${x},${y}`))
+                .filter(index => index !== undefined));
+        }
+        const startIndex = points.findIndex(point => point.x === start.x && point.y === start.y);
+        const endIndex = points.findIndex(point => point.x === end.x && point.y === end.y);
+        if (startIndex < 0 || endIndex < 0) {
+            return this.createBezierPath(start.x, start.y, end.x, end.y);
+        }
+
+        const distances = new Array(points.length).fill(Infinity);
+        const previous = new Array(points.length).fill(-1);
+        const openSet = [];
+        const pushOpen = (index, priority) => {
+            openSet.push({ index, priority });
+            let child = openSet.length - 1;
+            while (child > 0) {
+                const parent = Math.floor((child - 1) / 2);
+                if (openSet[parent].priority <= priority) break;
+                openSet[child] = openSet[parent];
+                child = parent;
+            }
+            openSet[child] = { index, priority };
+        };
+        const popOpen = () => {
+            const first = openSet[0];
+            const last = openSet.pop();
+            if (openSet.length > 0 && last) {
+                let parent = 0;
+                while (true) {
+                    const left = parent * 2 + 1;
+                    const right = left + 1;
+                    if (left >= openSet.length) break;
+                    const smaller = right < openSet.length &&
+                        openSet[right].priority < openSet[left].priority ? right : left;
+                    if (openSet[smaller].priority >= last.priority) break;
+                    openSet[parent] = openSet[smaller];
+                    parent = smaller;
+                }
+                openSet[parent] = last;
+            }
+            return first;
+        };
+        distances[startIndex] = 0;
+        pushOpen(startIndex, Math.abs(start.x - end.x) + Math.abs(start.y - end.y));
+
+        while (openSet.length > 0) {
+            const currentEntry = popOpen();
+            if (!currentEntry) continue;
+            const current = currentEntry.index;
+            const currentPoint = points[current];
+            const expectedPriority = distances[current] +
+                Math.abs(currentPoint.x - end.x) + Math.abs(currentPoint.y - end.y);
+            if (currentEntry.priority > expectedPriority) continue;
+            if (current === endIndex) break;
+            for (const neighbor of neighbors[current]) {
+                const distance = distances[current] + neighbor.cost;
+                if (distance < distances[neighbor.index]) {
+                    distances[neighbor.index] = distance;
+                    previous[neighbor.index] = current;
+                    const point = points[neighbor.index];
+                    const heuristic = Math.abs(point.x - end.x) + Math.abs(point.y - end.y);
+                    pushOpen(neighbor.index, distance + heuristic);
+                }
+            }
+        }
+
+        if (!Number.isFinite(distances[endIndex])) {
+            return this.createBezierPath(start.x, start.y, end.x, end.y);
+        }
+        const route = [];
+        for (let current = endIndex; current >= 0; current = previous[current]) {
+            route.push(points[current]);
+            if (current === startIndex) break;
+        }
+        route.reverse();
+
+        const simplified = route.filter((point, index) => {
+            if (index === 0 || index === route.length - 1) return true;
+            const before = route[index - 1];
+            const after = route[index + 1];
+            return !((before.x === point.x && point.x === after.x) ||
+                (before.y === point.y && point.y === after.y));
+        });
+        return `M ${simplified.map(point => `${point.x} ${point.y}`).join(' L ')}`;
     }
 
     createBezierPath(x1, y1, x2, y2, isInputNode = false) {
@@ -679,9 +845,7 @@ class NodeSystem {
             troops: 'Troop Unit',
             missiles: 'Missile Design',
             outfit: 'Ship Outfit',
-            loadouts: 'Loadout',
             shipCore: 'Ship Core',
-            shipBerth: 'Ship Berths',
             shipHulls: 'Hull Plan',
             statistics: 'Statistics Hub',
             reroute: 'Reroute Node'
@@ -837,7 +1001,7 @@ class NodeSystem {
                 outputs: ['Class', 'Statistics']
             },
             'outfit': {
-                inputs: ['Class', 'Core'],
+                inputs: ['Core','Class'],
                 outputs: ['Outfit', 'Statistics']
             },
             'craft': {
@@ -852,20 +1016,12 @@ class NodeSystem {
                 inputs: [],
                 outputs: ['Weapon']
             },
-            'loadouts': {
-                inputs: ['Outfit', 'Class', 'Craft', 'Weapon'],
-                outputs: ['Loadout']
-            },
             'shipCore': {
-                inputs: [],
+                inputs: ['Class'],
                 outputs: ['Core']
             },
-            'shipBerth': {
-                inputs: ['Outfit', 'Troop'],
-                outputs: ['Berth']
-            },
             'shipHulls': {
-                inputs: ['Outfit', 'Berth', 'Loadout'],
+                inputs: ['Class', 'Core', 'Outfit'],
                 outputs: ['Statistics']
             },
             'statistics': {

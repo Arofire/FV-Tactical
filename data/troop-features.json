@@ -1,0 +1,8 @@
+[
+  { "id": "protected", "name": "Protected", "effect": "Provides basic personal protection.", "combatValue": 1, "equipment": 1 },
+  { "id": "reinforced", "name": "Reinforced", "effect": "Improves resilience under fire.", "combatValue": 1, "equipment": 1 },
+  { "id": "plasma-field", "name": "Plasma Field", "effect": "Adds a defensive plasma field.", "combatValue": 2, "equipment": 1 },
+  { "id": "enhanced", "name": "Enhanced", "effect": "Improves physical and tactical capability.", "combatValue": 2, "equipment": 1 },
+  { "id": "multi-domain", "name": "Multi-Domain", "effect": "Allows a second formation to be selected.", "combatValue": 1, "equipment": 1 },
+  { "id": "shock", "name": "Shock", "effect": "Specialized assault capability.", "combatValue": 2, "equipment": 1 }
+]

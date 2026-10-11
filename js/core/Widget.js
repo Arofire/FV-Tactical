@@ -72,17 +72,40 @@ class Widget {
         const titleElement = document.createElement('span');
         titleElement.className = 'widget-title';
         titleElement.textContent = this.title;
+        this.titleElement = titleElement;
+
+        if (typeof this.titleEditHandler === 'function') {
+            titleElement.classList.add('widget-title-editable');
+            titleElement.tabIndex = 0;
+            titleElement.setAttribute('role', 'button');
+            titleElement.setAttribute('aria-label', 'Rename widget title');
+            titleElement.addEventListener('mousedown', event => {
+                event.stopPropagation();
+                this.select();
+            });
+            titleElement.addEventListener('click', () => this.beginTitleEdit());
+            titleElement.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.beginTitleEdit();
+                }
+            });
+        }
         
         const controls = document.createElement('div');
         controls.className = 'widget-controls';
 
-        const duplicateBtn = document.createElement('button');
-        duplicateBtn.className = 'widget-control-btn duplicate';
-        duplicateBtn.innerHTML = '⎘';
-        duplicateBtn.title = 'Duplicate widget';
-        duplicateBtn.onclick = (e) => {
+        const technologyBtn = document.createElement('button');
+        technologyBtn.className = 'widget-control-btn technology';
+        technologyBtn.textContent = '⚗';
+        technologyBtn.title = 'View technology requirements';
+        technologyBtn.setAttribute('aria-label', 'View technology requirements');
+        technologyBtn.onclick = (e) => {
             e.stopPropagation();
-            this.duplicate();
+            this.showTechnologyRequirements().catch(error => {
+                console.error('Unable to show technology requirements:', error);
+                window.app?.showNotification(`Unable to load technology requirements: ${error.message}`, 'error');
+            });
         };
 
         const pinBtn = document.createElement('button');
@@ -92,6 +115,15 @@ class Widget {
         pinBtn.onclick = (e) => {
             e.stopPropagation();
             this.togglePin();
+        };
+
+        const duplicateBtn = document.createElement('button');
+        duplicateBtn.className = 'widget-control-btn duplicate';
+        duplicateBtn.innerHTML = '⎘';
+        duplicateBtn.title = 'Duplicate widget';
+        duplicateBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.duplicate();
         };
 
         const minimizeBtn = document.createElement('button');
@@ -119,6 +151,7 @@ class Widget {
         preflightIndicator.style.display = 'none'; // Hidden by default
         
         controls.appendChild(preflightIndicator);
+        controls.appendChild(technologyBtn);
         controls.appendChild(duplicateBtn);
         controls.appendChild(pinBtn);
         controls.appendChild(minimizeBtn);
@@ -213,6 +246,45 @@ class Widget {
         this.setupEventListeners();
     }
 
+    beginTitleEdit() {
+        if (typeof this.titleEditHandler !== 'function' || !this.titleElement || this.titleEditor) return;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'widget-title-input';
+        input.value = this.title;
+        input.setAttribute('aria-label', 'Widget name');
+        input.addEventListener('mousedown', event => event.stopPropagation());
+        input.addEventListener('click', event => event.stopPropagation());
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.finishTitleEdit(input, true);
+            } else if (event.key === 'Escape') {
+                event.preventDefault();
+                this.finishTitleEdit(input, false);
+            }
+        });
+        input.addEventListener('blur', () => this.finishTitleEdit(input, true));
+
+        this.titleEditor = input;
+        this.titleElement.replaceWith(input);
+        input.focus();
+        input.select();
+    }
+
+    finishTitleEdit(input, commit) {
+        if (this.titleEditor !== input) return;
+        this.titleEditor = null;
+
+        if (commit) {
+            this.titleEditHandler(input.value);
+        }
+
+        input.replaceWith(this.titleElement);
+        this.titleElement.textContent = this.title;
+    }
+
     usesThreeColumnLayout() {
         return this.layoutMode === 'three-column';
     }
@@ -220,6 +292,139 @@ class Widget {
     // Called when the tech tree changes - widgets can override to refresh tech-dependent elements
     onTechTreeUpdated() {
         // Base implementation - override in subclasses that have tech-dependent content
+    }
+
+    async showTechnologyRequirements() {
+        const technologies = await TechTree.ensureLoaded();
+        const selectedTechIds = new Set();
+        const visit = (value, key = '') => {
+            if (Array.isArray(value)) {
+                value.forEach(item => visit(item, key));
+                return;
+            }
+            if (value && typeof value === 'object') {
+                Object.entries(value).forEach(([childKey, childValue]) => visit(childValue, childKey));
+                return;
+            }
+            if (typeof value !== 'string') return;
+
+            if (/required.?tech|tech.?requirement/i.test(key) ||
+                /technology|reactor|engine|manifold/i.test(key)) {
+                if (Object.prototype.hasOwnProperty.call(technologies, value)) {
+                    selectedTechIds.add(value);
+                }
+            }
+        };
+        visit(this.getSerializedData());
+
+        const modal = document.createElement('div');
+        modal.className = 'technology-modal-backdrop';
+        modal.setAttribute('role', 'presentation');
+        const dialog = document.createElement('section');
+        dialog.className = 'technology-modal';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-labelledby', `${this.id}-technology-title`);
+
+        const header = document.createElement('header');
+        const title = document.createElement('h2');
+        title.id = `${this.id}-technology-title`;
+        title.textContent = `${this.title} — Technology Requirements`;
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'technology-modal-close';
+        closeButton.textContent = '×';
+        closeButton.setAttribute('aria-label', 'Close technology requirements');
+        closeButton.addEventListener('click', () => modal.remove());
+        header.append(title, closeButton);
+
+        const legend = document.createElement('p');
+        legend.className = 'technology-tree-legend';
+        legend.textContent = 'Possessed · Available · Not available';
+        const tree = document.createElement('ul');
+        tree.className = 'technology-tree';
+        const empire = window.empire;
+        const requiredTechIds = new Set();
+        const requirementsByTech = new Map();
+
+        const getRequirementIds = techId => {
+            const technology = technologies[techId];
+            if (!technology) return [];
+            return [
+                ...(technology.prerequisites || []),
+                ...(technology.specialRequirement && technology.specialRequirement !== 'Tier3'
+                    ? [technology.specialRequirement]
+                    : [])
+            ].filter(id => technologies[id]);
+        };
+
+        const includeRequiredTech = techId => {
+            if (requirementsByTech.has(techId) || !technologies[techId]) return;
+            const requirementIds = getRequirementIds(techId);
+            requirementsByTech.set(techId, requirementIds);
+            requiredTechIds.add(techId);
+            requirementIds.forEach(includeRequiredTech);
+        };
+        selectedTechIds.forEach(includeRequiredTech);
+
+        const dependentsByRequirement = new Map(
+            [...requiredTechIds].map(techId => [techId, []])
+        );
+        requiredTechIds.forEach(techId => {
+            (requirementsByTech.get(techId) || []).forEach(requirementId => {
+                dependentsByRequirement.get(requirementId)?.push(techId);
+            });
+        });
+
+        const renderTechnology = (techId, ancestry = new Set()) => {
+            const technology = technologies[techId];
+            if (!technology || ancestry.has(techId)) return null;
+            const item = document.createElement('li');
+            const label = document.createElement('span');
+            const state = empire?.researchedTech?.has(techId)
+                ? 'possessed'
+                : empire?.availableTech?.has(techId) ? 'available' : 'unavailable';
+            item.className = `technology-tree-item ${state}`;
+            label.textContent = technology.name || techId;
+
+            const nextAncestry = new Set(ancestry);
+            nextAncestry.add(techId);
+            item.appendChild(label);
+
+            const dependentIds = dependentsByRequirement.get(techId) || [];
+            if (dependentIds.length > 0) {
+                const children = document.createElement('ul');
+                dependentIds.forEach(id => {
+                    const child = renderTechnology(id, nextAncestry);
+                    if (child) children.appendChild(child);
+                });
+                item.appendChild(children);
+            }
+
+            return item;
+        };
+
+        if (selectedTechIds.size === 0) {
+            const empty = document.createElement('li');
+            empty.className = 'technology-tree-empty';
+            empty.textContent = 'No technology requirements found for the current selections.';
+            tree.appendChild(empty);
+        } else {
+            const rootTechIds = [...requiredTechIds].filter(techId =>
+                (requirementsByTech.get(techId) || []).length === 0
+            );
+            rootTechIds.forEach(techId => {
+                const item = renderTechnology(techId);
+                if (item) tree.appendChild(item);
+            });
+        }
+        dialog.append(header, legend, tree);
+        modal.appendChild(dialog);
+        modal.addEventListener('click', event => {
+            if (event.target === modal) modal.remove();
+        });
+        document.body.appendChild(modal);
+        closeButton.focus();
     }
 
     createContent(contentElement) {
@@ -1153,6 +1358,10 @@ class Widget {
 
         if (typeof this.onMinimizeStateChanged === 'function') {
             this.onMinimizeStateChanged(this.minimized);
+        }
+
+        if (window.app && window.app.updateMinimap) {
+            window.app.updateMinimap();
         }
 
         const refresh = () => {

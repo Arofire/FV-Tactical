@@ -98,19 +98,39 @@ class PreflightCheck {
             case 'outfit':
                 this.checkOutfitWidget(widget);
                 break;
-            case 'loadouts':
-                this.checkLoadoutsWidget(widget);
-                break;
             case 'shipCore':
                 this.checkShipCoreWidget(widget);
-                break;
-            case 'shipBerth':
-                this.checkShipBerthWidget(widget);
                 break;
             case 'shipHulls':
                 this.checkShipHullsWidget(widget);
                 break;
         }
+        this.checkWidgetTechnologyRequirements(widget);
+    }
+
+    checkWidgetTechnologyRequirements(widget) {
+        const data = widget.getSerializedData();
+        if (data.ignoreTechRequirements || data.shipData?.ignoreTechRequirements) return;
+        const requirements = new Set();
+        const visit = (value, key = '') => {
+            if (Array.isArray(value)) {
+                value.forEach(item => visit(item, key));
+                return;
+            }
+            if (value && typeof value === 'object') {
+                Object.entries(value).forEach(([childKey, childValue]) => visit(childValue, childKey));
+                return;
+            }
+            if (typeof value === 'string' && /required.?tech|tech.?requirement/i.test(key)) {
+                requirements.add(value);
+            }
+        };
+        visit(data);
+        requirements.forEach(tech => {
+            if (!this.empire.hasTech(tech)) {
+                this.addTechRequirement(`${widget.title} requires ${tech}`, tech, widget.id);
+            }
+        });
     }
 
     checkShipWidget(widget) {
@@ -137,18 +157,6 @@ class PreflightCheck {
         
         // Analyze components
         for (const component of data.components) {
-            // Check tech requirements
-            if (component.requiredTech && !data.ignoreTechRequirements) {
-                for (const tech of component.requiredTech) {
-                    if (!this.empire.hasTech(tech)) {
-                        this.addTechRequirement(
-                            `Ship "${widget.title}" component "${component.name}" requires ${tech}`,
-                            tech, widget.id
-                        );
-                    }
-                }
-            }
-            
             // Component type checking
             if (component.type === 'hull') hasHull = true;
             if (component.type === 'engine') hasEngine = true;
@@ -195,13 +203,6 @@ class PreflightCheck {
         const classConnections = this.countNodeConnections(widget, 'Class', 'output');
         if (classConnections === 0) {
             this.addWarning(`Ship "${widget.title}" requires an Outfit connection`, widget.id);
-        }
-
-        const loadoutConnections = this.countNodeConnections(widget, 'loadout', 'output');
-        const magazineHulls = (hull?.magazine || 0);
-        const hangarHulls = (hull?.hangar || 0);
-        if ((magazineHulls + hangarHulls) > 0 && loadoutConnections === 0) {
-            this.addWarning(`Ship "${widget.title}" has magazine or hangar hulls without a Loadout connection`, widget.id);
         }
 
         const parentShip = this.getShipParent(widget);
@@ -285,65 +286,17 @@ class PreflightCheck {
 
     checkCraftWidget(widget) {
         const data = widget.getSerializedData();
-        
-        if (!data.components || data.components.length === 0) {
-            this.addWarning(`Craft "${widget.title}" has no components`, widget.id);
-            return;
-        }
-        
-        // Similar to ship but with different thresholds
-        let totalMass = 0;
-        for (const component of data.components) {
-            if (component.requiredTech) {
-                for (const tech of component.requiredTech) {
-                    if (!this.empire.hasTech(tech)) {
-                        this.addTechRequirement(
-                            `Craft "${widget.title}" component "${component.name}" requires ${tech}`,
-                            tech, widget.id
-                        );
-                    }
-                }
-            }
-            if (component.mass) totalMass += component.mass;
-        }
-        
-        // Craft should be lighter than ships
-        if (totalMass > 200) {
-            this.addWarning(`Craft "${widget.title}" is heavy for a small craft (${totalMass} mass units)`, widget.id);
-        }
-
-        const craftLinks = this.countNodeConnections(widget, 'craft', 'output');
-        if (craftLinks === 0) {
-            this.addAlert(`Craft "${widget.title}" is not assigned to any loadout`, widget.id);
+        if (!data.profile) this.addWarning(`Craft "${widget.title}" has no profile`, widget.id);
+        if (!data.roles || data.roles.length === 0) {
+            this.addWarning(`Craft "${widget.title}" has no selected role`, widget.id);
         }
     }
 
     checkTroopsWidget(widget) {
         const data = widget.getSerializedData();
-        
-        if (!data.equipment || data.equipment.length === 0) {
-            this.addWarning(`Troop unit "${widget.title}" has no equipment`, widget.id);
-        }
-        
-        // Check equipment tech requirements
-        if (data.equipment) {
-            for (const equipment of data.equipment) {
-                if (equipment.requiredTech) {
-                    for (const tech of equipment.requiredTech) {
-                        if (!this.empire.hasTech(tech)) {
-                            this.addTechRequirement(
-                                `Troop unit "${widget.title}" equipment "${equipment.name}" requires ${tech}`,
-                                tech, widget.id
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        const troopLinks = this.countNodeConnections(widget, 'troop', 'output');
-        if (troopLinks === 0) {
-            this.addAlert(`Troop unit "${widget.title}" is not assigned to any berth plan`, widget.id);
+        if (!data.training) this.addWarning(`Troop unit "${widget.title}" has no training selected`, widget.id);
+        if (!data.formations || data.formations.length === 0) {
+            this.addWarning(`Troop unit "${widget.title}" has no formation`, widget.id);
         }
     }
 
@@ -354,25 +307,6 @@ class PreflightCheck {
             this.addError(`Missile "${widget.title}" requires warhead and guidance systems`, widget.id);
         }
         
-        // Check tech requirements for missile components
-        const components = [data.warhead, data.guidance, data.propulsion].filter(Boolean);
-        for (const component of components) {
-            if (component.requiredTech) {
-                for (const tech of component.requiredTech) {
-                    if (!this.empire.hasTech(tech)) {
-                        this.addTechRequirement(
-                            `Missile "${widget.title}" component "${component.name}" requires ${tech}`,
-                            tech, widget.id
-                        );
-                    }
-                }
-            }
-        }
-
-        const weaponLinks = this.countNodeConnections(widget, 'weapon', 'output');
-        if (weaponLinks === 0) {
-            this.addAlert(`Missile design "${widget.title}" is not assigned to any loadout`, widget.id);
-        }
     }
 
     checkOutfitWidget(widget) {
@@ -383,15 +317,6 @@ class PreflightCheck {
         }
 
         // Outfit receives Core input from ShipCore widgets
-        const coreLinks = this.countNodeConnections(widget, 'Core', 'input');
-        if (coreLinks === 0) {
-            this.addError(`Outfit "${widget.title}" requires at least one Ship Core`, widget.id);
-        }
-
-        const hullLinks = this.countNodeConnections(widget, 'outfit-hull', 'output');
-        if (hullLinks === 0) {
-            this.addAlert(`Outfit "${widget.title}" is not assigned to any Hull plan`, widget.id);
-        }
     }
 
     checkShipCoreWidget(widget) {
@@ -403,91 +328,11 @@ class PreflightCheck {
         // No connections - could add an alert here if desired
     }
 
-    checkShipBerthWidget(widget) {
-        const outfitLinks = this.countNodeConnections(widget, 'berth', 'input');
-        if (outfitLinks === 0) {
-            this.addAlert(`Berth plan "${widget.title}" is not linked to an Outfit`, widget.id);
-        }
-
-        const troopLinks = this.countNodeConnections(widget, 'troop', 'input');
-        if (troopLinks === 0) {
-            this.addAlert(`Berth plan "${widget.title}" has unused berth capacity`, widget.id);
-        }
-
-        const staffLinks = this.countNodeConnections(widget, 'staff', 'output');
-        if (staffLinks === 0) {
-            this.addAlert(`Berth plan "${widget.title}" does not produce a staff plan`, widget.id);
-        }
-    }
-
     checkShipHullsWidget(widget) {
-        const outfitLinks = this.countNodeConnections(widget, 'outfit-hull', 'input');
-        if (outfitLinks === 0) {
-            this.addError(`Hull plan "${widget.title}" requires an Outfit connection`, widget.id);
-        }
-
-        const loadoutLinks = this.countNodeConnections(widget, 'loadout-hull', 'input');
-        const staffLinks = this.countNodeConnections(widget, 'staff', 'input');
-
-        const outfitWidget = this.getParentWidgetByType(widget, 'outfit');
-        const shipWidget = outfitWidget ? this.getShipParent(outfitWidget) : null;
-
-        if (shipWidget) {
-            const hulls = shipWidget.shipData?.hullComposition || {};
-            const magazineHulls = hulls.magazine || 0;
-            const hangarHulls = hulls.hangar || 0;
-            if ((magazineHulls + hangarHulls) > 0 && loadoutLinks === 0) {
-                this.addAlert(`Hull plan "${widget.title}" has magazine or hangar capacity without a Loadout connection`, widget.id);
-            }
-        }
-
-        if (outfitWidget) {
-            const modules = outfitWidget.outfitData?.systemsData?.modules || [];
-            const hasBerthingSystems = modules.some(module => {
-                const key = (module?.moduleId || module?.name || '').toString().toLowerCase();
-                return key.includes('berth');
-            });
-            if (hasBerthingSystems && staffLinks === 0) {
-                this.addAlert(`Hull plan "${widget.title}" has berthing systems but no Staff plan connection`, widget.id);
-            }
-        }
-    }
-
-    checkLoadoutsWidget(widget) {
-        const data = widget.getSerializedData();
-        
-        if (!data.items || data.items.length === 0) {
-            this.addWarning(`Loadout "${widget.title}" is empty`, widget.id);
-        }
-        
-        // Check for conflicting items or missing dependencies
-        if (data.items) {
-            const weaponCount = data.items.filter(item => item.type === 'weapon').length;
-            const ammoCount = data.items.filter(item => item.type === 'ammunition').length;
-            
-            if (weaponCount > 0 && ammoCount === 0) {
-                this.addWarning(`Loadout "${widget.title}" has weapons but no ammunition`, widget.id);
-            }
-        }
-
-        const classLinks = this.countNodeConnections(widget, 'loadout', 'input');
-        if (classLinks === 0) {
-            this.addAlert(`Loadout "${widget.title}" is not linked to a ship class`, widget.id);
-        }
-
-        const craftLinks = this.countNodeConnections(widget, 'craft', 'input');
-        if (craftLinks === 0) {
-            this.addAlert(`Loadout "${widget.title}" has unused hangar bays`, widget.id);
-        }
-
-        const weaponLinks = this.countNodeConnections(widget, 'weapon', 'input');
-        if (weaponLinks === 0) {
-            this.addAlert(`Loadout "${widget.title}" has unused magazines`, widget.id);
-        }
-
-        const hullLinks = this.countNodeConnections(widget, 'loadout-hull', 'output');
-        if (hullLinks === 0) {
-            this.addAlert(`Loadout "${widget.title}" is not assigned to a hull plan`, widget.id);
+        const classLinks = this.countNodeConnections(widget, 'Class', 'input');
+        const outfitLinks = this.countNodeConnections(widget, 'Outfit', 'input');
+        if (classLinks === 0 && outfitLinks === 0) {
+            this.addError(`Hull plan "${widget.title}" requires a Ship Class or Outfit connection`, widget.id);
         }
     }
 

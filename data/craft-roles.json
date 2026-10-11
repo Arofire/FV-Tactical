@@ -1,0 +1,122 @@
+[
+  {
+    "id": "interceptor",
+    "name": "Interceptor",
+    "traits": ["Orbital"],
+    "tags": [],
+    "actions": [],
+    "profile": "medium",
+    "exclusive": false,
+    "capacities": { "power": 0, "fuel": 1, "equipment": 0, "cohesion": 0, "troops": 0, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "defensive",
+    "name": "Defensive",
+    "traits": ["Defend other", "Interrupt"],
+    "tags": [],
+    "actions": ["Escort"],
+    "profile": "light",
+    "exclusive": false,
+    "capacities": { "power": 1, "fuel": 0, "equipment": 0, "cohesion": 0, "troops": 0, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "patrol",
+    "name": "Patrol",
+    "traits": ["Radius"],
+    "tags": [],
+    "actions": [],
+    "profile": "light",
+    "exclusive": false,
+    "capacities": { "power": 0, "fuel": 1, "equipment": 2, "cohesion": 0, "troops": 0, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "assault",
+    "name": "Assault",
+    "traits": [],
+    "tags": ["Armored"],
+    "actions": ["Board"],
+    "profile": "medium",
+    "exclusive": false,
+    "capacities": { "power": 0, "fuel": -2, "equipment": 0, "cohesion": 2, "troops": 1, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "transport",
+    "name": "Transport",
+    "traits": [],
+    "tags": ["Reinforced"],
+    "actions": [],
+    "profile": "light",
+    "exclusive": false,
+    "capacities": { "power": 0, "fuel": 1, "equipment": 0, "cohesion": 0, "troops": 2, "cells": 0, "containment": 10 }
+  },
+  {
+    "id": "picket",
+    "name": "Picket",
+    "traits": [],
+    "tags": [],
+    "actions": ["Scan"],
+    "profile": "special",
+    "exclusive": true,
+    "capacities": { "power": 0, "fuel": 0, "equipment": 0, "cohesion": 0, "troops": 0, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "strike",
+    "name": "Strike",
+    "traits": [],
+    "tags": ["Armored"],
+    "actions": ["Attack(ship)"],
+    "profile": "medium",
+    "exclusive": false,
+    "capacities": { "power": 1, "fuel": -1, "equipment": 0, "cohesion": 1, "troops": 0, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "attack",
+    "name": "Attack",
+    "traits": [],
+    "tags": ["Reinforced"],
+    "actions": ["Attack(troop)", "Defend(troop)"],
+    "profile": "special",
+    "exclusive": false,
+    "capacities": { "power": 1, "fuel": 0, "equipment": 1, "cohesion": 2, "troops": 0, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "atmospheric",
+    "name": "Atmospheric",
+    "traits": ["Regen"],
+    "tags": ["Aerodynamic"],
+    "actions": [],
+    "profile": "special",
+    "exclusive": false,
+    "capacities": { "power": 0, "fuel": 0, "equipment": 0, "cohesion": 0, "troops": 0, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "troop",
+    "name": "Troop",
+    "traits": ["Elite"],
+    "tags": ["Reinforced"],
+    "actions": ["Attack(troop)", "Fortify", "Search", "Raid", "Mount", "Board", "Breach"],
+    "profile": "special",
+    "exclusive": true,
+    "capacities": { "power": 0, "fuel": 0, "equipment": 1, "cohesion": 1, "troops": 2, "cells": 0, "containment": 0, "action": 3 }
+  },
+  {
+    "id": "teleporter",
+    "name": "Teleporter",
+    "traits": [],
+    "tags": ["Reinforced"],
+    "actions": [],
+    "profile": "medium",
+    "exclusive": false,
+    "capacities": { "power": 0, "fuel": 0, "equipment": 0, "cohesion": 0, "troops": 1, "cells": 0, "containment": 0 }
+  },
+  {
+    "id": "shuttle",
+    "name": "Shuttle",
+    "traits": ["Stable"],
+    "tags": [],
+    "actions": [],
+    "profile": "special",
+    "exclusive": false,
+    "capacities": { "power": 0, "fuel": 0, "equipment": -1, "cohesion": 0, "troops": 0, "cells": 5, "containment": 0 }
+  }
+]

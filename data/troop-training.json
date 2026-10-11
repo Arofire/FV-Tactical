@@ -1,0 +1,7 @@
+[
+  { "id": "green", "name": "Green", "combatValue": 5, "cohesion": 1, "action": 1, "equipment": 1, "description": "Green troops are less survivable in defence and much less effective when attacking. Green troops cannot use the Support action. Irregular, militia or just plain undrained." },
+  { "id": "trained", "name": "Trained", "combatValue": 12, "cohesion": 1, "action": 1, "equipment": 1 },
+  { "id": "professional", "name": "Professional", "combatValue": 20, "cohesion": 1, "action": 2, "equipment": 1 },
+  { "id": "veteran", "name": "Veteran", "combatValue": 28, "cohesion": 2, "action": 2, "equipment": 1 },
+  { "id": "elite", "name": "Elite", "combatValue": 42, "cohesion": 2, "action": 2, "equipment": 1, "description": "Elite troops are more effective with any equipment, and improve the TN of any roll by 1." }
+]

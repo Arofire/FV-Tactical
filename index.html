@@ -15,7 +15,19 @@
             <span id="empireName">New Empire</span>
             <span id="techPoints">Tech Points: 0</span>
         </div>
+        <nav class="empire-view-selector" aria-label="Empire view">
+            <button id="designViewBtn" class="active" type="button" aria-pressed="true">Design</button>
+            <button id="fleetViewBtn" type="button" aria-pressed="false">Fleet</button>
+        </nav>
         <div class="empire-controls">
+            <label class="economy-mode-control" for="economyMode">
+                Economy
+                <select id="economyMode">
+                    <option value="skirmish">Skirmish (CV)</option>
+                    <option value="campaign">Campaign (Industry / Materiel)</option>
+                </select>
+            </label>
+            <button id="campaignCostRules" type="button" hidden>Campaign Cost Rules</button>
             <button id="saveEmpire">Save Empire</button>
             <button id="loadEmpire">Load Empire</button>
             <button id="exportData">Export Data</button>
@@ -62,6 +74,16 @@
         </div>
 
         <div id="workspace" class="workspace">
+            <section id="fleetView" class="fleet-view" hidden aria-label="Fleet">
+                <header class="fleet-view-header">
+                    <div>
+                        <h1>Fleet</h1>
+                        <p>Assign unique ships from your designs to this fleet.</p>
+                    </div>
+                    <button id="addFleetShip" type="button">Add Ship</button>
+                </header>
+                <div id="fleetShipList" class="fleet-ship-list"></div>
+            </section>
             <div id="canvas" class="canvas">
                 <!-- Widgets will be dynamically created here -->
             </div>
@@ -97,9 +119,7 @@
     <script src="js/widgets/StatisticsWidget.js"></script>
     <script src="js/widgets/RerouteWidget.js"></script>
     <script src="js/widgets/MissilesWidget.js"></script>
-    <script src="js/widgets/LoadoutsWidget.js"></script>
     <script src="js/widgets/ShipCoreWidget.js"></script>
-    <script src="js/widgets/ShipBerthWidget.js"></script>
     <script src="js/widgets/ShipHullsWidget.js"></script>
     <script src="js/main.js"></script>
 </body>

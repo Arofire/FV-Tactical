@@ -5,16 +5,29 @@ class Empire {
         this.techPoints = 1000; // Starting tech points for testing
         this.researchedTech = new Set();
         this.availableTech = new Set();
+        this.economyMode = 'skirmish';
+        this.campaignCostRules = {
+            categories: {
+                weapons: 'materiel',
+                equipment: 'materiel',
+                munitions: 'materiel',
+                systems: 'industry',
+                hulls: 'industry',
+                technology: 'industry',
+                features: 'split',
+                roles: 'split',
+                general: 'split'
+            },
+            items: {}
+        };
+        this.fleetShips = [];
 
         this.designs = {
             ships: [],
             craft: [],
             troops: [],
             missiles: [],
-            loadouts: [],
-            powerplants: [],
-            factories: [],
-            shipyards: []
+            powerplants: []
         };
         
         // Initialize available technologies asynchronously
@@ -173,7 +186,9 @@ class Empire {
             techPoints: this.techPoints,
             researchedTech: Array.from(this.researchedTech),
             availableTech: Array.from(this.availableTech),
-
+            economyMode: this.economyMode,
+            campaignCostRules: this.campaignCostRules,
+            fleetShips: this.fleetShips,
             designs: this.designs
         };
     }
@@ -184,17 +199,26 @@ class Empire {
         this.techPoints = data.techPoints || 0;
         this.researchedTech = new Set(data.researchedTech || []);
         this.availableTech = new Set(data.availableTech || ['basic-hull', 'basic-engine', 'basic-weapon']);
+        this.economyMode = data.economyMode === 'campaign' ? 'campaign' : 'skirmish';
+        this.campaignCostRules = {
+            categories: {
+                ...this.campaignCostRules.categories,
+                ...(data.campaignCostRules?.categories || {})
+            },
+            items: { ...(data.campaignCostRules?.items || {}) }
+        };
+        this.fleetShips = Array.isArray(data.fleetShips) ? data.fleetShips : [];
 
         this.designs = data.designs || {
             ships: [],
             craft: [],
             troops: [],
             missiles: [],
-            loadouts: [],
-            powerplants: [],
-            factories: [],
-            shipyards: []
+            powerplants: []
         };
+        for (const removedType of ['loadouts', 'factories', 'shipyards']) {
+            delete this.designs[removedType];
+        }
     }
 
     // Get tech requirements for all designs

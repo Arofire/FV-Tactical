@@ -1,0 +1,4 @@
+[
+  { "id": "countermeasures", "name": "Countermeasures", "capacity": 1, "combatValue": 1 },
+  { "id": "cargo", "name": "Cargo Equipment", "capacity": 1 }
+]

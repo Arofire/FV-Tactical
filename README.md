@@ -1,6 +1,6 @@
 # FV-Tactical
 
-A web-based node-driven design tool for tabletop wargaming spacecraft and military units. Create and manage ship designs, fighter craft, troop units, weapons, and industrial facilities for your empire.
+A web-based node-driven design tool for tabletop wargaming spacecraft and military units. Organize ship, craft, troop, weapon, and technology designs under an Empire, then assign unique ship instances in the Fleet view.
 
 ## Features
 
@@ -9,6 +9,8 @@ A web-based node-driven design tool for tabletop wargaming spacecraft and milita
 - Dynamic node connections for weapon-magazine linkages
 - Real-time power balance and performance calculations
 - Support for various ship classifications from fighters to dreadnoughts
+- Separate Design and Fleet views, with unique ships linked to their source class
+- Hull Plan diagrams and structured JSON exports
 
 ### 🔬 **Technology Tree**
 - Visual tech tree with prerequisites and dependencies
@@ -17,15 +19,19 @@ A web-based node-driven design tool for tabletop wargaming spacecraft and milita
 - Component availability based on researched technologies
 
 ### 🎮 **Interactive Widgets**
-- **Ships**: Design large spacecraft with hull, engines, weapons, and reactors
-- **Outfit**: Configure ship hardpoints, systems modules, and role profiles
+- **Ships**: Design hull composition and allocate containment between Freight and Tankage with the Cargo/Remass slider
+- **Outfit**: Select an operational core widget, then configure Emplacements, Utilities, and Systems; Hardpoints are reserved for Fleet view, defensive weapons are listed under Utilities, and oversized emplacement weapons use the spinal slot. Multi-arc weapons use one additional resource per weapon; main weapons are restricted to a single Port or Starboard arc.
+- **QSystems**: Consume System resources and replace the same number of System hulls with Quantum hulls in the Hull Plan
 - **Craft**: Create smaller fighters, bombers, and support vessels
 - **Troops**: Manage military units with equipment and specializations
 - **Missiles**: Design guided weapons with warheads and guidance systems
-- **Loadouts**: Create equipment configurations for ships and troops
-- **Powerplants**: Design power generation systems
-- **Factories**: Manage industrial production capabilities
-- **Shipyards**: Plan ship construction facilities
+- **Ship Core**: Configure power technology, efficiencies, and gearing
+- **Hull Plan**: Visualize and export hull allocation
+
+### 💰 **Economy Modes**
+- **Skirmish** keeps option costs in CV
+- **Campaign** presents option costs as Industry and Materiel by category
+- Campaign category rules can be adjusted from the Empire title bar
 
 ### 🔗 **Visual Node System**
 - Drag-and-drop connections between components
@@ -58,18 +64,19 @@ Visit the live application at: `https://arofire.github.io/FV-Tactical/`
    cd FV-Tactical
    ```
 
-2. Open `index.html` in a modern web browser
+2. Serve the project over HTTP and open it in a modern web browser so its JSON catalogues can load
    - Chrome, Firefox, Safari, or Edge recommended
    - No build process required - pure HTML/CSS/JavaScript
 
 ### 🎯 **Quick Start Guide**
-1. **Create Your Empire**: Click on "New Empire" to set your empire name
+1. **Create Your Empire**: Set your Empire name and choose an economy mode
 2. **Research Technology**: Expand the tech tree panel and click technologies to research them
-3. **Design Ships**: Click "Ship" in the toolbar to create your first spacecraft
+3. **Choose Design**: Create ship, craft, troop, outfit, and core designs in the Design view
 4. **Add Components**: Select hull, engines, weapons, and reactors from the component library
 5. **Connect Systems**: Drag between nodes to create power and weapon connections
-6. **Check Status**: Monitor the preflight panel for warnings and requirements
-7. **Save & Export**: Use the empire controls to save your designs locally or export to JSON
+6. **Check Status**: Monitor preflight and the per-widget technology tree
+7. **Build a Fleet**: Switch to Fleet and add unique ships based on a ship-class design
+8. **Save & Export**: Save designs and fleet assignments locally or export them to JSON
 
 ## Controls
 
@@ -114,10 +121,19 @@ FV-Tactical/
 │   │   ├── OutfitWidget.js # Ship outfit planner
 │   │   ├── CraftWidget.js  # Craft design widget
 │   │   ├── TroopsWidget.js # Troops management widget
-│   │   └── OtherWidgets.js # Other specialized widgets
+│   │   ├── ShipCoreWidget.js # Core and gearing widget
+│   │   └── ShipHullsWidget.js # Hull visualization and export
 │   └── main.js             # Application initialization
+├── data/
+│   ├── tech-tree.json      # Technology definitions
+│   ├── weapons.json        # Imported weapon catalogue
+│   └── *.json              # Craft and troop catalogues
+├── scripts/
+│   └── import_weapons.py   # Refresh the weapon catalogue from its published CSV
 └── README.md
 ```
+
+The bundled weapon catalogue is imported from the [published weapons CSV](https://docs.google.com/spreadsheets/d/e/2PACX-1vQWHExCdUgGcby87ZzTN-FlKwLEjWvg1pNlr6DpSeNo31j4gwvk1Tpty1K7DJ2CgWxMteNzgigWXq-A/pub?gid=923591294&single=true&output=csv&range=A2:R328). Run `python3 scripts/import_weapons.py` to refresh it. CSV `H`, `U`, and `E` mount codes count against the new Hardpoints, Utilities, and Emplacements resources respectively; `E` mounts larger than 04 also occupy the single spinal slot. Hardpoints use is tallied, but its available capacity remains unknown until the freight/tankage formula is defined. Troop, craft, warhead, and other entries without a recognized ship mount remain in the catalogue but are not offered as ship-outfit weapons.
 
 ### 🏗️ **Technical Details**
 - **Framework**: Vanilla JavaScript ES6+ with modern web APIs

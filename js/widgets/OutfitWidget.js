@@ -1,80 +1,58 @@
-// Outfit widget for configuring ship load-outs
+// Outfit configuration for a Ship Class, with core-derived resources.
 class OutfitWidget extends Widget {
     constructor(x = 550, y = 120) {
         super('outfit', 'New Outfit', x, y, null);
-
         this.defaultRoles = [
-            'Artillery',
-            'Brawler',
-            'Lancer',
-            'QWarfare',
-            'Scout',
-            'Support',
-            'Escort',
-            'Carrier',
-            'Interceptor'
+            'Artillery', 'Brawler', 'Lancer', 'QWarfare', 'Scout',
+            'Support', 'Escort', 'Carrier', 'Interceptor'
         ];
-
-        this.hardpointDefinitions = [
-            { key: 'UHP', label: 'Utility Hardpoints' },
-            { key: 'SHP', label: 'Secondary Hardpoints' },
-            { key: 'PHP', label: 'Primary Hardpoints' },
-            { key: 'MHP', label: 'Main Hardpoints' }
-        ];
-
-        this.parentShipWidget = null;
-        this.ignoreTechRequirements = false; // Mirrored from parent ShipWidget
-
+        this.availableRoles = OutfitWidget.loadStoredRoles(this.defaultRoles);
         this.outfitData = {
             name: 'New Outfit',
             role: 'Artillery',
             customRole: '',
             roleMode: 'dropdown',
             notes: '',
-            hardpoints: {
-                base: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 },
-                merge: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 },
-                split: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 }
+            operational: false,
+            ignoreTechRequirements: false,
+            coreWidgetId: '',
+            resources: {
+                utilities: null,
+                emplacements: null,
+                systems: null,
+                hardpoints: null,
+                core: null,
+                containmentHulls: null
             },
-            stats: {
-                shipyardMonths: 0,
-                cargo: 0,
-                remass: 0,
-                systemHulls: 0,
-                powerplantHulls: 0
+            defenses: {
+                armor: 0
             },
-            systemsData: {
-                availableSystemHulls: 0,
-                usedSystemHulls: 0,
-                modules: [],
-                heatManagement: {
-                    magneticSystems: 0,
-                    demonSystems: 0
-                }
+            resourceUse: {
+                utilities: 0,
+                emplacements: 0,
+                systems: 0,
+                hardpoints: 0,
+                core: 0
             },
+            selectedCore: null,
             weapons: {
                 spinal: '',
                 offensive: [],
                 defensive: []
-            },
-            attachments: {
-                clamp: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 },
-                tether: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 },
-                adapter: { UHP: 0, SHP: 0, PHP: 0, MHP: 0 }
             }
         };
-
-        this.moduleTypes = this.buildModuleDefinitions();
-        this.weaponsData = null;
+        this.ignoreTechRequirements = false;
+        this.weaponsData = { categories: [] };
         this.weaponsDataLoaded = false;
-        this.loadWeaponsData();
-
-        this.roleMode = this.outfitData.roleMode;
-        this.availableRoles = OutfitWidget.loadStoredRoles(this.defaultRoles);
-        this.ensureRoleAvailable(this.outfitData.role);
-
         this.layoutMode = 'three-column';
+        this.titleEditHandler = name => {
+            this.outfitData.name = name;
+            this.updateTitle(name);
+        };
+        this.ensureRoleAvailable(this.outfitData.role);
         this.init();
+        this.onEconomyModeChanged();
+        this.loadWeaponsData();
     }
 
     static getRoleStorageKey() {
@@ -84,13 +62,12 @@ class OutfitWidget extends Widget {
     static loadStoredRoles(defaultRoles = []) {
         try {
             const raw = localStorage.getItem(OutfitWidget.getRoleStorageKey());
-            if (!raw) return [...defaultRoles];
-            const parsed = JSON.parse(raw);
+            const parsed = raw ? JSON.parse(raw) : [];
             return Array.isArray(parsed)
-                ? Array.from(new Set([...(defaultRoles || []), ...parsed])).sort((a, b) => a.localeCompare(b))
+                ? Array.from(new Set([...defaultRoles, ...parsed])).sort((a, b) => a.localeCompare(b))
                 : [...defaultRoles];
-        } catch (err) {
-            console.warn('Unable to load stored outfit roles', err);
+        } catch (error) {
+            console.warn('Unable to load stored outfit roles', error);
             return [...defaultRoles];
         }
     }
@@ -98,1649 +75,983 @@ class OutfitWidget extends Widget {
     static saveStoredRoles(roles = []) {
         try {
             localStorage.setItem(OutfitWidget.getRoleStorageKey(), JSON.stringify(roles));
-        } catch (err) {
-            console.warn('Unable to persist outfit roles', err);
+        } catch (error) {
+            console.warn('Unable to persist stored outfit roles', error);
         }
     }
 
+    static escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[character]);
+    }
 
     ensureRoleAvailable(role) {
-        if (!role) return;
-        const normalized = role.trim();
-        if (!normalized) return;
-        if (!this.availableRoles.includes(normalized)) {
+        const normalized = typeof role === 'string' ? role.trim() : '';
+        if (normalized && !this.availableRoles.includes(normalized)) {
             this.availableRoles.push(normalized);
             this.availableRoles.sort((a, b) => a.localeCompare(b));
             OutfitWidget.saveStoredRoles(this.availableRoles);
         }
     }
 
-    buildModuleDefinitions() {
-        return {
-            surveyEquipment: {
-                name: 'Survey Equipment',
-                systemHulls: 1,
-                category: 'utility',
-                maxCount: 1,
-                techRequirement: null,
-                description: 'Advanced sensors for planetary and asteroid surveys'
-            },
-            longRangeScanner: {
-                name: 'Long Range Scanner',
-                systemHulls: 6,
-                category: 'utility',
-                maxCount: 1,
-                techRequirement: 'advanced-sensors',
-                description: 'Long-range detection and analysis systems'
-            },
-            commandBridge: {
-                name: 'Command Bridge',
-                systemHulls: 6,
-                category: 'utility',
-                maxCount: 1,
-                techRequirement: null,
-                description: 'Advanced command and control center'
-            },
-            quantumWarfare3: {
-                name: 'Quantum Warfare System (Basic)',
-                systemHulls: 3,
-                category: 'warfare',
-                maxCount: 1,
-                techRequirement: 'quantum-integration',
-                description: 'Basic quantum warfare capabilities'
-            },
-            quantumWarfare5: {
-                name: 'Quantum Warfare System (Advanced)',
-                systemHulls: 5,
-                category: 'warfare',
-                maxCount: 1,
-                techRequirement: 'living-network',
-                description: 'Advanced quantum warfare systems'
-            },
-            quantumWarfare8: {
-                name: 'Quantum Warfare System (Elite)',
-                systemHulls: 8,
-                category: 'warfare',
-                maxCount: 1,
-                techRequirement: 'oracle-machines',
-                description: 'Elite quantum warfare technology'
-            },
-            hyperdrive1: {
-                name: 'Hyperdrive (Class I)',
-                systemHulls: 1,
-                category: 'propulsion',
-                maxCount: 1,
-                techRequirement: 'basic-hyperdrive',
-                description: 'Basic hyperdrive system'
-            },
-            hyperdrive2: {
-                name: 'Hyperdrive (Class II)',
-                systemHulls: 2,
-                category: 'propulsion',
-                maxCount: 1,
-                techRequirement: 'advanced-hyperdrive',
-                description: 'Advanced hyperdrive system'
-            },
-            hyperdrive3: {
-                name: 'Hyperdrive (Class III)',
-                systemHulls: 3,
-                category: 'propulsion',
-                maxCount: 1,
-                techRequirement: 'elite-hyperdrive',
-                description: 'Elite hyperdrive technology'
-            },
-            magneticHeatManagement: {
-                name: 'Magnetic Heat Management',
-                systemHulls: 1,
-                category: 'heat',
-                maxCount: null,
-                techRequirement: 'magnetic-fields',
-                description: 'Magnetic field-based heat dissipation'
-            },
-            demonHeatManagement: {
-                name: 'Demon Heat Management',
-                systemHulls: 1,
-                category: 'heat',
-                maxCount: null,
-                techRequirement: 'demon-technology',
-                description: 'Advanced demon-tech heat management'
-            },
-            berthModule: {
-                name: 'Berth',
-                systemHulls: 1,
-                category: 'utility',
-                maxCount: null,
-                techRequirement: null,
-                description: 'Crew/passenger berth capacity module'
-            }
-        };
+    formatRoleLabel(role) {
+        return role ? role.charAt(0).toUpperCase() + role.slice(1) : '';
     }
 
     async loadWeaponsData() {
         try {
             const response = await fetch('data/weapons.json');
-            this.weaponsData = await response.json();
-            this.weaponsDataLoaded = true;
-            console.log('Weapons data loaded:', this.weaponsData.categories.length, 'categories');
-            // If widget is already rendered, refresh weapons sections and attach listeners
-            if (this.element && document.contains(this.element)) {
-                console.log('Refreshing weapons dropdowns after data load');
-                this.refreshWeaponDropdowns();
-                this.setupWeaponsEventListeners();
-            }
+            if (!response.ok) throw new Error(`Unable to load weapons (${response.status})`);
+            const data = await response.json();
+            this.weaponsData = data && Array.isArray(data.categories) ? data : { categories: [] };
         } catch (error) {
             console.error('Failed to load weapons data:', error);
             this.weaponsData = { categories: [] };
-            this.weaponsDataLoaded = true;
         }
+        this.weaponsDataLoaded = true;
+        this.refreshWeapons();
+    }
+
+    refreshArmorDisplay(resources = this.getResourceSources()) {
+        const input = this.element?.querySelector(`#${this.id}-armor`);
+        if (input) input.value = this.parseCount(this.outfitData.defenses?.armor);
+        const result = this.element?.querySelector(`#${this.id}-armor-result`);
+        if (result) {
+            const capacity = resources.hardpoints;
+            const used = this.getArmorHardpointUse(resources);
+            result.textContent = `Armor hits: ${this.getArmorHits()} · Hardpoints used: ${used} / ${capacity ?? '—'} · Effective hulls: ${this.getEffectiveHullCount() ?? '—'}`;
+        }
+        this.outfitData.armorHits = this.getArmorHits();
+        this.outfitData.armorHardpoints = this.getArmorHardpointUse(resources);
+        this.outfitData.effectiveHulls = this.getEffectiveHullCount();
     }
 
     getAllWeapons() {
-        if (!this.weaponsData || !this.weaponsData.categories) {
-            return [];
-        }
-        const weapons = [];
-        for (const category of this.weaponsData.categories) {
-            if (category.weapons && Array.isArray(category.weapons)) {
-                for (const weapon of category.weapons) {
-                    weapons.push({ ...weapon, categoryName: category.name });
-                }
-            }
-        }
-        return weapons;
+        return (this.weaponsData?.categories || []).flatMap(category =>
+            (category.weapons || []).map(weapon => ({
+                ...weapon,
+                categoryName: category.name || ''
+            }))
+        );
     }
 
     getSpinalWeapons() {
-        return this.getAllWeapons().filter(weapon => 
-            weapon.techRequirement && weapon.techRequirement.includes('spinal')
+        return this.getAllWeapons().filter(weapon =>
+            weapon.isSpinal && weapon.resourceType !== 'hardpoints'
+        );
+    }
+
+    getMountableWeapons() {
+        return this.getAllWeapons().filter(weapon =>
+            weapon.resourceType !== 'hardpoints' && (!!weapon.resourceType || weapon.isSpinal)
         );
     }
 
     getPDWeapons() {
-        return this.getAllWeapons().filter(weapon => 
-            weapon.name && weapon.name.toLowerCase().includes('pd')
-        );
+        return this.getMountableWeapons().filter(weapon => weapon.isPointDefense);
     }
 
     getOffensiveWeapons() {
-        const allWeapons = this.getAllWeapons();
-        const pdWeapons = this.getPDWeapons();
-        const spinalWeapons = this.getSpinalWeapons();
-        
-        return allWeapons.filter(weapon => 
-            !pdWeapons.includes(weapon) && !spinalWeapons.includes(weapon)
+        return this.getMountableWeapons().filter(weapon =>
+            !weapon.isPointDefense && !weapon.isSpinal
         );
     }
 
     filterWeaponsByTech(weapons) {
         if (this.ignoreTechRequirements) return weapons;
-        
-        return weapons.filter(weapon => {
-            if (!weapon.techRequirement) return true;
-            return window.empire?.hasTech?.(weapon.techRequirement) ?? false;
-        });
+        return weapons.filter(weapon =>
+            !weapon.techRequirement || (window.empire?.hasTech?.(weapon.techRequirement) ?? false)
+        );
     }
 
-    getRoleInputValue() {
-        return this.roleMode === 'custom'
-            ? (this.outfitData.customRole || this.outfitData.role || '')
-            : (this.outfitData.role || '');
-    }
-
-    formatRoleLabel(role) {
-        if (!role) return '';
-        return role.charAt(0).toUpperCase() + role.slice(1);
+    formatOptionCost(value, category = 'general', itemId = '') {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+        try {
+            if (typeof window.app?.formatOptionCost === 'function') {
+                return window.app.formatOptionCost(value, category, itemId);
+            }
+        } catch (error) {
+            // Fall back to CV if the application economy formatter is unavailable.
+        }
+        return `${value} CV`;
     }
 
     getRoleOptions(selected = this.outfitData.role) {
-        return this.availableRoles
-            .sort((a, b) => a.localeCompare(b))
-            .map(role => `<option value="${role}" ${role === selected ? 'selected' : ''}>${this.formatRoleLabel(role)}</option>`) 
-            .join('');
+        return this.availableRoles.map(role =>
+            `<option value="${OutfitWidget.escapeHTML(role)}" ${role === selected ? 'selected' : ''}>${OutfitWidget.escapeHTML(this.formatRoleLabel(role))}</option>`
+        ).join('');
     }
 
     createContent(contentElement) {
-        const sectionsContainer = contentElement.querySelector('.widget-sections');
-        
-        // Create Meta section (no title)
-        const metaSection = this.createSection('meta', '');
-        this.setSectionContent(metaSection, `
-            <div class="outfit-meta-header widget-sticky-header" id="${this.id}-meta-header">
-                ${this.hardpointDefinitions.map(({ key }) => `
-                    <div class="outfit-stat" data-hardpoint="${key}">
-                        <span class="label">${key}</span>
-                        <span class="value" id="${this.id}-hp-value-${key}">0</span>
-                    </div>
-                `).join('')}
-                <div class="outfit-stat">
-                    <span class="label">SM</span>
-                    <span class="value" id="${this.id}-shipyard-months">0</span>
-                </div>
-            </div>
-            <div class="input-group" id="${this.id}-name-group">
-                <label>Outfit Name</label>
-                <input type="text" id="${this.id}-name" value="${this.outfitData.name}" placeholder="Enter outfit name">
-            </div>
-        `);
-        sectionsContainer.appendChild(metaSection.section);
-        
-        // Create Role section (no title)
-        const roleSection = this.createSection('role', '');
-        this.setSectionContent(roleSection, `
-            <div class="input-group role-group" id="${this.id}-role-group">
-                <label>Role</label>
-                <div class="role-controls">
-                    <select id="${this.id}-role-select" class="role-select" ${this.roleMode === 'custom' ? 'style="display:none;"' : ''}>
-                        ${this.getRoleOptions()}
-                    </select>
-                    <input type="text" id="${this.id}-role-custom" class="role-input" placeholder="Enter custom role" ${this.roleMode === 'dropdown' ? 'style="display:none;"' : ''} value="${this.getRoleInputValue()}">
-                    <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '🖉' : '🌳'}</button>
-                </div>
-            </div>
-            <div class="input-group" id="${this.id}-notes-group">
-                <label>Outfit Notes</label>
-                <textarea id="${this.id}-notes" placeholder="Doctrine, deployment notes, logistics considerations...">${this.outfitData.notes}</textarea>
-            </div>
-        `);
-        sectionsContainer.appendChild(roleSection.section);
-        
-        // Create Propulsion section
-        const propulsionSection = this.createSection('propulsion', 'Propulsion');
-        this.setSectionContent(propulsionSection, `
+        const sections = contentElement.querySelector('.widget-sections');
+        const identity = this.createSection('meta', 'Outfit');
+        this.setSectionContent(identity, `
             <div class="input-group">
-                <label>Remass</label>
-                <div class="stat-display" id="${this.id}-remass-display">0</div>
+                <label for="${this.id}-role">Role</label>
+                <select id="${this.id}-role">${this.getRoleOptions()}</select>
+                <input id="${this.id}-custom-role" type="text" placeholder="Custom role" value="${OutfitWidget.escapeHTML(this.outfitData.customRole)}">
+            </div>
+            <div class="input-group">
+                <label for="${this.id}-notes">Notes</label>
+                <textarea id="${this.id}-notes" placeholder="Doctrine and deployment notes">${OutfitWidget.escapeHTML(this.outfitData.notes)}</textarea>
+            </div>
+            <div class="ship-information-header outfit-flags">
+                <label class="ship-flag"><input id="${this.id}-operational" type="checkbox" ${this.outfitData.operational ? 'checked' : ''}> Operational</label>
+                <label class="ship-flag"><input id="${this.id}-ignore-tech" type="checkbox" ${this.outfitData.ignoreTechRequirements ? 'checked' : ''}> Ignore Tech</label>
             </div>
         `);
-        sectionsContainer.appendChild(propulsionSection.section);
-        
-        // Create Systems section
-        const systemsSection = this.createSection('systems', 'Systems');
-        const systemsContent = systemsSection.contentContainer;
-        systemsContent.classList.add('systems-section');
-        systemsContent.id = `${this.id}-systems-section`;
-        this.setSectionContent(systemsSection, this.renderSystemsSection());
-        sectionsContainer.appendChild(systemsSection.section);
-        
-        // Create Features section
-        const featuresSection = this.createSection('features', 'Features');
-        const featuresContent = featuresSection.contentContainer;
-        featuresContent.id = `${this.id}-features-section`;
-        this.setSectionContent(featuresSection, this.renderFeaturesTable());
-        sectionsContainer.appendChild(featuresSection.section);
+        sections.appendChild(identity.section);
 
-        // Create Weapons section
-        const weaponsSection = this.createSection('weapons', 'Weapons');
-        const weaponsContent = weaponsSection.contentContainer;
-        weaponsContent.id = `${this.id}-weapons-section`;
-        this.setSectionContent(weaponsSection, this.renderWeaponsSection());
-        sectionsContainer.appendChild(weaponsSection.section);
+        const armor = this.createSection('category-armor', 'Armor');
+        this.setSectionContent(armor, this.renderArmorSection());
+        sections.appendChild(armor.section);
 
-        // Create Attachment section
-        const attachmentSection = this.createSection('attachment', 'Attachment');
-        const attachmentContent = attachmentSection.contentContainer;
-        attachmentContent.id = `${this.id}-attachment-section`;
-        this.setSectionContent(attachmentSection, this.renderAttachmentSection());
-        sectionsContainer.appendChild(attachmentSection.section);
+        const core = this.createSection('category-core', 'Core');
+        this.addResourceCounter(core.titleElement, 'core');
+        this.setSectionContent(core, `
+            <div class="input-group" id="${this.id}-core-source">
+                <select id="${this.id}-core-select" aria-label="Select operational core"></select>
+            </div>
+            <div class="outfit-core-properties" id="${this.id}-core-properties" aria-live="polite"></div>
+        `);
+        sections.appendChild(core.section);
 
-        this.setupEventListeners();
+        for (const category of ['emplacements', 'utilities']) {
+            const title = category[0].toUpperCase() + category.slice(1);
+            const section = this.createSection(`category-${category}`, title);
+            this.addResourceCounter(section.titleElement, category);
+            const weapons = category === 'emplacements'
+                ? this.renderEmplacementWeaponsSection()
+                : `<div class="outfit-utilities-subcategory">
+                    <h5 class="outfit-utilities-subcategory-title">Defenses</h5>
+                    ${this.renderWeaponCategory('defensive', 'Defensive Weapons')}
+                </div>`;
+            const categoryContent = `${weapons}<div class="outfit-resource-note" id="${this.id}-resource-${category}-note"></div>`;
+            this.setSectionContent(section, categoryContent);
+            if (category === 'utilities') {
+                const defensesTitle = section.section.querySelector('.outfit-utilities-subcategory-title');
+                this.addResourceCounter(defensesTitle, 'hardpoints');
+            }
+            sections.appendChild(section.section);
+        }
+
+        const systems = this.createSection('category-systems', 'Systems');
+        this.addResourceCounter(systems.titleElement, 'systems');
+        this.setSectionContent(systems, `<div class="outfit-resource-note" id="${this.id}-resource-systems-note"></div>`);
+        sections.appendChild(systems.section);
+
+        this.refreshCoreOptions();
+        this.refreshResourceDisplay();
         this.registerLayoutAnchors();
-        this.updateHardpointHeader();
-        this.updateShipyardMonths();
-        this.renderSystemsContent();
     }
 
     registerLayoutAnchors() {
         this.resetLayoutAnchors();
         if (!this.element) return;
-        const anchors = [
-            { id: 'outfit-meta', selector: `#${this.id}-meta` },
-            { id: 'outfit-role', selector: `#${this.id}-role` },
-            { id: 'outfit-hardpoints', selector: `#${this.id}-hardpoints` },
-            { id: 'outfit-propulsion', selector: `#${this.id}-propulsion` },
-            { id: 'outfit-systems', selector: `#${this.id}-systems` },
-            { id: 'outfit-features', selector: `#${this.id}-features` },
-            { id: 'outfit-weapons', selector: `#${this.id}-weapons` }
-        ];
-        anchors.forEach(({ id, selector }) => {
-            const el = this.element.querySelector(selector);
-            if (el) this.addLayoutAnchor(id, el, { selector });
-        });
+        for (const sectionId of ['meta', 'category-armor', 'category-core', 'category-emplacements', 'category-utilities', 'category-systems']) {
+            const element = this.element.querySelector(`#${this.id}-${sectionId}`);
+            if (element) this.addLayoutAnchor(`outfit-${sectionId}`, element, { selector: `#${this.id}-${sectionId}` });
+        }
     }
 
     setupEventListeners() {
         super.setupEventListeners();
-        if (this._eventsBound) return;
-        this._eventsBound = true;
+        if (this._outfitEventsBound || !this.element) return;
+        this._outfitEventsBound = true;
 
-        const nameInput = document.getElementById(`${this.id}-name`);
-        const notesInput = document.getElementById(`${this.id}-notes`);
-        const roleSelect = document.getElementById(`${this.id}-role-select`);
-        const roleCustom = document.getElementById(`${this.id}-role-custom`);
-        const roleToggle = document.getElementById(`${this.id}-role-toggle`);
+        this.element.addEventListener('focusin', event => {
+            if (event.target.id === `${this.id}-core-select`) this.refreshCoreOptions();
+        });
 
-        if (nameInput) {
-            nameInput.addEventListener('input', (e) => {
-                this.outfitData.name = e.target.value;
-                this.updateTitle(this.outfitData.name || 'New Outfit');
-                this.refreshSummary();
-            });
-        }
+        this.element.addEventListener('input', event => {
+            const target = event.target;
+            if (target.id === `${this.id}-custom-role`) {
+                this.outfitData.customRole = target.value;
+                this.outfitData.role = target.value.trim();
+                this.outfitData.roleMode = 'custom';
+            } else if (target.id === `${this.id}-notes`) {
+                this.outfitData.notes = target.value;
+            } else if (target.dataset.defenseField === 'armor') {
+                this.outfitData.defenses.armor = this.parseCount(target.value);
+                target.value = this.outfitData.defenses.armor;
+            } else if (target.dataset.weaponField === 'count') {
+                this.updateWeaponField(target, 'count', this.parseCount(target.value));
+                target.value = this.parseCount(target.value);
+                const weapon = this.outfitData.weapons?.[target.dataset.category]?.[Number(target.dataset.index)];
+                const definition = this.getAllWeapons().find(item => item.id === weapon?.weaponId);
+                const costCell = target.closest('tr')?.querySelector('.cost-cell');
+                if (costCell) costCell.textContent = this.getWeaponCostDisplay(definition, this.parseCount(target.value));
+            }
+            this.refreshWeaponResourceDisplay();
+            this.onOutfitDataChanged();
+            this.refreshSummary();
+        });
 
-        if (notesInput) {
-            notesInput.addEventListener('input', (e) => {
-                this.outfitData.notes = e.target.value;
-                this.refreshSummary();
-            });
-        }
-
-        if (roleSelect) {
-            roleSelect.addEventListener('change', (e) => {
-                this.outfitData.role = e.target.value;
+        this.element.addEventListener('change', event => {
+            const target = event.target;
+            if (target.id === `${this.id}-role`) {
+                this.outfitData.role = target.value;
                 this.outfitData.customRole = '';
-                this.roleMode = 'dropdown';
-                this.refreshSummary();
-            });
-        }
-
-        if (roleCustom) {
-            roleCustom.addEventListener('input', (e) => {
-                const value = e.target.value;
-                this.outfitData.customRole = value;
-                this.outfitData.role = value;
-                this.refreshSummary();
-            });
-            roleCustom.addEventListener('change', (e) => {
-                const value = e.target.value.trim();
-                if (value) this.ensureRoleAvailable(value);
-                this.refreshSummary();
-            });
-        }
-
-        if (roleToggle) {
-            roleToggle.addEventListener('click', () => {
-                if (this.roleMode === 'dropdown') {
-                    this.applyRoleMode('custom');
-                } else {
-                    const value = (roleCustom?.value || '').trim();
-                    if (value) {
-                        this.ensureRoleAvailable(value);
-                        this.outfitData.role = value;
-                    }
-                    this.outfitData.customRole = '';
-                    this.applyRoleMode('dropdown');
-                }
-                this.refreshSummary();
-            });
-        }
-
-        this.applyRoleMode(this.roleMode);
-        this.setupHardpointControls();
-        this.setupSystemsEventListeners();
-        this.setupWeaponsEventListeners();
-        this.setupAttachmentEventListeners();
-    }
-
-    applyRoleMode(mode) {
-        this.roleMode = mode;
-        this.outfitData.roleMode = mode;
-        const roleSelect = document.getElementById(`${this.id}-role-select`);
-        const roleCustom = document.getElementById(`${this.id}-role-custom`);
-        const roleToggle = document.getElementById(`${this.id}-role-toggle`);
-
-        if (roleSelect) {
-            if (mode === 'dropdown') {
-                roleSelect.style.display = '';
-                this.populateRoleSelect(roleSelect);
-                roleSelect.value = this.outfitData.role;
-            } else {
-                roleSelect.style.display = 'none';
+                this.outfitData.roleMode = 'dropdown';
+                const custom = this.element.querySelector(`#${this.id}-custom-role`);
+                if (custom) custom.value = '';
+            } else if (target.id === `${this.id}-operational`) {
+                this.outfitData.operational = target.checked;
+            } else if (target.id === `${this.id}-ignore-tech`) {
+                this.outfitData.ignoreTechRequirements = target.checked;
+                this.ignoreTechRequirements = target.checked;
+                this.refreshWeapons();
+            } else if (target.id === `${this.id}-core-select`) {
+                this.outfitData.coreWidgetId = target.value;
+                this.refreshCoreOptions();
+                this.refreshResourceDisplay();
+            } else if (target.id === `${this.id}-spinal-weapon`) {
+                this.outfitData.weapons.spinal = target.value;
+            } else if (target.dataset.weaponField) {
+                this.updateWeaponField(target, target.dataset.weaponField, target.value);
+                this.refreshWeapons();
+            } else if (target.dataset.arcCheckbox !== undefined) {
+                this.updateWeaponArc(target);
             }
-        }
+            this.refreshWeaponResourceDisplay();
+            this.onOutfitDataChanged();
+            this.refreshSummary();
+        });
 
-        if (roleCustom) {
-            if (mode === 'custom') {
-                roleCustom.style.display = '';
-                roleCustom.value = this.getRoleInputValue();
-                roleCustom.focus();
-            } else {
-                roleCustom.style.display = 'none';
-            }
-        }
-
-        if (roleToggle) {
-            if (mode === 'dropdown') {
-                roleToggle.textContent = '🖉';
-                roleToggle.title = 'Use custom role';
-            } else {
-                roleToggle.textContent = '🌳';
-                roleToggle.title = 'Use role list';
-            }
-        }
-    }
-
-    populateRoleSelect(selectElement, selectedRole = this.outfitData.role) {
-        if (!selectElement) return;
-        selectElement.innerHTML = this.getRoleOptions(selectedRole);
-        if (selectedRole) selectElement.value = selectedRole;
-    }
-
-    setupHardpointControls() {
-        this.hardpointDefinitions.forEach(({ key }) => {
-            const mergeInput = document.getElementById(`${this.id}-hp-merge-${key}`);
-            const splitInput = document.getElementById(`${this.id}-hp-split-${key}`);
-
-            if (mergeInput) {
-                mergeInput.addEventListener('input', (e) => {
-                    const value = Math.max(0, parseInt(e.target.value, 10) || 0);
-                    e.target.value = value;
-                    this.outfitData.hardpoints.merge[key] = value;
-                    this.updateHardpointHeader();
-                    this.refreshSummary();
-                    this.onOutfitDataChanged();
+        this.element.addEventListener('click', event => {
+            const button = event.target.closest('[data-weapon-action]');
+            if (!button) return;
+            const category = button.dataset.category;
+            if (button.dataset.weaponAction === 'add') {
+                this.outfitData.weapons[category].push({
+                    weaponId: '', arc: '', count: 0,
+                    requiredTech: [], techRequirement: null
                 });
-            }
-
-            if (splitInput) {
-                splitInput.addEventListener('input', (e) => {
-                    const value = Math.max(0, parseInt(e.target.value, 10) || 0);
-                    e.target.value = value;
-                    this.outfitData.hardpoints.split[key] = value;
-                    this.updateHardpointHeader();
-                    this.refreshSummary();
-                    this.onOutfitDataChanged();
-                });
-            }
-        });
-    }
-
-    updateHardpointHeader() {
-        let hasNegativeHardpoints = false;
-        
-        this.hardpointDefinitions.forEach(({ key }) => {
-            const base = this.outfitData.hardpoints.base[key] || 0;
-            const merged = this.outfitData.hardpoints.merge[key] || 0;
-            const split = this.outfitData.hardpoints.split[key] || 0;
-            
-            // Calculate total attachments consumed
-            const clampAttachments = this.outfitData.attachments.clamp[key] || 0;
-            const tetherAttachments = this.outfitData.attachments.tether[key] || 0;
-            const adapterAttachments = this.outfitData.attachments.adapter[key] || 0;
-            const totalAttachments = clampAttachments + tetherAttachments + adapterAttachments;
-            
-            // Allow negative values instead of flooring to 0
-            const value = base - merged + split - totalAttachments;
-            if (value < 0) {
-                hasNegativeHardpoints = true;
-            }
-            
-            const valueEl = document.getElementById(`${this.id}-hp-value-${key}`);
-            if (valueEl) valueEl.textContent = value;
-        });
-        
-        // Update preflight check for hardpoint requirements
-        this.updatePreflightHardpointCheck(hasNegativeHardpoints);
-    }
-    
-    updatePreflightHardpointCheck(hasNegativeHardpoints) {
-        if (!window.preflightCheck) return;
-        
-        // Clear any previous hardpoint requirement errors for this widget
-        const currentIssues = window.preflightCheck.widgetIssues.get(this.id);
-        if (currentIssues) {
-            currentIssues.errors = currentIssues.errors.filter(err => err.message !== 'Widget does not meet hardpoint requirements');
-        }
-        
-        // Add error if any hardpoint is negative
-        if (hasNegativeHardpoints) {
-            window.preflightCheck.addError('Widget does not meet hardpoint requirements', this.id);
-        }
-        
-        // Trigger preflight check update
-        window.preflightCheck.runCheck();
-    }
-
-    updateHardpointBaseDisplay() {
-        this.hardpointDefinitions.forEach(({ key }) => {
-            const baseEl = document.getElementById(`${this.id}-hp-base-${key}`);
-            if (baseEl) baseEl.textContent = this.outfitData.hardpoints.base[key] || 0;
-        });
-        this.updateHardpointHeader();
-    }
-
-    updateShipyardMonths() {
-        const el = document.getElementById(`${this.id}-shipyard-months`);
-        if (el) el.textContent = this.outfitData.stats.shipyardMonths ?? 0;
-    }
-
-    updateRemassDisplay() {
-        const el = document.getElementById(`${this.id}-remass-display`);
-        if (el) el.textContent = this.outfitData.stats.remass ?? 0;
-    }
-
-    renderSystemsSection() {
-        return `
-            <div class="system-hulls-info">
-                <div class="hull-status">
-                    <span>System Hulls: <strong id="${this.id}-used-hulls">${this.outfitData.systemsData.usedSystemHulls}</strong> / <strong id="${this.id}-available-hulls">${this.outfitData.systemsData.availableSystemHulls}</strong></span>
-                    <div class="hull-bar">
-                        <div class="hull-bar-fill" id="${this.id}-hull-bar"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="widget-tabs">
-                <button class="widget-tab active" data-tab="modules">System Modules</button>
-                <button class="widget-tab" data-tab="heat">Heat Management</button>
-            </div>
-            <div class="widget-tab-content active" id="${this.id}-modules-tab">
-                <div class="modules-section">
-                    <h5>Available Modules</h5>
-                    <div class="modules-grid" id="${this.id}-available-modules"></div>
-                </div>
-                <div class="installed-modules-section">
-                    <h5>Installed Modules</h5>
-                    <div class="installed-modules-list" id="${this.id}-installed-modules"></div>
-                </div>
-            </div>
-            <div class="widget-tab-content" id="${this.id}-heat-tab">
-                <div class="heat-management-section">
-                    <h5>Heat Management Systems</h5>
-                    <div class="heat-systems">
-                        <div class="heat-system-item">
-                            <div class="heat-system-info">
-                                <span class="heat-system-name">Magnetic Heat Management</span>
-                                <span class="heat-system-count">Installed: <strong id="${this.id}-magnetic-count">${this.outfitData.systemsData.heatManagement.magneticSystems}</strong></span>
-                            </div>
-                            <div class="heat-system-controls">
-                                <button class="heat-btn decrease" data-type="magnetic">−</button>
-                                <button class="heat-btn increase" data-type="magnetic">+</button>
-                            </div>
-                        </div>
-                        <div class="heat-system-item">
-                            <div class="heat-system-info">
-                                <span class="heat-system-name">Demon Heat Management</span>
-                                <span class="heat-system-count">Installed: <strong id="${this.id}-demon-count">${this.outfitData.systemsData.heatManagement.demonSystems}</strong></span>
-                            </div>
-                            <div class="heat-system-controls">
-                                <button class="heat-btn decrease" data-type="demon">−</button>
-                                <button class="heat-btn increase" data-type="demon">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="heat-stats-summary">
-                        <div class="stat-item">
-                            <label>Total Heat Dissipation:</label>
-                            <span id="${this.id}-total-dissipation">${this.calculateHeatDissipation()}/turn</span>
-                        </div>
-                        <div class="stat-item">
-                            <label>Heat Capacity Bonus:</label>
-                            <span id="${this.id}-capacity-bonus">+${this.calculateCapacityBonus()}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderSystemsContent() {
-        const available = document.getElementById(`${this.id}-available-modules`);
-        const installed = document.getElementById(`${this.id}-installed-modules`);
-
-        if (available) available.innerHTML = this.renderAvailableModules();
-        if (installed) installed.innerHTML = this.renderInstalledModules();
-        this.updateHullBar();
-    }
-
-    renderAvailableModules() {
-        return Object.entries(this.moduleTypes).filter(([_, module]) => module.category !== 'heat')
-            .map(([moduleId, module]) => {
-                const isInstalled = this.outfitData.systemsData.modules.find(m => m.moduleId === moduleId);
-                const canInstall = !isInstalled && this.canInstallModule(moduleId);
-                const hasSystemHulls = this.outfitData.systemsData.availableSystemHulls >= this.outfitData.systemsData.usedSystemHulls + module.systemHulls;
-                const hasTech = this.hasTech(module.techRequirement);
-                const disabled = !canInstall || !hasSystemHulls || !hasTech;
-                return `
-                    <div class="module-card ${disabled ? 'disabled' : ''}" data-module="${moduleId}">
-                        <div class="module-header">
-                            <span class="module-name">${module.name}</span>
-                            <span class="module-hulls">${module.systemHulls} hulls</span>
-                        </div>
-                        <div class="module-description">${module.description}</div>
-                        <div class="module-status">
-                            ${!hasTech ? '<span class="status-error">Tech Required</span>' : ''}
-                            ${!hasSystemHulls ? '<span class="status-error">Insufficient Hulls</span>' : ''}
-                            ${isInstalled ? '<span class="status-installed">Installed</span>' : ''}
-                            ${!disabled ? `<button class="install-btn" data-install="${moduleId}">Install</button>` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-    }
-
-    renderInstalledModules() {
-        if (this.outfitData.systemsData.modules.length === 0) {
-            return '<div class="no-modules">No modules installed</div>';
-        }
-        return this.outfitData.systemsData.modules.map(module => {
-            const moduleType = this.moduleTypes[module.moduleId];
-            if (!moduleType) return '';
-            return `
-                <div class="installed-module-item">
-                    <div class="installed-module-info">
-                        <span class="installed-module-name">${moduleType.name}</span>
-                        <span class="installed-module-hulls">${moduleType.systemHulls} hulls</span>
-                    </div>
-                    <button class="uninstall-btn" data-uninstall="${module.id}">Uninstall</button>
-                </div>
-            `;
-        }).join('');
-    }
-
-    setupSystemsEventListeners() {
-        const tabs = this.element.querySelectorAll('.widget-tab');
-        tabs.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const tab = e.currentTarget.dataset.tab;
-                this.switchSystemsTab(tab);
-            });
-        });
-
-        this.element.addEventListener('click', (e) => {
-            const installTarget = e.target.closest('button[data-install]');
-            if (installTarget) {
-                const moduleId = installTarget.dataset.install;
-                this.installModule(moduleId);
+            } else if (button.dataset.weaponAction === 'remove') {
+                this.outfitData.weapons[category].splice(Number(button.dataset.index), 1);
+            } else {
                 return;
             }
-            const uninstallTarget = e.target.closest('button[data-uninstall]');
-            if (uninstallTarget) {
-                const moduleInstanceId = uninstallTarget.dataset.uninstall;
-                this.uninstallModule(moduleInstanceId);
-                return;
-            }
-        });
-
-        const heatButtons = this.element.querySelectorAll('.heat-btn');
-        heatButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const type = e.currentTarget.dataset.type;
-                if (!type) return;
-                if (e.currentTarget.classList.contains('increase')) {
-                    this.addHeatManagement(type);
-                } else {
-                    this.removeHeatManagement(type);
-                }
-            });
+            this.refreshWeapons();
+            this.onOutfitDataChanged();
+            this.refreshSummary();
         });
     }
 
-    switchSystemsTab(tab) {
-        const tabs = this.element.querySelectorAll('.widget-tab');
-        const contents = this.element.querySelectorAll('.widget-tab-content');
-        tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-        contents.forEach(section => section.classList.toggle('active', section.id === `${this.id}-${tab}-tab`));
-    }
-
-    canInstallModule(moduleId) {
-        const module = this.moduleTypes[moduleId];
-        if (!module) return false;
-        if (module.maxCount === 1) {
-            return !this.outfitData.systemsData.modules.find(m => m.moduleId === moduleId);
+    updateWeaponField(target, field, value) {
+        const category = target.dataset.category;
+        const weapon = this.outfitData.weapons?.[category]?.[Number(target.dataset.index)];
+        if (!weapon) return;
+        weapon[field] = field === 'count' ? value : value;
+        if (field === 'weaponId') {
+            const selected = this.getAllWeapons().find(item => item.id === value);
+            weapon.requiredTech = selected?.techRequirement ? [selected.techRequirement] : [];
+            weapon.techRequirement = selected?.techRequirement || null;
+            weapon.name = selected?.name || '';
+            weapon.arc = this.getValidWeaponArc(weapon.arc, selected?.isMain);
         }
-        return true;
     }
 
-    hasTech(techRequirement) {
-        if (!techRequirement) return true;
-        return window.empire?.hasTech?.(techRequirement) ?? true;
+    getValidWeaponArc(arc, isMain = false) {
+        const validArcs = Array.from(new Set(String(arc || '').split('')
+            .filter(value => (isMain ? 'PS' : 'FPSA').includes(value))));
+        return (isMain ? validArcs.slice(0, 1) : validArcs).sort().join('');
     }
 
-    installModule(moduleId) {
-        const module = this.moduleTypes[moduleId];
-        if (!module) return;
-        if (!this.canInstallModule(moduleId)) return;
-        const total = this.outfitData.systemsData.usedSystemHulls + module.systemHulls;
-        if (total > this.outfitData.systemsData.availableSystemHulls) return;
-        const newModule = {
-            id: `${moduleId}-${Date.now()}`,
-            moduleId,
-            name: module.name,
-            systemHulls: module.systemHulls
+    getWeaponDefinition(weaponId) {
+        return this.getAllWeapons().find(item => item.id === weaponId);
+    }
+
+    normalizeWeaponArc(weapon) {
+        if (weapon) weapon.arc = this.getValidWeaponArc(
+            weapon.arc,
+            this.getWeaponDefinition(weapon.weaponId)?.isMain
+        );
+    }
+
+    updateWeaponArc(target) {
+        const category = target.dataset.category;
+        const index = Number(target.dataset.index);
+        const weapon = this.outfitData.weapons?.[category]?.[index];
+        const row = target.closest('tr');
+        if (!weapon || !row) return;
+        const definition = this.getWeaponDefinition(weapon.weaponId);
+        const checkedArcs = Array.from(row.querySelectorAll('[data-arc-checkbox]:checked'))
+            .map(checkbox => checkbox.value);
+        if (definition?.isMain && target.checked) {
+            weapon.arc = this.getValidWeaponArc(target.value, true);
+            row.querySelectorAll('[data-arc-checkbox]').forEach(checkbox => {
+                checkbox.checked = checkbox.value === weapon.arc;
+            });
+        } else {
+            weapon.arc = this.getValidWeaponArc(checkedArcs.join(''), definition?.isMain);
+        }
+    }
+
+    parseCount(value) {
+        const count = Number.parseInt(value, 10);
+        return Number.isFinite(count) ? Math.max(0, count) : 0;
+    }
+
+    getConnectedCoreData() {
+        const linked = this.getConnectedDataByNodeType('Core')[0]?.data;
+        if (!linked) return null;
+        return linked.coreData || linked;
+    }
+
+    getSelectedCoreWidget() {
+        if (this.getConnectedCoreData()) return null;
+        const selectedId = this.outfitData.coreWidgetId;
+        const widget = window.widgetManager?.getWidget?.(selectedId);
+        if (widget?.type === 'shipCore' && widget.coreData?.operational) return widget;
+        return null;
+    }
+
+    getCoreData() {
+        return this.getConnectedCoreData() || this.getSelectedCoreWidget()?.coreData || null;
+    }
+
+    refreshSelectedCoreData(coreWidgetId) {
+        if (this.outfitData.coreWidgetId !== coreWidgetId || this.getConnectedCoreData()) return;
+        this.refreshCoreOptions();
+        this.refreshResourceDisplay();
+        this.refreshSummary();
+    }
+
+    getConnectedClassData() {
+        const linked = this.getConnectedDataByNodeType('Class')[0]?.data;
+        return linked?.shipData || linked || null;
+    }
+
+    getResourceSources() {
+        const classData = this.getConnectedClassData();
+        const composition = classData?.hullComposition || {};
+        const coreData = this.getCoreData();
+        const coreSize = this.numericOrNull(coreData?.powerplantSize ?? coreData?.size);
+        const optionalNumber = (...values) => {
+            const value = values.find(item => item !== undefined && item !== null && item !== '');
+            return value === undefined ? null : this.numericOrNull(value);
         };
-        this.outfitData.systemsData.modules.push(newModule);
-        this.outfitData.systemsData.usedSystemHulls = total;
-        this.renderSystemsContent();
-        this.refreshSummary();
+        const containmentHulls = optionalNumber(classData?.containmentHulls) ??
+            (optionalNumber(composition.freight, composition.Freight) === null &&
+            optionalNumber(composition.tankage, composition.Tankage) === null
+                ? null
+                : (optionalNumber(composition.freight, composition.Freight) || 0) +
+                    (optionalNumber(composition.tankage, composition.Tankage) || 0));
+        const systemCapacity = optionalNumber(composition.system, composition.System);
+        const availableSystems = systemCapacity === null
+            ? null
+            : Math.max(0, systemCapacity - this.getQuantumSystemSize());
+        const coreHardpoints = optionalNumber(coreData?.hardpoints);
+        const calculatedHardpoints = containmentHulls === null
+            ? null
+            : Math.floor(
+                Math.pow(containmentHulls, 2 / 3) +
+                    Number.EPSILON * Math.max(1, Math.pow(containmentHulls, 2 / 3))
+            );
+        return {
+            utilities: coreSize === null ? null : coreSize * 2,
+            emplacements: optionalNumber(composition.emplacement, composition.Emplacement),
+            systems: availableSystems,
+            hardpoints: coreHardpoints ?? calculatedHardpoints,
+            core: optionalNumber(composition.core, composition.Core),
+            containmentHulls
+        };
     }
 
-    uninstallModule(moduleInstanceId) {
-        const idx = this.outfitData.systemsData.modules.findIndex(m => m.id === moduleInstanceId);
-        if (idx === -1) return;
-        const module = this.outfitData.systemsData.modules[idx];
-        this.outfitData.systemsData.usedSystemHulls = Math.max(0, this.outfitData.systemsData.usedSystemHulls - (module?.systemHulls || 0));
-        this.outfitData.systemsData.modules.splice(idx, 1);
-        this.renderSystemsContent();
-        this.refreshSummary();
+    getArmorEfficiency() {
+        const classEfficiency = this.getConnectedClassData()?.armorEfficiency;
+        const coreEfficiency = this.getCoreData()?.armorEfficiency;
+        const efficiency = this.numericOrNull(classEfficiency ?? coreEfficiency);
+        return efficiency === null ? 1 : Math.max(0, efficiency);
     }
 
-    addHeatManagement(type) {
-        const moduleKey = type === 'magnetic' ? 'magneticHeatManagement' : 'demonHeatManagement';
-        const module = this.moduleTypes[moduleKey];
-        if (!module) return;
-        if (this.outfitData.systemsData.usedSystemHulls + module.systemHulls > this.outfitData.systemsData.availableSystemHulls) return;
-        if (type === 'magnetic') this.outfitData.systemsData.heatManagement.magneticSystems++;
-        if (type === 'demon') this.outfitData.systemsData.heatManagement.demonSystems++;
-        this.outfitData.systemsData.usedSystemHulls += module.systemHulls;
-        this.updateHeatStats();
-        this.refreshSummary();
+    getArmorHits() {
+        return this.parseCount(this.outfitData.defenses?.armor) * this.getArmorEfficiency();
     }
 
-    removeHeatManagement(type) {
-        const moduleKey = type === 'magnetic' ? 'magneticHeatManagement' : 'demonHeatManagement';
-        const module = this.moduleTypes[moduleKey];
-        if (!module) return;
-        if (type === 'magnetic' && this.outfitData.systemsData.heatManagement.magneticSystems > 0) {
-            this.outfitData.systemsData.heatManagement.magneticSystems--;
-            this.outfitData.systemsData.usedSystemHulls = Math.max(0, this.outfitData.systemsData.usedSystemHulls - module.systemHulls);
-        }
-        if (type === 'demon' && this.outfitData.systemsData.heatManagement.demonSystems > 0) {
-            this.outfitData.systemsData.heatManagement.demonSystems--;
-            this.outfitData.systemsData.usedSystemHulls = Math.max(0, this.outfitData.systemsData.usedSystemHulls - module.systemHulls);
-        }
-        this.updateHeatStats();
-        this.refreshSummary();
+    getArmorHardpointUse(resources = this.getResourceSources()) {
+        const capacity = resources.hardpoints;
+        return capacity === null ? 0 : Math.min(capacity, this.getArmorHits());
     }
 
-    updateHeatStats() {
-        const magnetic = document.getElementById(`${this.id}-magnetic-count`);
-        const demon = document.getElementById(`${this.id}-demon-count`);
-        const dissipation = document.getElementById(`${this.id}-total-dissipation`);
-        const capacity = document.getElementById(`${this.id}-capacity-bonus`);
-        if (magnetic) magnetic.textContent = this.outfitData.systemsData.heatManagement.magneticSystems;
-        if (demon) demon.textContent = this.outfitData.systemsData.heatManagement.demonSystems;
-        if (dissipation) dissipation.textContent = `${this.calculateHeatDissipation()}/turn`;
-        if (capacity) capacity.textContent = `+${this.calculateCapacityBonus()}`;
-        this.renderSystemsContent();
+    getClassHullCount() {
+        const hullComposition = this.getConnectedClassData()?.hullComposition;
+        if (!hullComposition || typeof hullComposition !== 'object') return null;
+        return Object.values(hullComposition).reduce((total, count) => {
+            const number = Number(count);
+            return total + (Number.isFinite(number) && number > 0 ? number : 0);
+        }, 0);
     }
 
-    calculateHeatDissipation() {
-        const magnetic = this.outfitData.systemsData.heatManagement.magneticSystems;
-        const demon = this.outfitData.systemsData.heatManagement.demonSystems;
-        return magnetic * 5 + demon * 8;
+    getEffectiveHullCount() {
+        const classHullCount = this.getClassHullCount();
+        return classHullCount === null ? null : classHullCount + this.parseCount(this.outfitData.defenses?.armor);
     }
 
-    calculateCapacityBonus() {
-        const magnetic = this.outfitData.systemsData.heatManagement.magneticSystems;
-        const demon = this.outfitData.systemsData.heatManagement.demonSystems;
-        return magnetic * 2 + demon * 6;
+    addResourceCounter(titleElement, resource) {
+        if (!titleElement) return;
+        const counter = document.createElement('span');
+        counter.className = 'outfit-resource-counter';
+        counter.id = `${this.id}-resource-${resource}-counter`;
+        counter.setAttribute('aria-label', `${resource} used / available`);
+        const used = document.createElement('span');
+        used.className = 'outfit-resource-used';
+        used.textContent = '0';
+        const capacity = document.createElement('span');
+        capacity.className = 'outfit-resource-capacity';
+        capacity.textContent = '0';
+        counter.append(used, document.createTextNode(' / '), capacity);
+        titleElement.appendChild(counter);
     }
 
-    updateHullBar() {
-        const bar = document.getElementById(`${this.id}-hull-bar`);
-        if (!bar) return;
-        const used = this.outfitData.systemsData.usedSystemHulls;
-        const available = this.outfitData.systemsData.availableSystemHulls || 1;
-        const percent = Math.min(100, (used / available) * 100);
-        bar.style.width = `${percent}%`;
-        const usedLabel = document.getElementById(`${this.id}-used-hulls`);
-        const availableLabel = document.getElementById(`${this.id}-available-hulls`);
-        if (usedLabel) usedLabel.textContent = used;
-        if (availableLabel) availableLabel.textContent = available;
+    getQuantumSystemSize() {
+        const modules = Array.isArray(this.outfitData.systemsData?.modules)
+            ? this.outfitData.systemsData.modules
+            : [];
+        return modules.reduce((sum, module) => {
+            if (!module || typeof module !== 'object') return sum;
+            if (!/quantum|\bqsystem\b/i.test(`${module.moduleId || ''} ${module.name || ''}`)) return sum;
+            const size = module.systemHulls ?? module.size ?? module.systemSize ?? module.hulls ?? 1;
+            return sum + this.parseCount(size);
+        }, 0);
     }
 
-    renderFeaturesTable() {
-        const rows = [
-            ['Aero Streamlining', 'FALSE', '-', '(252)'],
-            ['Enhanced Armour', 'FALSE', '-', '(33)'],
-            ['QW Hardening', 'FALSE', '-', ''],
-            ['Particle Sail', 'FALSE', '5%', ''],
-            ['Fighter Catapult', '0', 'MHP', '(50)'],
-            ['Flinger Little', 'FALSE', 'MHP', '(50)'],
-            ['Magazine Crane', 'FALSE', 'MHP', '(50)'],
-            ['Bomb Launcher', '0', 'PHP', '(12)'],
-            ['LASER Focus', '0', 'SHP', '(50)'],
-            ['Jump Beacon', 'FALSE', 'MHP', '(90)'],
-            ['Transporter', '0', 'UHP', '(30)']
-        ];
-        return `
-            <table class="features-table">
-                <thead>
-                    <tr>
-                        <th>Feature</th>
-                        <th>Active</th>
-                        <th>Cost</th>
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rows.map(row => `
-                        <tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+    numericOrNull(value) {
+        if (value === null || value === undefined || value === '') return null;
+        const number = Number(value);
+        return Number.isFinite(number) ? number : null;
     }
 
-    renderWeaponsSection() {
-        const spinalWeapons = this.filterWeaponsByTech(this.getSpinalWeapons());
-        const spinalOptions = spinalWeapons.map(w => 
-            `<option value="${w.id}">${w.name} (${w.categoryName})</option>`
+    getOperationalCores() {
+        const widgets = window.widgetManager?.getAllWidgets?.() || [];
+        return widgets.filter(widget =>
+            widget !== this && widget.type === 'shipCore' && widget.coreData?.operational
+        );
+    }
+
+    refreshCoreOptions() {
+        const select = this.element?.querySelector(`#${this.id}-core-select`);
+        if (!select) return;
+        const directCore = !!this.getConnectedCoreData();
+        const selectedWidget = this.getSelectedCoreWidget();
+        const selectedId = selectedWidget?.id || '';
+        const options = this.getOperationalCores().map(widget =>
+            `<option value="${OutfitWidget.escapeHTML(widget.id)}" ${widget.id === selectedId ? 'selected' : ''}>${OutfitWidget.escapeHTML(widget.title || 'Ship Core')} (Size ${OutfitWidget.escapeHTML(widget.coreData.powerplantSize ?? '—')})</option>`
         ).join('');
+        select.innerHTML = `<option value="">Select operational core...</option>${options}`;
+        select.value = selectedId;
+        const source = this.element.querySelector(`#${this.id}-core-source`);
+        if (source) source.hidden = directCore;
+    }
 
+    refreshResourceDisplay() {
+        if (!this.element) return;
+        const resources = this.getResourceSources();
+        this.refreshResourceCounters(resources);
+        this.refreshArmorDisplay(resources);
+        const quantumSize = this.getQuantumSystemSize();
+        const systemNote = this.element.querySelector(`#${this.id}-resource-systems-note`);
+        if (systemNote) {
+            systemNote.textContent = quantumSize > 0
+                ? `QSystem allocation: ${quantumSize} system resources and hulls`
+                : '';
+        }
+        const core = this.getCoreData();
+        this.outfitData.selectedCore = core ? this.serializeCore(core) : null;
+        this.renderCoreProperties(core);
+        this.outfitData.weaponResourceUse = this.getWeaponResourceUse();
+        this.refreshWeapons();
+    }
+
+    renderCoreProperties(core) {
+        const container = this.element?.querySelector(`#${this.id}-core-properties`);
+        if (!container) return;
+        container.replaceChildren();
+        if (!core) return;
+
+        const display = value => value === undefined || value === null || value === '' ? '—' : String(value);
+        const gears = Array.isArray(core.gears)
+            ? core.gears.map((gear, index) =>
+                `${gear.name || `Gear ${index + 1}`} (Instability ${display(gear.instability)})`
+            ).join(', ')
+            : '—';
+        const properties = [
+            ['Operational', core.operational ? 'Yes' : 'No'],
+            ['Armor efficiency', display(core.armorEfficiency ?? this.getArmorEfficiency())],
+            ['Effective hulls for thrust', display(core.effectiveHulls ?? this.getEffectiveHullCount())],
+            ['Reactor', display(core.reactor)],
+            ['Engine', display(core.engine)],
+            ['Manifold', display(core.manifold)],
+            ['Reactor Distribution', display(core.reactorValue)],
+            ['Engine Distribution', display(core.engineValue)],
+            ['Manifold Distribution', display(core.manifoldValue)],
+            ['Reactor Stability', display(core.reactorStability)],
+            ['Engine Efficiency', display(core.engineEfficiency)],
+            ['Manifold Efficiency', display(core.manifoldEfficiency)],
+            ['Gears', gears]
+        ];
+        const grid = document.createElement('dl');
+        grid.className = 'outfit-core-properties-grid';
+        for (const [label, value] of properties) {
+            const term = document.createElement('dt');
+            term.textContent = label;
+            const detail = document.createElement('dd');
+            detail.textContent = value;
+            grid.append(term, detail);
+        }
+        container.appendChild(grid);
+    }
+
+    refreshResourceCounters(resources = this.getResourceSources()) {
+        const usage = this.getResourceUse();
+        this.outfitData.resources = { ...resources };
+        this.outfitData.resourceUse = { ...usage };
+        for (const name of ['core', 'emplacements', 'utilities', 'systems', 'hardpoints']) {
+            const counter = this.element?.querySelector(`#${this.id}-resource-${name}-counter`);
+            if (!counter) continue;
+            const usedElement = counter.querySelector('.outfit-resource-used');
+            const capacityElement = counter.querySelector('.outfit-resource-capacity');
+            const used = usage[name];
+            const capacity = resources[name];
+            const hasCapacity = typeof capacity === 'number' && Number.isFinite(capacity);
+            const availableCapacity = hasCapacity ? capacity : 0;
+            if (usedElement) {
+                usedElement.textContent = String(used);
+                usedElement.classList.toggle('is-over-capacity', used > availableCapacity);
+            }
+            if (capacityElement) {
+                capacityElement.textContent = hasCapacity ? String(capacity) : '0';
+                capacityElement.classList.toggle('has-unused-capacity', hasCapacity && used < capacity);
+            }
+        }
+    }
+
+    serializeCore(core) {
+        const techs = [core.reactor, core.engine, core.manifold, ...(Array.isArray(core.requiredTech) ? core.requiredTech : [])]
+            .filter(value => typeof value === 'string' && value);
+        return {
+            size: this.numericOrNull(core.size ?? core.powerplantSize),
+            armorEfficiency: this.numericOrNull(core.armorEfficiency) ?? 1,
+            hardpoints: this.numericOrNull(core.hardpoints),
+            effectiveHulls: this.getEffectiveHullCount(),
+            reactor: core.reactor || '',
+            engine: core.engine || '',
+            manifold: core.manifold || '',
+            requiredTech: Array.from(new Set(techs)),
+            techRequirement: Array.from(new Set(techs))
+        };
+    }
+
+    renderEmplacementWeaponsSection() {
         return `
-            <div class="weapons-section">
-                <div class="spinal-weapon-group">
-                    <h5>Spinal Mount</h5>
-                    <div class="input-group">
-                        <select id="${this.id}-spinal-weapon" class="weapon-select">
-                            <option value="">None</option>
-                            ${spinalOptions}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="offensive-weapons-group">
-                    <h5>Offensive Weapons</h5>
-                    <button type="button" class="add-weapon-btn" id="${this.id}-add-offensive">Add Weapon</button>
-                    <table class="weapons-table">
-                        <thead>
-                            <tr>
-                                <th>Mount</th>
-                                <th>Weapon</th>
-                                <th>Arc</th>
-                                <th>Hardpoint</th>
-                                <th>Count</th>
-                                <th>Cost</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="${this.id}-offensive-weapons-body">
-                            ${this.renderWeaponRows('offensive')}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="defensive-weapons-group">
-                    <h5>Defensive Weapons</h5>
-                    <button type="button" class="add-weapon-btn" id="${this.id}-add-defensive">Add Weapon</button>
-                    <table class="weapons-table">
-                        <thead>
-                            <tr>
-                                <th>Mount</th>
-                                <th>Weapon</th>
-                                <th>Arc</th>
-                                <th>Hardpoint</th>
-                                <th>Count</th>
-                                <th>Cost</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="${this.id}-defensive-weapons-body">
-                            ${this.renderWeaponRows('defensive')}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="spinal-weapon-group">
+                <h5>Spinal Mount</h5>
+                <select id="${this.id}-spinal-weapon" class="weapon-select">
+                    <option value="">None</option>
+                    ${this.renderWeaponOptions(this.getSpinalWeapons(), this.outfitData.weapons.spinal)}
+                </select>
             </div>
+            ${this.renderWeaponCategory('offensive', 'Offensive Weapons')}
         `;
+    }
+
+    renderArmorSection() {
+        return `<div class="outfit-armor-control">
+            <div class="composition-item">
+                <label for="${this.id}-armor">Armour</label>
+                <input id="${this.id}-armor" class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(this.outfitData.defenses?.armor)}" data-defense-field="armor">
+            </div>
+            <div id="${this.id}-armor-result" class="outfit-resource-note" aria-live="polite"></div>
+        </div>`;
+    }
+
+    renderWeaponCategory(category, title) {
+        return `<div class="${category}-weapons-group">
+            <h5>${title}</h5>
+            <button type="button" data-weapon-action="add" data-category="${category}">Add Weapon</button>
+            <table class="weapons-table">
+                <thead><tr><th>Weapon</th><th>Arc</th><th>Count</th><th>Cost</th><th></th></tr></thead>
+                <tbody id="${this.id}-${category}-weapons-body">${this.renderWeaponRows(category)}</tbody>
+            </table>
+        </div>`;
+    }
+
+    renderWeaponOptions(weapons, selectedId = '') {
+        const available = this.filterWeaponsByTech(weapons);
+        if (selectedId && !available.some(weapon => weapon.id === selectedId)) {
+            const selected = weapons.find(weapon => weapon.id === selectedId);
+            if (selected) available.push(selected);
+        }
+        return available.map(weapon =>
+            `<option value="${OutfitWidget.escapeHTML(weapon.id)}" ${weapon.id === selectedId ? 'selected' : ''}>${OutfitWidget.escapeHTML(weapon.name)} (${OutfitWidget.escapeHTML(weapon.hp || weapon.categoryName)})</option>`
+        ).join('');
     }
 
     renderWeaponRows(category) {
-        const weapons = this.outfitData.weapons[category];
-        if (!weapons || weapons.length === 0) {
-            return '<tr class="no-weapons"><td colspan="7">No weapons added</td></tr>';
-        }
-
+        const weapons = this.outfitData.weapons?.[category] || [];
+        if (!weapons.length) return '<tr class="no-weapons"><td colspan="5">No weapons added</td></tr>';
         return weapons.map((weapon, index) => this.renderWeaponRow(category, weapon, index)).join('');
     }
 
     renderWeaponRow(category, weapon, index) {
-        const offensiveWeapons = category === 'offensive' 
-            ? this.filterWeaponsByTech(this.getOffensiveWeapons())
-            : this.filterWeaponsByTech(this.getPDWeapons());
-
-        const weaponOptions = offensiveWeapons.map(w => 
-            `<option value="${w.id}" ${weapon.weaponId === w.id ? 'selected' : ''}>${w.name}</option>`
-        ).join('');
-
-        const selectedWeapon = offensiveWeapons.find(w => w.id === weapon.weaponId);
-        const hardpoint = selectedWeapon?.hardpoint || '-';
-        const weaponCost = selectedWeapon?.cost || 0;
-        const totalCost = weaponCost * (weapon.count || 0);
-
-        return `
-            <tr data-index="${index}">
-                <td>
-                    <select class="mount-select" data-category="${category}" data-index="${index}">
-                        <option value="Single" ${weapon.mount === 'Single' ? 'selected' : ''}>Single</option>
-                        <option value="Double" ${weapon.mount === 'Double' ? 'selected' : ''}>Double</option>
-                        <option value="Triple" ${weapon.mount === 'Triple' ? 'selected' : ''}>Triple</option>
-                        <option value="Quad" ${weapon.mount === 'Quad' ? 'selected' : ''}>Quad</option>
-                    </select>
-                </td>
-                <td>
-                    <select class="weapon-select" data-category="${category}" data-index="${index}">
-                        <option value="">Select weapon...</option>
-                        ${weaponOptions}
-                    </select>
-                </td>
-                <td>
-                    <div class="arc-field" data-category="${category}" data-index="${index}">
-                        <input type="text" readonly value="${weapon.arc || ''}" class="arc-display" placeholder="FPSA">
-                        <div class="arc-popup" style="display: none;">
-                            <div class="arc-checkbox-grid">
-                                <div class="arc-row">
-                                    <label><input type="checkbox" value="F" ${weapon.arc?.includes('F') ? 'checked' : ''}> Fore</label>
-                                </div>
-                                <div class="arc-row arc-sides">
-                                    <label><input type="checkbox" value="P" ${weapon.arc?.includes('P') ? 'checked' : ''}> Port</label>
-                                    <div class="arc-arrow">↑</div>
-                                    <label><input type="checkbox" value="S" ${weapon.arc?.includes('S') ? 'checked' : ''}> Starboard</label>
-                                </div>
-                                <div class="arc-row">
-                                    <label><input type="checkbox" value="A" ${weapon.arc?.includes('A') ? 'checked' : ''}> Aft</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-                <td class="hardpoint-cell">${hardpoint}</td>
-                <td>
-                    <input type="number" min="0" step="1" value="${weapon.count || 0}" 
-                           class="count-input" data-category="${category}" data-index="${index}">
-                </td>
-                <td class="cost-cell">${totalCost}</td>
-                <td>
-                    <button type="button" class="remove-weapon-btn" data-category="${category}" data-index="${index}">×</button>
-                </td>
-            </tr>
-        `;
-    }
-
-    setupWeaponsEventListeners() {
-        // Get weapons section
-        const weaponsSection = document.getElementById(`${this.id}-weapons-section`);
-        if (!weaponsSection) {
-            return;
-        }
-        
-        // Check if listeners are already attached to prevent duplicates
-        if (this._weaponsListenersAttached) {
-            return;
-        }
-        this._weaponsListenersAttached = true;
-
-        // Setup add weapon buttons
-        const addOffensiveBtn = weaponsSection.querySelector(`#${this.id}-add-offensive`);
-        const addDefensiveBtn = weaponsSection.querySelector(`#${this.id}-add-defensive`);
-        
-        if (addOffensiveBtn) {
-            addOffensiveBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.addWeaponRow('offensive');
-            });
-        }
-
-        if (addDefensiveBtn) {
-            addDefensiveBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.addWeaponRow('defensive');
-            });
-        }
-
-        // Spinal weapon selector
-        const spinalSelect = weaponsSection.querySelector(`#${this.id}-spinal-weapon`);
-        if (spinalSelect) {
-            spinalSelect.addEventListener('change', (e) => {
-                this.outfitData.weapons.spinal = e.target.value;
-            });
-        }
-
-        // Event delegation for weapon table interactions
-        weaponsSection.addEventListener('change', (e) => {
-            if (e.target.classList.contains('mount-select')) {
-                const { category, index } = e.target.dataset;
-                if (this.outfitData.weapons[category] && this.outfitData.weapons[category][index]) {
-                    this.outfitData.weapons[category][index].mount = e.target.value;
-                }
-            } else if (e.target.classList.contains('weapon-select')) {
-                const { category, index } = e.target.dataset;
-                if (this.outfitData.weapons[category] && this.outfitData.weapons[category][index]) {
-                    this.outfitData.weapons[category][index].weaponId = e.target.value;
-                    this.refreshWeaponsTable(category);
-                }
-            } else if (e.target.classList.contains('count-input')) {
-                const { category, index } = e.target.dataset;
-                if (this.outfitData.weapons[category] && this.outfitData.weapons[category][index]) {
-                    this.outfitData.weapons[category][index].count = parseInt(e.target.value, 10) || 0;
-                    this.refreshWeaponsTable(category);
-                }
-            }
-        });
-
-        weaponsSection.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-weapon-btn')) {
-                e.preventDefault();
-                const { category, index } = e.target.dataset;
-                this.removeWeaponRow(category, parseInt(index, 10));
-            } else if (e.target.classList.contains('arc-display')) {
-                e.preventDefault();
-                const arcField = e.target.closest('.arc-field');
-                if (arcField) {
-                    const popup = arcField.querySelector('.arc-popup');
-                    if (popup) {
-                        popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
-                    }
-                }
-            }
-        });
-
-        // Arc checkbox handling
-        weaponsSection.addEventListener('change', (e) => {
-            if (e.target.type === 'checkbox' && e.target.closest('.arc-popup')) {
-                const arcField = e.target.closest('.arc-field');
-                if (arcField) {
-                    const { category, index } = arcField.dataset;
-                    if (this.outfitData.weapons[category] && this.outfitData.weapons[category][index]) {
-                        const checkboxes = arcField.querySelectorAll('input[type="checkbox"]:checked');
-                        const arcValue = Array.from(checkboxes).map(cb => cb.value).sort().join('');
-                        this.outfitData.weapons[category][index].arc = arcValue;
-                        const arcDisplay = arcField.querySelector('.arc-display');
-                        if (arcDisplay) {
-                            arcDisplay.value = arcValue;
-                        }
-                    }
-                }
-            }
-        });
-
-        // Hide arc popup when mouse leaves
-        weaponsSection.addEventListener('mouseleave', (e) => {
-            if (e.target.classList.contains('arc-field') || e.target.classList.contains('arc-popup')) {
-                const arcField = e.target.closest('.arc-field');
-                if (arcField) {
-                    const popup = arcField.querySelector('.arc-popup');
-                    if (popup) popup.style.display = 'none';
-                }
-            }
-        }, true);
-    }
-
-    addWeaponRow(category) {
-        const weapon = {
-            mount: 'Single',
-            weaponId: '',
-            arc: '',
-            count: 0
+        const all = category === 'offensive' ? this.getOffensiveWeapons() : this.getPDWeapons();
+        const weaponOptions = this.renderWeaponOptions(all, weapon.weaponId);
+        const selected = all.find(item => item.id === weapon.weaponId);
+        const arc = this.getValidWeaponArc(weapon.arc, selected?.isMain);
+        const arcOption = (value, label) => {
+            const disabled = selected?.isMain && (value === 'F' || value === 'A');
+            return `<label class="arc-option${disabled ? ' disabled' : ''}"><input type="checkbox" data-arc-checkbox data-category="${category}" data-index="${index}" value="${value}" ${arc.includes(value) ? 'checked' : ''} ${disabled ? 'disabled' : ''}> ${label}</label>`;
         };
-        this.outfitData.weapons[category].push(weapon);
-        this.refreshWeaponsTable(category);
+        return `<tr>
+            <td><select data-weapon-field="weaponId" data-category="${category}" data-index="${index}">
+                <option value="">Select weapon...</option>${weaponOptions}
+            </select></td>
+            <td class="arc-field">${arcOption('F', 'Fore')}${arcOption('P', 'Port')}${arcOption('S', 'Starboard')}${arcOption('A', 'Aft')}</td>
+            <td><input type="number" min="0" step="1" value="${this.parseCount(weapon.count)}" data-weapon-field="count" data-category="${category}" data-index="${index}"></td>
+            <td class="cost-cell">${OutfitWidget.escapeHTML(this.getWeaponCostDisplay(selected, this.parseCount(weapon.count)))}</td>
+            <td><button type="button" data-weapon-action="remove" data-category="${category}" data-index="${index}" aria-label="Remove weapon">×</button></td>
+        </tr>`;
     }
 
-    removeWeaponRow(category, index) {
-        this.outfitData.weapons[category].splice(index, 1);
-        this.refreshWeaponsTable(category);
-    }
-
-    refreshWeaponsTable(category) {
-        const tbody = document.getElementById(`${this.id}-${category}-weapons-body`);
-        if (tbody) {
-            tbody.innerHTML = this.renderWeaponRows(category);
-        }
-    }
-
-    refreshWeaponDropdowns() {
-        // Refresh spinal weapon dropdown
-        const spinalSelect = document.getElementById(`${this.id}-spinal-weapon`);
-        if (spinalSelect) {
-            const currentValue = spinalSelect.value;
-            const spinalWeapons = this.filterWeaponsByTech(this.getSpinalWeapons());
-            const spinalOptions = spinalWeapons.map(w => 
-                `<option value="${w.id}">${w.name} (${w.categoryName})</option>`
-            ).join('');
-            spinalSelect.innerHTML = `<option value="">None</option>${spinalOptions}`;
-            spinalSelect.value = currentValue;
-        }
-
-        // Refresh offensive and defensive weapon tables
-        this.refreshWeaponsTable('offensive');
-        this.refreshWeaponsTable('defensive');
-    }
-
-    // Called when tech tree changes - refresh tech-dependent content
-    onTechTreeUpdated() {
+    refreshWeapons() {
         if (!this.element) return;
-        // Re-render all weapon rows to reflect current tech filtering
-        this.refreshWeaponsTable('offensive');
-        this.refreshWeaponsTable('defensive');
-        // Also refresh the spinal weapon dropdown
-        this.refreshWeaponDropdowns();
+        const spinal = this.element.querySelector(`#${this.id}-spinal-weapon`);
+        if (spinal) {
+            const selected = this.outfitData.weapons.spinal || '';
+            spinal.innerHTML = `<option value="">None</option>${this.renderWeaponOptions(this.getSpinalWeapons(), selected)}`;
+            spinal.value = selected;
+        }
+        for (const category of ['offensive', 'defensive']) {
+            const body = this.element.querySelector(`#${this.id}-${category}-weapons-body`);
+            if (body) body.innerHTML = this.renderWeaponRows(category);
+        }
+        this.refreshWeaponCostLabels();
+        this.refreshWeaponResourceDisplay();
     }
 
-    getParentShipWidget() {
-        if (this.parentShipWidget && this.parentShipWidget.element?.isConnected) {
-            return this.parentShipWidget;
-        }
+    getWeaponResourceUse() {
+        const resourceUse = { hardpoints: 0, utilities: 0, emplacements: 0 };
+        const addWeapon = (weaponId, count, arc = '') => {
+            const weapon = this.getWeaponDefinition(weaponId);
+            if (!weapon || !weapon.resourceType ||
+                !Object.prototype.hasOwnProperty.call(resourceUse, weapon.resourceType)) return;
+            const validArc = this.getValidWeaponArc(arc, weapon.isMain);
+            const arcSurcharge = validArc.length > 1 ? 1 : 0;
+            resourceUse[weapon.resourceType] += this.parseCount(count) *
+                (this.parseCount(weapon.resourceCount) + arcSurcharge);
+        };
 
-        if (this.parents && window.widgetManager) {
-            for (const parentId of this.parents) {
-                const widget = window.widgetManager.getWidget(parentId);
-                if (widget && (widget.type === 'ship' || widget.type === 'shipPrototype')) {
-                    this.parentShipWidget = widget;
-                    return widget;
-                }
+        addWeapon(this.outfitData.weapons?.spinal, 1);
+        for (const category of ['offensive', 'defensive']) {
+            for (const weapon of this.outfitData.weapons?.[category] || []) {
+                addWeapon(weapon.weaponId, weapon.count, weapon.arc);
             }
         }
-
-        return null;
+        return resourceUse;
     }
 
-    onParentLinked(parentWidget) {
-        // No longer using parent widget hierarchy for Class data
-        // Class data comes through node connections instead
+    refreshWeaponResourceDisplay() {
+        if (!this.element) return;
+        const resources = this.getResourceSources();
+        this.refreshResourceCounters(resources);
+        this.outfitData.weaponResourceUse = this.getWeaponResourceUse();
+        this.refreshArmorDisplay(resources);
+        this.renderCoreProperties(this.getCoreData());
     }
 
-    onParentUnlinked(parentWidget) {
-        // No longer using parent widget hierarchy for Class data
+    getSystemResourceUse() {
+        const systemsData = this.outfitData.systemsData || {};
+        const modules = Array.isArray(systemsData.modules) ? systemsData.modules : [];
+        if (modules.length === 0) return this.parseCount(systemsData.usedSystemHulls);
+        return modules.reduce((sum, module) => {
+            if (!module || typeof module !== 'object' ||
+                /quantum|\bqsystem\b/i.test(`${module.moduleId || ''} ${module.name || ''}`)) {
+                return sum;
+            }
+            const size = module.systemHulls ?? module.size ?? module.systemSize ?? module.hulls ?? 1;
+            return sum + this.parseCount(size);
+        }, 0);
+    }
+
+    getResourceUse() {
+        const weaponUse = this.getWeaponResourceUse();
+        const core = this.getCoreData();
+        const hardpoints = this.getResourceSources().hardpoints;
+        return {
+            core: core ? this.parseCount(core.powerplantSize ?? core.size) : 0,
+            emplacements: weaponUse.emplacements,
+            utilities: weaponUse.utilities,
+            systems: this.getSystemResourceUse(),
+            hardpoints: weaponUse.hardpoints + this.getArmorHardpointUse({ hardpoints })
+        };
+    }
+
+    getWeaponCostDisplay(weapon, count = 1) {
+        if (!weapon) return '';
+        const cost = Number(weapon.cost) || 0;
+        return this.formatOptionCost(cost * count, 'weapons', weapon.id);
+    }
+
+    refreshWeaponCostLabels() {
+        if (!this.element) return;
+        for (const category of ['offensive', 'defensive']) {
+            const body = this.element.querySelector(`#${this.id}-${category}-weapons-body`);
+            if (!body) continue;
+            body.querySelectorAll('tr:not(.no-weapons)').forEach(row => {
+                const weaponSelect = row.querySelector('[data-weapon-field="weaponId"]');
+                const countInput = row.querySelector('[data-weapon-field="count"]');
+                const costCell = row.querySelector('.cost-cell');
+                if (!weaponSelect || !costCell) return;
+                const weapon = this.getAllWeapons().find(item => item.id === weaponSelect.value);
+                const count = this.parseCount(countInput?.value ?? 1);
+                costCell.textContent = this.getWeaponCostDisplay(weapon, count);
+            });
+        }
+    }
+
+    onTechTreeUpdated() {
+        this.refreshWeapons();
+    }
+
+    onEconomyModeChanged() {
+        this.refreshWeaponCostLabels();
+    }
+
+    updateWidgetTitle() {
+        const title = this.element?.querySelector('.widget-title');
+        if (title) title.textContent = this.title;
+    }
+
+    updateTitle(text) {
+        if (typeof text === 'string') this.title = text || 'New Outfit';
+        this.updateWidgetTitle();
     }
 
     handleNodeConnectionChange(nodeId) {
         super.handleNodeConnectionChange(nodeId);
-        // When any node connection changes, update derived data
-        this.syncClassData();
+        this.syncConnectedData();
     }
 
-    onParentDataChanged(parentWidgetId) {
-        // When a parent widget's data changes, pull fresh data
-        console.log(`[OutfitWidget ${this.id}] Parent changed (${parentWidgetId}), syncing Class data...`);
-        this.syncClassData();
+    onParentDataChanged() {
+        this.syncConnectedData();
     }
 
-    /**
-     * Called whenever significant outfit data changes
-     * Notifies children that depend on this outfit's data
-     */
+    syncConnectedData() {
+        this.refreshCoreOptions();
+        this.refreshResourceDisplay();
+        this.refreshSummary();
+        this.notifyChildrenOfChange();
+    }
+
     onOutfitDataChanged() {
         this.notifyChildrenOfChange();
     }
 
-    /**
-     * Called after connections are restored during load to sync connected data
-     */
-    syncConnectedData() {
-        this.syncClassData();
-    }
-
-    /**
-     * Pull all Class widget data from the Class input node connection
-     * Replaces manual applyParentInheritance method with generic node-based approach
-     */
-    syncClassData() {
-        // Get data connected to the Class input node
-        const classNodeDataArray = this.getConnectedDataByNodeType('Class');
-        console.log(`[OutfitWidget ${this.id}] getConnectedDataByNodeType('Class') returned:`, classNodeDataArray);
-        
-        const classNodeData = classNodeDataArray[0];
-        
-        if (!classNodeData) {
-            // No class connected, reset to defaults
-            console.log(`[OutfitWidget ${this.id}] No Class data connected, resetting values`);
-            this.resetInheritedValues();
-            return;
-        }
-
-        console.log(`[OutfitWidget ${this.id}] classNodeData:`, classNodeData);
-
-        // classNodeData.data is the ShipWidget's getSerializedData(), which has shipData nested
-        const fullData = classNodeData.data;
-        if (!fullData) {
-            console.log(`[OutfitWidget ${this.id}] fullData is empty/null`);
-            return;
-        }
-
-        console.log(`[OutfitWidget ${this.id}] fullData keys:`, Object.keys(fullData));
-
-        // Extract the shipData from the connected widget
-        const classData = fullData.shipData || fullData;
-
-        console.log(`[OutfitWidget ${this.id}] Synced Class data:`, {
-            ignoreTechRequirements: classData.ignoreTechRequirements,
-            hardpointsUHP: classData.hardpoints?.UHP,
-            systemHulls: classData.hullComposition?.system,
-            remass: classData.resources?.remass
-        });
-
-        // Mirror ignoreTechRequirements flag from class widget
-        this.ignoreTechRequirements = classData.ignoreTechRequirements ?? false;
-
-        // Update hardpoint base values from Class hardpoints
-        // ShipWidget stores hardpoints as { UHP, SHP, PHP, MHP, ... }
-        // We need to update our base hardpoints to match
-        if (classData.hardpoints) {
-            this.hardpointDefinitions.forEach(({ key }) => {
-                const value = classData.hardpoints[key] ?? 0;
-                if (!this.outfitData.hardpoints.base) {
-                    this.outfitData.hardpoints.base = {};
-                }
-                this.outfitData.hardpoints.base[key] = value;
-            });
-        }
-
-        // Update shipyard months from Class system hulls
-        if (classData.hullComposition?.system) {
-            this.outfitData.stats.systemHulls = classData.hullComposition.system;
-            this.outfitData.stats.shipyardMonths = classData.hullComposition.system;
-        }
-
-        // Update Remass from Class resources
-        if (classData.resources?.remass !== undefined) {
-            this.outfitData.stats.remass = classData.resources.remass;
-        }
-
-        // Update other inherited stats
-        this.outfitData.stats.cargo = classData.resources?.cargo ?? 0;
-        this.outfitData.stats.powerplantHulls = classData.hullComposition?.powerplant ?? 0;
-
-        this.updateHardpointHeader();
-        this.updateShipyardMonths();
-        this.updateRemassDisplay();
-        this.refreshWeaponDropdowns();
-    }
-
-    resetInheritedValues() {
-        // Reset inherited values when Class connection is removed
-        this.ignoreTechRequirements = false;
-        this.outfitData.stats.cargo = 0;
-        this.outfitData.stats.remass = 0;
-        this.outfitData.stats.shipyardMonths = 0;
-        this.outfitData.stats.systemHulls = 0;
-        this.outfitData.stats.powerplantHulls = 0;
-        this.hardpointDefinitions.forEach(({ key }) => {
-            this.outfitData.hardpoints.base[key] = 0;
-        });
-        this.updateHardpointBaseDisplay();
-        this.updateShipyardMonths();
-        this.updateRemassDisplay();
-        this.refreshWeaponDropdowns();
-    }
-
     createNodes() {
         this.clearNodes();
-
-        this.addNode('input', 'Core', 'Core', 0, 0.4, {
-            anchorId: 'outfit-meta',
-            sectionId: 'meta',
-            anchorOffset: 32,
-            minSpacing: 32
+        this.addNode('input', 'Core', 'Core', 0, 0.25, {
+            sectionId: 'category-core', anchorId: `${this.id}-category-core`, minSpacing: 32
         });
-
-        this.addNode('input', 'Class', 'Class', 0, 0.2, {
-            anchorId: 'outfit-meta',
-            sectionId: 'meta',
-            minSpacing: 32
+        this.addNode('input', 'Class', 'Class', 0, 0.5, {
+            sectionId: 'category-core', anchorId: `${this.id}-category-core`, anchorOffset: 32, minSpacing: 32
         });
-
-        this.addNode('output', 'Statistics', 'Statistics', 1, 0.35, {
-            anchorId: 'outfit-meta',
-            sectionId: 'meta',
-            anchorOffset: 80,
-            minSpacing: 32
+        this.addNode('output', 'Statistics', 'Statistics', 1, 0.65, {
+            sectionId: 'category-core', anchorId: `${this.id}-category-core`, minSpacing: 32
         });
-
-        this.addNode('output', 'Outfit', 'Outfit', 1, 0.2, {
-            anchorId: 'outfit-meta',
-            sectionId: 'meta',
-            minSpacing: 32,
-            anchorOffset: 48
+        this.addNode('output', 'Outfit', 'Outfit', 1, 0.25, {
+            sectionId: 'meta', anchorId: `${this.id}-meta`, minSpacing: 32
         });
-
         this.reflowNodes();
     }
 
-
-
     syncDataFromForm() {
-        // Sync simple form fields to outfitData
-        const simpleFields = {
-            'name': { id: 'name', type: 'text' },
-            'notes': { id: 'notes', type: 'text' }
+        if (!this.element) return;
+        const value = id => this.element.querySelector(`#${this.id}-${id}`);
+        if (value('name')) this.outfitData.name = value('name').value;
+        if (value('notes')) this.outfitData.notes = value('notes').value;
+        if (value('armor')) this.outfitData.defenses.armor = this.parseCount(value('armor').value);
+        if (value('role')) this.outfitData.role = value('role').value;
+        if (value('custom-role') && this.outfitData.roleMode === 'custom') {
+            this.outfitData.customRole = value('custom-role').value;
+            this.outfitData.role = this.outfitData.customRole.trim();
+        }
+        if (value('operational')) this.outfitData.operational = value('operational').checked;
+        if (value('ignore-tech')) {
+            this.outfitData.ignoreTechRequirements = value('ignore-tech').checked;
+            this.ignoreTechRequirements = this.outfitData.ignoreTechRequirements;
+        }
+        const selectedCore = value('core-select');
+        if (selectedCore && !selectedCore.disabled) this.outfitData.coreWidgetId = selectedCore.value;
+        const spinal = value('spinal-weapon');
+        if (spinal) this.outfitData.weapons.spinal = spinal.value;
+    }
+
+    getSelectedTechRequirements() {
+        const requirements = [];
+        const add = value => {
+            if (typeof value === 'string' && value.trim()) requirements.push(value.trim());
+            else if (Array.isArray(value)) value.forEach(add);
         };
-        this.syncFieldsToData(this.outfitData, simpleFields);
-
-        // Handle role (dropdown vs custom)
-        const roleSelect = document.getElementById(`${this.id}-role-select`);
-        const roleCustom = document.getElementById(`${this.id}-role-custom`);
-        
-        if (this.roleMode === 'custom' && roleCustom) {
-            this.outfitData.customRole = roleCustom.value.trim();
-            this.outfitData.role = this.outfitData.customRole;
-        } else if (roleSelect) {
-            this.outfitData.role = roleSelect.value;
-            this.outfitData.customRole = '';
+        const core = this.outfitData.selectedCore;
+        if (core) {
+            add(core.requiredTech);
+            add(core.techRequirement);
+            add(core.reactor);
+            add(core.engine);
+            add(core.manifold);
         }
-
-        // Sync hardpoint merge/split values
-        ['UHP', 'SHP', 'PHP', 'MHP'].forEach(key => {
-            const mergeInput = document.getElementById(`${this.id}-hp-merge-${key}`);
-            const splitInput = document.getElementById(`${this.id}-hp-split-${key}`);
-            if (mergeInput) {
-                const val = parseInt(mergeInput.value, 10);
-                this.outfitData.hardpoints.merge[key] = isNaN(val) ? 0 : val;
-            }
-            if (splitInput) {
-                const val = parseInt(splitInput.value, 10);
-                this.outfitData.hardpoints.split[key] = isNaN(val) ? 0 : val;
-            }
-        });
-
-        // Sync spinal mount selection
-        const spinalSelect = document.getElementById(`${this.id}-spinal-weapon`);
-        if (spinalSelect) {
-            this.outfitData.weapons.spinal = spinalSelect.value;
+        for (const weapon of this.outfitData.weapons.offensive.concat(this.outfitData.weapons.defensive)) {
+            add(weapon.requiredTech);
+            add(weapon.techRequirement);
         }
-
-        // Sync weapon arrays (offensive/defensive)
-        ['offensive', 'defensive'].forEach(category => {
-            const weaponsArray = this.outfitData.weapons?.[category];
-            if (!weaponsArray || !Array.isArray(weaponsArray)) return;
-            
-            weaponsArray.forEach((weapon, idx) => {
-                const nameEl = document.getElementById(`${this.id}-${category}-${idx}-name`);
-                const categoryEl = document.getElementById(`${this.id}-${category}-${idx}-category`);
-                const hpEl = document.getElementById(`${this.id}-${category}-${idx}-hp`);
-                const countEl = document.getElementById(`${this.id}-${category}-${idx}-count`);
-                
-                if (nameEl) weapon.name = nameEl.value;
-                if (categoryEl) weapon.category = categoryEl.value;
-                if (hpEl) weapon.hp = parseInt(hpEl.value, 10) || 0;
-                if (countEl) weapon.count = parseInt(countEl.value, 10) || 0;
-            });
-        });
+        const spinal = this.getAllWeapons().find(weapon => weapon.id === this.outfitData.weapons.spinal);
+        add(spinal?.techRequirement);
+        return Array.from(new Set(requirements));
     }
 
     getSerializedData() {
         this.syncDataFromForm();
+        this.outfitData.resources = this.getResourceSources();
+        this.outfitData.resourceUse = this.getResourceUse();
+        this.refreshArmorDisplay(this.outfitData.resources);
+        const core = this.getCoreData();
+        this.outfitData.selectedCore = core ? this.serializeCore(core) : null;
+        this.outfitData.ignoreTechRequirements = this.ignoreTechRequirements = !!this.outfitData.ignoreTechRequirements;
+        this.outfitData.weapons.offensive.forEach(weapon => this.applyWeaponRequirements(weapon));
+        this.outfitData.weapons.defensive.forEach(weapon => this.applyWeaponRequirements(weapon));
+        const requiredTech = this.getSelectedTechRequirements();
+        this.outfitData.requiredTech = requiredTech;
+        this.outfitData.techRequirement = requiredTech;
+        const selectedSpinal = this.getAllWeapons().find(weapon => weapon.id === this.outfitData.weapons.spinal);
+        this.outfitData.weaponResourceUse = this.getWeaponResourceUse();
         return {
             ...super.getSerializedData(),
             outfitData: this.outfitData,
-            ignoreTechRequirements: this.ignoreTechRequirements
+            ignoreTechRequirements: this.ignoreTechRequirements,
+            requiredTech,
+            techRequirement: requiredTech,
+            spinalWeapon: selectedSpinal ? {
+                id: selectedSpinal.id,
+                name: selectedSpinal.name,
+                hp: selectedSpinal.hp,
+                resourceType: selectedSpinal.resourceType,
+                resourceCount: selectedSpinal.resourceCount,
+                isSpinal: selectedSpinal.isSpinal,
+                requiredTech: selectedSpinal.techRequirement ? [selectedSpinal.techRequirement] : [],
+                techRequirement: selectedSpinal.techRequirement || null
+            } : null
         };
     }
 
-    loadSerializedData(data) {
+    applyWeaponRequirements(weapon) {
+        const definition = this.getAllWeapons().find(item => item.id === weapon.weaponId);
+        const required = definition?.techRequirement || weapon.techRequirement || null;
+        weapon.name = definition?.name || weapon.name || '';
+        weapon.requiredTech = required ? [required] : [];
+        weapon.techRequirement = required;
+        weapon.hp = definition?.hp || weapon.hp || null;
+        weapon.resourceType = definition?.resourceType || weapon.resourceType || null;
+        weapon.resourceCount = definition?.resourceCount ?? weapon.resourceCount ?? null;
+        weapon.isSpinal = definition?.isSpinal ?? weapon.isSpinal ?? false;
+        weapon.isMain = definition?.isMain ?? weapon.isMain ?? false;
+        this.normalizeWeaponArc(weapon);
+    }
+
+    loadSerializedData(data = {}) {
         super.loadSerializedData(data);
-        if (data.ignoreTechRequirements !== undefined) {
-            this.ignoreTechRequirements = data.ignoreTechRequirements;
+        const incoming = data.outfitData || {};
+        this.outfitData = {
+            ...this.outfitData,
+            ...incoming,
+            operational: Boolean(incoming.operational ?? incoming.developed),
+            resources: { ...this.outfitData.resources, ...(incoming.resources || {}) },
+            defenses: { ...this.outfitData.defenses, ...(incoming.defenses || {}) },
+            resourceUse: { ...this.outfitData.resourceUse, ...(incoming.resourceUse || {}) },
+            selectedCore: incoming.selectedCore || null,
+            weapons: {
+                ...this.outfitData.weapons,
+                ...(incoming.weapons || {}),
+                offensive: Array.isArray(incoming.weapons?.offensive) ? incoming.weapons.offensive.map(item => {
+                    const weapon = { ...item };
+                    delete weapon.mount;
+                    return weapon;
+                }) : [],
+                defensive: Array.isArray(incoming.weapons?.defensive) ? incoming.weapons.defensive.map(item => {
+                    const weapon = { ...item };
+                    delete weapon.mount;
+                    return weapon;
+                }) : []
+            }
+        };
+        delete this.outfitData.developed;
+        for (const category of ['offensive', 'defensive']) {
+            this.outfitData.weapons[category].forEach(weapon => this.applyWeaponRequirements(weapon));
         }
-        if (data.outfitData) {
-            this.outfitData = {
-                ...this.outfitData,
-                ...data.outfitData,
-                hardpoints: {
-                    base: { ...this.outfitData.hardpoints.base, ...(data.outfitData.hardpoints?.base || {}) },
-                    merge: { ...this.outfitData.hardpoints.merge, ...(data.outfitData.hardpoints?.merge || {}) },
-                    split: { ...this.outfitData.hardpoints.split, ...(data.outfitData.hardpoints?.split || {}) }
-                },
-                attachments: {
-                    clamp: { ...this.outfitData.attachments.clamp, ...(data.outfitData.attachments?.clamp || {}) },
-                    tether: { ...this.outfitData.attachments.tether, ...(data.outfitData.attachments?.tether || {}) },
-                    adapter: { ...this.outfitData.attachments.adapter, ...(data.outfitData.attachments?.adapter || {}) }
-                },
-                stats: { ...this.outfitData.stats, ...(data.outfitData.stats || {}) },
-                systemsData: {
-                    availableSystemHulls: data.outfitData.systemsData?.availableSystemHulls ?? this.outfitData.systemsData.availableSystemHulls,
-                    usedSystemHulls: data.outfitData.systemsData?.usedSystemHulls ?? this.outfitData.systemsData.usedSystemHulls,
-                    modules: Array.isArray(data.outfitData.systemsData?.modules) ? data.outfitData.systemsData.modules : [],
-                    heatManagement: {
-                        magneticSystems: data.outfitData.systemsData?.heatManagement?.magneticSystems ?? this.outfitData.systemsData.heatManagement.magneticSystems,
-                        demonSystems: data.outfitData.systemsData?.heatManagement?.demonSystems ?? this.outfitData.systemsData.heatManagement.demonSystems
-                    }
-                },
-                weapons: {
-                    spinal: data.outfitData.weapons?.spinal ?? this.outfitData.weapons.spinal,
-                    offensive: Array.isArray(data.outfitData.weapons?.offensive) ? data.outfitData.weapons.offensive : [],
-                    defensive: Array.isArray(data.outfitData.weapons?.defensive) ? data.outfitData.weapons.defensive : []
-                }
-            };
-            this.roleMode = this.outfitData.roleMode || (this.outfitData.customRole ? 'custom' : 'dropdown');
-            this.ensureRoleAvailable(this.outfitData.role);
-            
-            // Reset hardpoint base values when loading serialized data
-            // If this widget is connected to a class, syncClassData() will restore correct values
-            // If not connected, hardpoints should be 0 (not inherited from parent outfit)
-            this.hardpointDefinitions.forEach(({ key }) => {
-                this.outfitData.hardpoints.base[key] = 0;
-            });
-            
-            this.syncFormFromData();
-        }
+        this.ignoreTechRequirements = data.ignoreTechRequirements ?? incoming.ignoreTechRequirements ?? false;
+        this.outfitData.ignoreTechRequirements = this.ignoreTechRequirements;
+        this.outfitData.weaponResourceUse = this.getWeaponResourceUse();
+        this.outfitData.roleMode = incoming.roleMode || (incoming.customRole ? 'custom' : 'dropdown');
+        this.ensureRoleAvailable(this.outfitData.role);
+        this.title = this.outfitData.name || 'New Outfit';
+        this.syncFormFromData();
     }
 
     syncFormFromData() {
-        const nameInput = document.getElementById(`${this.id}-name`);
-        if (nameInput) nameInput.value = this.outfitData.name || '';
-
-        const notesInput = document.getElementById(`${this.id}-notes`);
-        if (notesInput) notesInput.value = this.outfitData.notes || '';
-
-        this.updateHardpointBaseDisplay();
-        this.updateShipyardMonths();
-        this.updateRemassDisplay();
-
-        const roleSelect = document.getElementById(`${this.id}-role-select`);
-        const roleCustom = document.getElementById(`${this.id}-role-custom`);
-        this.populateRoleSelect(roleSelect, this.outfitData.role);
-        if (roleCustom) roleCustom.value = this.getRoleInputValue();
-        this.applyRoleMode(this.outfitData.customRole ? 'custom' : 'dropdown');
-
-        this.renderSystemsContent();
-        this.refreshWeaponDropdowns();
-        this.refreshAttachmentSection();
-        
-        // Sync any connected Class node data
-        // Skip this during initial load when skipConnectionSync is true
-        // Connections will be synced later in Phase 3 after connections are restored
-        if (!this.skipConnectionSync) {
-            this.syncClassData();
-        } else {
-            console.log(`[OutfitWidget ${this.id}] Skipping syncClassData during load (skipConnectionSync=${this.skipConnectionSync})`);
-        }
-    }
-
-    refreshAttachmentSection() {
-        const attachmentSection = document.getElementById(`${this.id}-attachment-section`);
-        if (attachmentSection) {
-            attachmentSection.innerHTML = this.renderAttachmentSection();
-            // Re-attach event listeners after refreshing
-            this._attachmentListenersAttached = false;
-            this.setupAttachmentEventListeners();
-        }
-    }
-
-    updateTitle(text) {
-        const titleElement = this.element?.querySelector('.widget-title');
-        if (titleElement) {
-            titleElement.textContent = text || this.outfitData.name || 'New Outfit';
-        }
-    }
-
-    renderSummary(container) {
-        if (!container) return;
-
-        // Clear any existing summary
-        container.innerHTML = '';
-
-        // Title
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'summary-title';
-        titleDiv.textContent = this.outfitData.name || 'New Outfit';
-        container.appendChild(titleDiv);
-
-        // Badges
-        const badgesDiv = document.createElement('div');
-        badgesDiv.className = 'summary-badges';
-        
-        if (this.outfitData.role) {
-            badgesDiv.appendChild(this.createBadge(this.outfitData.role, 'role'));
-        }
-        
-        if (this.roleMode === 'custom') {
-            badgesDiv.appendChild(this.createBadge('Custom Role', 'info'));
-        }
-
-        container.appendChild(badgesDiv);
-
-        // Summary grid
-        const gridDiv = document.createElement('div');
-        gridDiv.className = 'summary-grid';
-
-        // Role
-        const roleValue = this.outfitData.role || '—';
-        this.addSummaryField(gridDiv, 'Role', roleValue);
-
-        // Hardpoints
-        const hpBase = this.formatHardpoints(this.outfitData.hardpoints.base);
-        const hpMerge = this.formatHardpoints(this.outfitData.hardpoints.merge);
-        const hpSplit = this.formatHardpoints(this.outfitData.hardpoints.split);
-        this.addSummaryField(gridDiv, 'Hardpoints (Base)', hpBase);
-        if (hpMerge !== '—') {
-            this.addSummaryField(gridDiv, 'Hardpoints (Merge)', hpMerge);
-        }
-        if (hpSplit !== '—') {
-            this.addSummaryField(gridDiv, 'Hardpoints (Split)', hpSplit);
-        }
-
-        // Systems
-        const moduleCount = this.outfitData.systemsData?.modules?.length || 0;
-        const usedHulls = this.outfitData.systemsData?.usedSystemHulls || 0;
-        const availableHulls = this.outfitData.systemsData?.availableSystemHulls || 0;
-        this.addSummaryField(gridDiv, 'System Modules', `${moduleCount} (${usedHulls}/${availableHulls} hulls)`);
-
-        // Heat Management
-        const magnetic = this.outfitData.systemsData?.heatManagement?.magneticSystems || 0;
-        const demon = this.outfitData.systemsData?.heatManagement?.demonSystems || 0;
-        if (magnetic > 0 || demon > 0) {
-            const heatParts = [];
-            if (magnetic > 0) heatParts.push(`${magnetic}× Magnetic`);
-            if (demon > 0) heatParts.push(`${demon}× Demon`);
-            this.addSummaryField(gridDiv, 'Heat Mgmt', heatParts.join(', '));
-        }
-
-        // Weapons
-        const spinalWeapon = this.outfitData.weapons?.spinal || '—';
-        const offensiveCount = this.outfitData.weapons?.offensive?.length || 0;
-        const defensiveCount = this.outfitData.weapons?.defensive?.length || 0;
-        
-        if (spinalWeapon !== 'none' && spinalWeapon !== '—') {
-            this.addSummaryField(gridDiv, 'Spinal', spinalWeapon);
-        }
-        this.addSummaryField(gridDiv, 'Offensive Weapons', offensiveCount.toString());
-        this.addSummaryField(gridDiv, 'Defensive Weapons', defensiveCount.toString());
-
-        container.appendChild(gridDiv);
+        if (!this.element) return;
+        const setValue = (id, value) => {
+            const input = this.element.querySelector(`#${this.id}-${id}`);
+            if (input) input.value = value ?? '';
+        };
+        setValue('notes', this.outfitData.notes);
+        setValue('armor', this.outfitData.defenses?.armor);
+        setValue('role', this.outfitData.role);
+        setValue('custom-role', this.outfitData.customRole);
+        const operational = this.element.querySelector(`#${this.id}-operational`);
+        const ignore = this.element.querySelector(`#${this.id}-ignore-tech`);
+        if (operational) operational.checked = this.outfitData.operational;
+        if (ignore) ignore.checked = this.ignoreTechRequirements;
+        this.updateWidgetTitle();
+        this.refreshCoreOptions();
+        this.refreshResourceDisplay();
+        this.refreshSummary();
     }
 
     refreshSummary() {
-        if (!this.element) return;
-        const summaryContainer = this.element.querySelector('.widget-summary');
-        if (!summaryContainer) return;
-        
-        const isMinimized = this.element.classList.contains('minimized');
-        if (isMinimized) {
-            this.renderSummary(summaryContainer);
+        if (!this.summaryElement) return;
+        const name = document.createElement('strong');
+        name.textContent = this.outfitData.name || 'New Outfit';
+        const role = document.createElement('span');
+        role.textContent = this.outfitData.role || 'No role';
+        const summary = document.createElement('div');
+        summary.className = 'summary-grid';
+        const effectiveHulls = this.getEffectiveHullCount();
+        if (effectiveHulls !== null) {
+            const hulls = document.createElement('div');
+            hulls.className = 'summary-item';
+            hulls.textContent = `Effective hulls for thrust: ${effectiveHulls}`;
+            summary.appendChild(hulls);
         }
+        const usage = this.getResourceUse();
+        for (const resource of ['core', 'emplacements', 'utilities', 'systems', 'hardpoints']) {
+            const entry = document.createElement('div');
+            entry.className = 'summary-item';
+            entry.textContent = `${resource}: ${usage[resource]} / ${this.outfitData.resources?.[resource] ?? '—'}`;
+            summary.appendChild(entry);
+        }
+        const containment = document.createElement('div');
+        containment.className = 'summary-item';
+        containment.textContent = `Containment hull basis: ${this.outfitData.resources?.containmentHulls ?? '—'}`;
+        summary.appendChild(containment);
+        this.summaryElement.replaceChildren(name, role, summary);
     }
 
     onMinimizeStateChanged(isMinimized) {
-        if (isMinimized) {
-            this.refreshSummary();
-        }
-    }
-
-    addSummaryField(container, label, value) {
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'summary-label';
-        labelDiv.textContent = label;
-
-        const valueDiv = document.createElement('div');
-        valueDiv.className = 'summary-value';
-        valueDiv.textContent = value;
-
-        container.appendChild(labelDiv);
-        container.appendChild(valueDiv);
-    }
-
-    formatHardpoints(hardpointObj) {
-        if (!hardpointObj) return '—';
-        
-        const parts = [];
-        if (hardpointObj.spinal > 0) parts.push(`${hardpointObj.spinal}S`);
-        if (hardpointObj.heavy > 0) parts.push(`${hardpointObj.heavy}H`);
-        if (hardpointObj.medium > 0) parts.push(`${hardpointObj.medium}M`);
-        if (hardpointObj.light > 0) parts.push(`${hardpointObj.light}L`);
-        if (hardpointObj.turret > 0) parts.push(`${hardpointObj.turret}T`);
-        
-        return parts.length > 0 ? parts.join(' ') : '—';
-    }
-
-    createBadge(text, variant = '') {
-        const badge = document.createElement('span');
-        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
-        badge.textContent = text;
-        return badge;
-    }
-
-    renderAttachmentSection() {
-        const attachmentTypes = ['Clamp', 'Tether', 'Adapter'];
-        const hardpointTypes = ['UHP', 'SHP', 'PHP', 'MHP'];
-        
-        let html = `<table class="weapons-table"><thead><tr><th>Type</th>`;
-        
-        // Add column headers
-        attachmentTypes.forEach(type => {
-            html += `<th>${type}</th>`;
-        });
-        html += `</tr></thead><tbody>`;
-        
-        // Add rows for each hardpoint type
-        hardpointTypes.forEach(hp => {
-            html += `<tr><td>${hp}</td>`;
-            attachmentTypes.forEach(type => {
-                const dataKey = type.toLowerCase();
-                const currentValue = this.outfitData.attachments[dataKey][hp] || 0;
-                html += `<td><input type="number" min="0" step="1" value="${currentValue}" class="attachment-spinbox" data-type="${dataKey}" data-hp="${hp}"></td>`;
-            });
-            html += `</tr>`;
-        });
-        
-        html += `</tbody></table>`;
-        return html;
-    }
-
-    setupAttachmentEventListeners() {
-        const attachmentSection = document.getElementById(`${this.id}-attachment-section`);
-        if (!attachmentSection) {
-            return;
-        }
-        
-        // Check if listeners are already attached to prevent duplicates
-        if (this._attachmentListenersAttached) {
-            return;
-        }
-        this._attachmentListenersAttached = true;
-
-        // Event delegation for attachment spinboxes
-        attachmentSection.addEventListener('change', (e) => {
-            if (e.target.classList.contains('attachment-spinbox')) {
-                const { type, hp } = e.target.dataset;
-                const newValue = parseInt(e.target.value, 10) || 0;
-                
-                if (this.outfitData.attachments[type]) {
-                    this.outfitData.attachments[type][hp] = newValue;
-                    
-                    // Update hardpoint header to reflect new remaining hardpoints
-                    this.updateHardpointHeader();
-                }
-            }
-        });
+        if (!isMinimized) this.refreshSummary();
     }
 }

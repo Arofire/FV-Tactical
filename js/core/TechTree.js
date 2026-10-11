@@ -80,6 +80,44 @@ class TechTree {
         return categories;
     }
 
+    static async getTechCategoryGroups() {
+        const categories = await this.getTechsByCategory();
+        const categoryEntries = Object.entries(categories);
+        const prefixCounts = new Map();
+        const prefixPattern = /^([A-Za-z]+)\s*[-/]\s*(.+)$/;
+
+        for (const [categoryName] of categoryEntries) {
+            const match = categoryName.match(prefixPattern);
+            if (match) {
+                const key = match[1].toLowerCase();
+                prefixCounts.set(key, (prefixCounts.get(key) || 0) + 1);
+            }
+        }
+
+        const groups = [];
+        const supercategories = new Map();
+        for (const [categoryName, techs] of categoryEntries) {
+            const match = categoryName.match(prefixPattern);
+            const key = match?.[1].toLowerCase();
+            if (match && prefixCounts.get(key) > 1) {
+                let supercategory = supercategories.get(key);
+                if (!supercategory) {
+                    supercategory = { name: match[1], categories: [] };
+                    supercategories.set(key, supercategory);
+                    groups.push(supercategory);
+                }
+                supercategory.categories.push({
+                    name: categoryName.replace(prefixPattern, '$2'),
+                    techs
+                });
+            } else {
+                groups.push({ name: categoryName, techs });
+            }
+        }
+
+        return groups;
+    }
+
     static async getTechPrerequisites(techId) {
         const tech = await this.getTech(techId);
         return tech ? [...(tech.prerequisites || [])] : [];

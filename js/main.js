@@ -7,6 +7,7 @@ class FVTacticalApp {
         this.dataManager = new DataManager();
         this.preflightCheck = new PreflightCheck(this.empire, this.widgetManager, this.nodeSystem);
         this.cascadeDragEnabled = false;
+        this.activeEmpireView = 'design';
         
     // Tech tree filter states
     this.hideUnavailableTech = false; // hides locked techs
@@ -36,6 +37,7 @@ class FVTacticalApp {
         await this.initializeTechTree();
         console.log('FVTacticalApp: Tech tree initialized');
         this.updateEmpireDisplay();
+        this.updateFleetView();
         
         // Enable auto-save (saves to localStorage in the background)
         // Note: Manual import/export via buttons takes precedence over auto-save
@@ -212,7 +214,7 @@ class FVTacticalApp {
         if (expandCollapseBtn) {
             expandCollapseBtn.addEventListener('click', () => {
                 const mode = expandCollapseBtn.dataset.mode;
-                const categories = document.querySelectorAll('.tech-category');
+                const categories = document.querySelectorAll('.tech-category, .tech-supercategory');
                 if (mode === 'expanded') {
                     categories.forEach(c => c.classList.remove('expanded'));
                     expandCollapseBtn.dataset.mode = 'collapsed';
@@ -260,6 +262,11 @@ class FVTacticalApp {
         const exportBtn = document.getElementById('exportData');
         const importBtn = document.getElementById('importDataBtn');
         const importFile = document.getElementById('importData');
+        const economyMode = document.getElementById('economyMode');
+        const campaignCostRulesButton = document.getElementById('campaignCostRules');
+        const designViewBtn = document.getElementById('designViewBtn');
+        const fleetViewBtn = document.getElementById('fleetViewBtn');
+        const addFleetShipBtn = document.getElementById('addFleetShip');
 
         if (saveBtn) saveBtn.addEventListener('click', () => this.saveEmpire());
         if (loadBtn) loadBtn.addEventListener('click', () => this.loadEmpire());
@@ -272,6 +279,241 @@ class FVTacticalApp {
                 }
             });
         }
+        if (economyMode) {
+            economyMode.value = this.empire.economyMode;
+            if (campaignCostRulesButton) campaignCostRulesButton.hidden = economyMode.value !== 'campaign';
+            economyMode.addEventListener('change', () => {
+                this.empire.economyMode = economyMode.value === 'campaign' ? 'campaign' : 'skirmish';
+                if (campaignCostRulesButton) campaignCostRulesButton.hidden = this.empire.economyMode !== 'campaign';
+                this.notifyEconomyModeChanged();
+                this.updateFleetView();
+                this.saveEmpire();
+            });
+        }
+        if (campaignCostRulesButton) {
+            campaignCostRulesButton.addEventListener('click', () => this.openCampaignCostRules());
+        }
+        if (designViewBtn) designViewBtn.addEventListener('click', () => this.setEmpireView('design'));
+        if (fleetViewBtn) fleetViewBtn.addEventListener('click', () => this.setEmpireView('fleet'));
+        if (addFleetShipBtn) addFleetShipBtn.addEventListener('click', () => this.addFleetShip());
+    }
+
+    setEmpireView(view) {
+        this.activeEmpireView = view === 'fleet' ? 'fleet' : 'design';
+        const fleetView = document.getElementById('fleetView');
+        const canvas = document.getElementById('canvas');
+        const connectionSvg = document.getElementById('connectionSvg');
+        const emptyCanvasText = document.getElementById('emptyCanvasText');
+        const minimap = document.getElementById('minimap');
+        const mainContainer = document.getElementById('mainContainer');
+        const designButton = document.getElementById('designViewBtn');
+        const fleetButton = document.getElementById('fleetViewBtn');
+        const isFleet = this.activeEmpireView === 'fleet';
+
+        if (fleetView) fleetView.hidden = !isFleet;
+        if (canvas) canvas.hidden = isFleet;
+        if (connectionSvg) connectionSvg.hidden = isFleet;
+        if (emptyCanvasText) emptyCanvasText.hidden = isFleet;
+        if (minimap) minimap.hidden = isFleet;
+        if (mainContainer) mainContainer.hidden = isFleet;
+        if (designButton) {
+            designButton.classList.toggle('active', !isFleet);
+            designButton.setAttribute('aria-pressed', String(!isFleet));
+        }
+        if (fleetButton) {
+            fleetButton.classList.toggle('active', isFleet);
+            fleetButton.setAttribute('aria-pressed', String(isFleet));
+        }
+        if (isFleet) this.updateFleetView();
+    }
+
+    addFleetShip() {
+        const shipDesigns = this.widgetManager.getAllWidgets().filter(widget => widget.type === 'ship');
+        if (shipDesigns.length === 0) {
+            this.showNotification('Create a ship class in Design before adding it to the Fleet.', 'warning');
+            return;
+        }
+
+        const fleetShip = {
+            id: `fleet-ship-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            designWidgetId: shipDesigns[0].id,
+            name: `${shipDesigns[0].shipData?.name || shipDesigns[0].title} ${this.empire.fleetShips.length + 1}`,
+            role: shipDesigns[0].shipData?.role || '',
+            berths: 0,
+            loadout: ''
+        };
+        this.empire.fleetShips.push(fleetShip);
+        this.updateFleetView();
+        this.saveEmpire();
+    }
+
+    updateFleetView() {
+        const list = document.getElementById('fleetShipList');
+        if (!list) return;
+        list.replaceChildren();
+        const designs = this.widgetManager.getAllWidgets().filter(widget => widget.type === 'ship');
+
+        if (this.empire.fleetShips.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'fleet-empty-state';
+            empty.textContent = 'No ships in the fleet yet.';
+            list.appendChild(empty);
+            return;
+        }
+
+        for (const fleetShip of this.empire.fleetShips) {
+            const card = document.createElement('article');
+            card.className = 'fleet-ship-card';
+            const heading = document.createElement('h2');
+            heading.textContent = fleetShip.name || 'Unnamed Ship';
+            card.appendChild(heading);
+
+            const form = document.createElement('div');
+            form.className = 'fleet-ship-fields';
+            const nameField = this.createFleetField('Ship name', 'text', fleetShip.name || '');
+            const roleField = this.createFleetField('Role', 'text', fleetShip.role || '');
+            const designField = document.createElement('label');
+            designField.textContent = 'Ship design';
+            const designSelect = document.createElement('select');
+            for (const design of designs) {
+                const option = document.createElement('option');
+                option.value = design.id;
+                option.textContent = design.shipData?.name || design.title;
+                option.selected = design.id === fleetShip.designWidgetId;
+                designSelect.appendChild(option);
+            }
+            designField.appendChild(designSelect);
+            const berthField = this.createFleetField('Berthings assigned', 'number', fleetShip.berths ?? 0);
+            berthField.querySelector('input').min = '0';
+            berthField.querySelector('input').step = '1';
+            const loadoutField = this.createFleetField('Loadout notes', 'text', fleetShip.loadout || '');
+
+            const saveFields = () => {
+                const oldName = fleetShip.name;
+                fleetShip.name = nameField.querySelector('input').value;
+                fleetShip.role = roleField.querySelector('input').value;
+                fleetShip.designWidgetId = designSelect.value;
+                fleetShip.berths = Math.max(0, Number(berthField.querySelector('input').value) || 0);
+                fleetShip.loadout = loadoutField.querySelector('input').value;
+                heading.textContent = fleetShip.name || 'Unnamed Ship';
+                if (oldName !== fleetShip.name || fleetShip.role) this.saveEmpire();
+            };
+            [nameField, roleField, berthField, loadoutField].forEach(field => {
+                field.querySelector('input').addEventListener('change', saveFields);
+            });
+            designSelect.addEventListener('change', () => {
+                const selectedDesign = designs.find(design => design.id === designSelect.value);
+                if (selectedDesign && !fleetShip.name) {
+                    fleetShip.name = selectedDesign.shipData?.name || selectedDesign.title;
+                    nameField.querySelector('input').value = fleetShip.name;
+                }
+                saveFields();
+            });
+            form.append(nameField, roleField, designField, berthField, loadoutField);
+
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'fleet-ship-remove';
+            removeButton.textContent = 'Remove ship';
+            removeButton.addEventListener('click', () => {
+                this.empire.fleetShips = this.empire.fleetShips.filter(ship => ship.id !== fleetShip.id);
+                this.updateFleetView();
+                this.saveEmpire();
+            });
+
+            card.append(form, removeButton);
+            if (Array.isArray(fleetShip.legacyAssignments) && fleetShip.legacyAssignments.length > 0) {
+                const legacyDetails = document.createElement('details');
+                const summary = document.createElement('summary');
+                summary.textContent = `Imported berth/loadout data (${fleetShip.legacyAssignments.length})`;
+                const data = document.createElement('pre');
+                data.textContent = JSON.stringify(fleetShip.legacyAssignments, null, 2);
+                legacyDetails.append(summary, data);
+                card.appendChild(legacyDetails);
+            }
+            list.appendChild(card);
+        }
+    }
+
+    createFleetField(labelText, type, value) {
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        const input = document.createElement('input');
+        input.type = type;
+        input.value = String(value);
+        label.appendChild(input);
+        return label;
+    }
+
+    formatOptionCost(value, category = 'general', itemId = '') {
+        if (value === null || value === undefined || value === '') return '';
+        const cost = Number(value);
+        if (!Number.isFinite(cost)) return '';
+        if (this.empire.economyMode !== 'campaign') return `${cost} CV`;
+
+        const rules = this.empire.campaignCostRules || { categories: {}, items: {} };
+        const normalizedCategory = String(category).toLowerCase();
+        const rule = rules.items?.[itemId] || rules.categories?.[normalizedCategory] || 'split';
+        if (rule === 'industry') return `${cost} Industry`;
+        if (rule === 'materiel') return `${cost} Materiel`;
+        const industry = Math.round(cost * 100 / 2) / 100;
+        const materiel = cost - industry;
+        return `${industry} Industry + ${materiel} Materiel`;
+    }
+
+    notifyEconomyModeChanged() {
+        for (const widget of this.widgetManager.getAllWidgets()) {
+            if (typeof widget.onEconomyModeChanged === 'function') {
+                widget.onEconomyModeChanged();
+            }
+        }
+    }
+
+    openCampaignCostRules() {
+        const modal = document.createElement('div');
+        modal.className = 'technology-modal-backdrop';
+        const dialog = document.createElement('section');
+        dialog.className = 'technology-modal campaign-cost-dialog';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        const title = document.createElement('h2');
+        title.textContent = 'Campaign Cost Rules';
+        const description = document.createElement('p');
+        description.textContent = 'Existing CV values are treated as base amounts. Choose how each option category is valued.';
+        const form = document.createElement('div');
+        form.className = 'campaign-cost-rules';
+        for (const [category, rule] of Object.entries(this.empire.campaignCostRules.categories)) {
+            const label = document.createElement('label');
+            label.textContent = category;
+            const select = document.createElement('select');
+            [['industry', 'Industry'], ['materiel', 'Materiel'], ['split', 'Split evenly']].forEach(([value, text]) => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = text;
+                option.selected = rule === value;
+                select.appendChild(option);
+            });
+            select.addEventListener('change', () => {
+                this.empire.campaignCostRules.categories[category] = select.value;
+                if (!this.dataManager.saveToLocalStorage(this.empire, this.widgetManager.widgets, this.nodeSystem)) {
+                    this.showNotification('Failed to save campaign cost rules', 'error');
+                }
+                this.notifyEconomyModeChanged();
+            });
+            label.appendChild(select);
+            form.appendChild(label);
+        }
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'technology-modal-close';
+        closeButton.textContent = 'Close';
+        closeButton.addEventListener('click', () => modal.remove());
+        dialog.append(title, description, form, closeButton);
+        modal.appendChild(dialog);
+        modal.addEventListener('click', event => {
+            if (event.target === modal) modal.remove();
+        });
+        document.body.appendChild(modal);
     }
 
     updateEmptyCanvasText() {
@@ -383,9 +625,6 @@ class FVTacticalApp {
                 case 'outfit':
                     widget = new OutfitWidget(x, y);
                     break;
-                case 'loadouts':
-                    widget = new LoadoutsWidget(x, y);
-                    break;
                 case 'statistics':
                     widget = new StatisticsWidget(null, x, y);
                     break;
@@ -394,9 +633,6 @@ class FVTacticalApp {
                     break;
                 case 'shipCore':
                     widget = new ShipCoreWidget(x, y);
-                    break;
-                case 'shipBerth':
-                    widget = new ShipBerthWidget(x, y);
                     break;
                 case 'shipHulls':
                     widget = new ShipHullsWidget(x, y);
@@ -475,10 +711,11 @@ class FVTacticalApp {
         }
         
         console.log('Initializing tech tree...');
-        const categories = await TechTree.getTechsByCategory();
-        console.log('Got categories:', Object.keys(categories), 'Total techs:', Object.values(categories).reduce((sum, techs) => sum + techs.length, 0));
-        
-        for (const [categoryName, techs] of Object.entries(categories)) {
+        const groups = await TechTree.getTechCategoryGroups();
+        const totalTechs = groups.reduce((sum, group) => sum + (group.techs || group.categories.flatMap(category => category.techs)).length, 0);
+        console.log('Got technology groups:', groups.map(group => group.name), 'Total techs:', totalTechs);
+
+        const createCategory = (categoryName, techs) => {
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'tech-category expanded';
             
@@ -507,6 +744,8 @@ class FVTacticalApp {
             
             const content = document.createElement('div');
             content.className = 'tech-category-content';
+            const contentInner = document.createElement('div');
+            contentInner.className = 'tech-category-content-inner';
             
             for (const tech of techs) {
                 const techItem = document.createElement('div');
@@ -548,12 +787,55 @@ class FVTacticalApp {
                     }
                 });
                 
-                content.appendChild(techItem);
+                contentInner.appendChild(techItem);
             }
             
+            content.appendChild(contentInner);
             categoryDiv.appendChild(header);
             categoryDiv.appendChild(content);
-            techTreeContainer.appendChild(categoryDiv);
+            return categoryDiv;
+        };
+
+        for (const group of groups) {
+            if (!group.categories) {
+                techTreeContainer.appendChild(createCategory(group.name, group.techs));
+                continue;
+            }
+
+            const supercategoryDiv = document.createElement('div');
+            supercategoryDiv.className = 'tech-supercategory expanded';
+
+            const header = document.createElement('div');
+            header.className = 'tech-supercategory-header';
+
+            const title = document.createElement('span');
+            title.className = 'tech-category-title';
+            title.textContent = group.name;
+
+            const indicator = document.createElement('span');
+            indicator.className = 'tech-available-indicator';
+            indicator.textContent = '0';
+            indicator.style.display = 'none';
+
+            header.appendChild(title);
+            header.appendChild(indicator);
+            header.addEventListener('click', () => {
+                supercategoryDiv.classList.toggle('expanded');
+                setTimeout(() => this.updateTechTreeIndicators(), 50);
+            });
+
+            const content = document.createElement('div');
+            content.className = 'tech-supercategory-content';
+            const contentInner = document.createElement('div');
+            contentInner.className = 'tech-supercategory-content-inner';
+            for (const category of group.categories) {
+                contentInner.appendChild(createCategory(category.name, category.techs));
+            }
+
+            content.appendChild(contentInner);
+            supercategoryDiv.appendChild(header);
+            supercategoryDiv.appendChild(content);
+            techTreeContainer.appendChild(supercategoryDiv);
         }
         
         await this.updateTechTree();
@@ -575,6 +857,20 @@ class FVTacticalApp {
                 indicator.textContent = count.toString();
                 indicator.style.display = count > 0 ? 'flex' : 'none';
             } else if (indicator) {
+                indicator.style.display = 'none';
+            }
+        });
+
+        document.querySelectorAll('.tech-supercategory').forEach(supercategoryDiv => {
+            const indicator = supercategoryDiv.querySelector('.tech-supercategory-header .tech-available-indicator');
+            if (!indicator) return;
+
+            if (!supercategoryDiv.classList.contains('expanded')) {
+                const count = Array.from(supercategoryDiv.querySelectorAll('.tech-item.available'))
+                    .filter(item => item.style.display !== 'none').length;
+                indicator.textContent = count.toString();
+                indicator.style.display = count > 0 ? 'flex' : 'none';
+            } else {
                 indicator.style.display = 'none';
             }
         });
@@ -643,6 +939,11 @@ class FVTacticalApp {
             const visible = Array.from(cat.querySelectorAll('.tech-item')).some(i => i.style.display !== 'none');
             cat.style.display = visible ? '' : 'none';
         });
+        document.querySelectorAll('.tech-supercategory').forEach(supercategory => {
+            const visible = Array.from(supercategory.querySelectorAll('.tech-category'))
+                .some(category => category.style.display !== 'none');
+            supercategory.style.display = visible ? '' : 'none';
+        });
 
         this.updateTechTreeIndicators();
         
@@ -679,10 +980,10 @@ class FVTacticalApp {
         }
     }
 
-    loadEmpire() {
+    async loadEmpire() {
         const data = this.dataManager.loadFromLocalStorage();
         if (data) {
-            this.loadEmpireData(data);
+            await this.loadEmpireData(data);
             this.showNotification('Empire loaded successfully', 'success');
         } else {
             this.showNotification('No saved empire found', 'warning');
@@ -718,7 +1019,20 @@ class FVTacticalApp {
         
         // Phase 1: Create all widgets and nodes
         const widgets = [];
+        const removedWidgetIds = new Set((data.widgets || [])
+            .filter(widgetData => ['loadouts', 'shipBerth', 'factories', 'shipyards'].includes(widgetData.type))
+            .map(widgetData => widgetData.id)
+            .filter(Boolean));
+        const legacyAssignmentWidgets = (data.widgets || [])
+            .filter(widgetData => ['loadouts', 'shipBerth'].includes(widgetData.type));
+        const referencesRemovedWidget = nodeId => {
+            for (const widgetId of removedWidgetIds) {
+                if (nodeId?.startsWith(`${widgetId}-`)) return true;
+            }
+            return false;
+        };
         for (const widgetData of data.widgets || []) {
+            if (['loadouts', 'shipBerth', 'factories', 'shipyards'].includes(widgetData.type)) continue;
             let widget;
             switch (widgetData.type) {
                 case 'ship':
@@ -733,9 +1047,7 @@ class FVTacticalApp {
                     widget = new OutfitWidget();
                     this.migrateLegacySystemsWidget(widgetData, widget);
                     break;
-                case 'loadouts': widget = new LoadoutsWidget(); break;
                 case 'shipCore': widget = new ShipCoreWidget(); break;
-                case 'shipBerth': widget = new ShipBerthWidget(); break;
                 case 'shipHulls': widget = new ShipHullsWidget(); break;
                 case 'statistics': widget = new StatisticsWidget(); break;
                 case 'reroute': widget = new RerouteWidget(); break;
@@ -772,8 +1084,16 @@ class FVTacticalApp {
         
         // Phase 2: Restore connections between nodes
         if (data.connections) {
-            this.nodeSystem.fromJSON(data.connections);
+            const retainedConnections = data.connections.filter(connection => {
+                return !removedWidgetIds.has(connection.sourceWidgetId) &&
+                    !removedWidgetIds.has(connection.targetWidgetId) &&
+                    !referencesRemovedWidget(connection.sourceNodeId) &&
+                    !referencesRemovedWidget(connection.targetNodeId);
+            });
+            this.nodeSystem.fromJSON(retainedConnections);
         }
+
+        this.migrateLegacyFleetAssignments(legacyAssignmentWidgets, data.connections || [], data.widgets || []);
         
         // Phase 3: Re-sync connection-dependent data now that connections exist
         for (const { widget } of widgets) {
@@ -785,9 +1105,80 @@ class FVTacticalApp {
         // Update UI
         await this.updateTechTree();
         this.updateEmpireDisplay();
+        this.updateFleetView();
+        const economyMode = document.getElementById('economyMode');
+        if (economyMode) {
+            economyMode.value = this.empire.economyMode;
+            const rulesButton = document.getElementById('campaignCostRules');
+            if (rulesButton) rulesButton.hidden = this.empire.economyMode !== 'campaign';
+        }
+        this.notifyEconomyModeChanged();
         this.preflightCheck.runCheck();
         
 
+    }
+
+    migrateLegacyFleetAssignments(legacyWidgets, connections, savedWidgets) {
+        if (legacyWidgets.length === 0) return;
+        const widgetById = new Map(savedWidgets.filter(widget => widget.id).map(widget => [widget.id, widget]));
+        const adjacency = new Map();
+        const getConnectionWidgetId = (connection, direction) => {
+            const explicitId = connection[`${direction}WidgetId`];
+            if (explicitId) return explicitId;
+            const nodeId = connection[`${direction}NodeId`];
+            return Array.from(widgetById.keys()).find(widgetId => nodeId?.startsWith(`${widgetId}-`));
+        };
+        for (const connection of connections) {
+            const sourceId = getConnectionWidgetId(connection, 'source');
+            const targetId = getConnectionWidgetId(connection, 'target');
+            if (!sourceId || !targetId) continue;
+            if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
+            if (!adjacency.has(targetId)) adjacency.set(targetId, new Set());
+            adjacency.get(sourceId).add(targetId);
+            adjacency.get(targetId).add(sourceId);
+        }
+
+        for (const legacyWidget of legacyWidgets) {
+            const visited = new Set([legacyWidget.id]);
+            const queue = [legacyWidget.id];
+            const shipDesignIds = new Set();
+            while (queue.length > 0) {
+                const currentId = queue.shift();
+                for (const neighborId of adjacency.get(currentId) || []) {
+                    if (visited.has(neighborId)) continue;
+                    visited.add(neighborId);
+                    queue.push(neighborId);
+                    const connectedWidget = widgetById.get(neighborId);
+                    if (connectedWidget && ['ship', 'shipPrototype'].includes(connectedWidget.type)) {
+                        shipDesignIds.add(neighborId);
+                    }
+                }
+            }
+
+            for (const designWidgetId of shipDesignIds) {
+                const design = widgetById.get(designWidgetId);
+                let fleetShip = this.empire.fleetShips.find(ship => ship.designWidgetId === designWidgetId);
+                if (!fleetShip) {
+                    const designName = design?.data?.shipData?.name || design?.title || 'Imported Ship';
+                    fleetShip = {
+                        id: `fleet-ship-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                        designWidgetId,
+                        name: designName,
+                        role: design?.data?.shipData?.role || '',
+                        berths: 0,
+                        loadout: '',
+                        legacyAssignments: []
+                    };
+                    this.empire.fleetShips.push(fleetShip);
+                }
+                if (!Array.isArray(fleetShip.legacyAssignments)) fleetShip.legacyAssignments = [];
+                fleetShip.legacyAssignments.push({
+                    type: legacyWidget.type,
+                    title: legacyWidget.title,
+                    data: legacyWidget.data || {}
+                });
+            }
+        }
     }
 
     migrateLegacySystemsWidget(widgetData, widgetInstance) {
@@ -896,13 +1287,9 @@ class FVTacticalApp {
             { type: 'troops', label: 'Troop Unit' },
             { type: 'missiles', label: 'Missile Design' },
             { type: 'outfit', label: 'Ship Outfit' },
-            { type: 'loadouts', label: 'Loadout' },
             { type: 'shipCore', label: 'Ship Core' },
-            { type: 'shipBerth', label: 'Ship Berths' },
             { type: 'shipHulls', label: 'Hull Plan' },
-            { type: 'statistics', label: 'Statistics Hub' },
-            { type: 'factories', label: 'Factory' },
-            { type: 'shipyards', label: 'Shipyard' }
+            { type: 'statistics', label: 'Statistics Hub' }
         ];
         
         widgetTypes.forEach(({ type, label }) => {
@@ -1355,6 +1742,7 @@ class WidgetManager {
 
     addWidget(widget) {
         this.widgets.set(widget.id, widget);
+        if (widget.type === 'shipCore') widget.refreshOutfitCoreAvailability?.();
         if (window.app) {
             widget.enableCascadeDrag = !!window.app.cascadeDragEnabled;
         }

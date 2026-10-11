@@ -1,0 +1,5 @@
+[
+  { "id": "reinforced-hull", "name": "Reinforced Hull", "hardpoints": 0, "utilities": 0, "equipment": 0, "combatValue": 1 },
+  { "id": "sensor-suite", "name": "Sensor Suite", "hardpoints": 0, "utilities": 1, "equipment": 0, "combatValue": 0 },
+  { "id": "cargo-pod", "name": "Cargo Pod", "hardpoints": 0, "utilities": 0, "equipment": 1, "combatValue": 0 }
+]
