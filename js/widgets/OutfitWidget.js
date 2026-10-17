@@ -214,7 +214,7 @@ class OutfitWidget extends Widget {
         const core = this.createSection('category-core', 'Core');
         this.addResourceCounter(core.titleElement, 'core');
         this.setSectionContent(core, `
-            <div class="input-group" id="${this.id}-core-source">
+            <div class="input-group outfit-core-source" id="${this.id}-core-source">
                 <select id="${this.id}-core-select" aria-label="Select operational core"></select>
             </div>
             <div class="outfit-core-properties" id="${this.id}-core-properties" aria-live="polite"></div>
@@ -227,16 +227,9 @@ class OutfitWidget extends Widget {
             this.addResourceCounter(section.titleElement, category);
             const weapons = category === 'emplacements'
                 ? this.renderEmplacementWeaponsSection()
-                : `<div class="outfit-utilities-subcategory">
-                    <h5 class="outfit-utilities-subcategory-title">Defenses</h5>
-                    ${this.renderWeaponCategory('defensive', 'Defensive Weapons')}
-                </div>`;
+                : this.renderWeaponCategory('defensive', 'Defensive Weapons');
             const categoryContent = `${weapons}<div class="outfit-resource-note" id="${this.id}-resource-${category}-note"></div>`;
             this.setSectionContent(section, categoryContent);
-            if (category === 'utilities') {
-                const defensesTitle = section.section.querySelector('.outfit-utilities-subcategory-title');
-                this.addResourceCounter(defensesTitle, 'hardpoints');
-            }
             sections.appendChild(section.section);
         }
 
@@ -313,7 +306,8 @@ class OutfitWidget extends Widget {
             } else if (target.id === `${this.id}-spinal-weapon`) {
                 this.outfitData.weapons.spinal = target.value;
             } else if (target.dataset.weaponField) {
-                this.updateWeaponField(target, target.dataset.weaponField, target.value);
+                const value = target.type === 'checkbox' ? target.checked : target.value;
+                this.updateWeaponField(target, target.dataset.weaponField, value);
                 this.refreshWeapons();
             } else if (target.dataset.arcCheckbox !== undefined) {
                 this.updateWeaponArc(target);
@@ -328,10 +322,12 @@ class OutfitWidget extends Widget {
             if (!button) return;
             const category = button.dataset.category;
             if (button.dataset.weaponAction === 'add') {
-                this.outfitData.weapons[category].push({
-                    weaponId: '', arc: '', count: 0,
+                const weapon = {
+                    weaponId: '', count: 0, isTurreted: false,
                     requiredTech: [], techRequirement: null
-                });
+                };
+                if (category === 'offensive') weapon.arc = '';
+                this.outfitData.weapons[category].push(weapon);
             } else if (button.dataset.weaponAction === 'remove') {
                 this.outfitData.weapons[category].splice(Number(button.dataset.index), 1);
             } else {
@@ -353,24 +349,39 @@ class OutfitWidget extends Widget {
             weapon.requiredTech = selected?.techRequirement ? [selected.techRequirement] : [];
             weapon.techRequirement = selected?.techRequirement || null;
             weapon.name = selected?.name || '';
-            weapon.arc = this.getValidWeaponArc(weapon.arc, selected?.isMain);
+        }
+        if (field === 'weaponId' || field === 'isTurreted') {
+            this.normalizeWeaponArc(weapon, category);
         }
     }
 
-    getValidWeaponArc(arc, isMain = false) {
+    getValidWeaponArc(arc, isMain = false, isTurreted = false) {
         const validArcs = Array.from(new Set(String(arc || '').split('')
             .filter(value => (isMain ? 'PS' : 'FPSA').includes(value))));
-        return (isMain ? validArcs.slice(0, 1) : validArcs).sort().join('');
+        return (isTurreted ? validArcs : validArcs.slice(0, 1)).sort().join('');
     }
 
     getWeaponDefinition(weaponId) {
         return this.getAllWeapons().find(item => item.id === weaponId);
     }
 
-    normalizeWeaponArc(weapon) {
-        if (weapon) weapon.arc = this.getValidWeaponArc(
+    isTurretOptionDisabled(weapon) {
+        return !weapon || Boolean(weapon.isMain) ||
+            (weapon.resourceType === 'emplacements' && Number(weapon.resourceCount) === 1);
+    }
+
+    normalizeWeaponArc(weapon, category) {
+        if (!weapon) return;
+        if (category === 'defensive') {
+            delete weapon.arc;
+            return;
+        }
+        const definition = this.getWeaponDefinition(weapon.weaponId);
+        if (this.isTurretOptionDisabled(definition)) weapon.isTurreted = false;
+        weapon.arc = this.getValidWeaponArc(
             weapon.arc,
-            this.getWeaponDefinition(weapon.weaponId)?.isMain
+            definition?.isMain,
+            Boolean(weapon.isTurreted)
         );
     }
 
@@ -379,18 +390,15 @@ class OutfitWidget extends Widget {
         const index = Number(target.dataset.index);
         const weapon = this.outfitData.weapons?.[category]?.[index];
         const row = target.closest('tr');
-        if (!weapon || !row) return;
+        if (category !== 'offensive' || !weapon || !row) return;
         const definition = this.getWeaponDefinition(weapon.weaponId);
         const checkedArcs = Array.from(row.querySelectorAll('[data-arc-checkbox]:checked'))
             .map(checkbox => checkbox.value);
-        if (definition?.isMain && target.checked) {
-            weapon.arc = this.getValidWeaponArc(target.value, true);
-            row.querySelectorAll('[data-arc-checkbox]').forEach(checkbox => {
-                checkbox.checked = checkbox.value === weapon.arc;
-            });
-        } else {
-            weapon.arc = this.getValidWeaponArc(checkedArcs.join(''), definition?.isMain);
-        }
+        const isTurreted = category === 'offensive' && weapon.isTurreted;
+        const selectedArcs = target.checked && !isTurreted
+            ? target.value
+            : checkedArcs.join('');
+        weapon.arc = this.getValidWeaponArc(selectedArcs, definition?.isMain, isTurreted);
     }
 
     parseCount(value) {
@@ -636,7 +644,16 @@ class OutfitWidget extends Widget {
         const techs = [core.reactor, core.engine, core.manifold, ...(Array.isArray(core.requiredTech) ? core.requiredTech : [])]
             .filter(value => typeof value === 'string' && value);
         return {
+            name: core.name || core.coreName || this.getSelectedCoreWidget()?.title || '',
             size: this.numericOrNull(core.size ?? core.powerplantSize),
+            operational: Boolean(core.operational),
+            developmentCost: this.numericOrNull(core.developmentCost),
+            reactorValue: this.numericOrNull(core.reactorValue),
+            engineValue: this.numericOrNull(core.engineValue),
+            manifoldValue: this.numericOrNull(core.manifoldValue),
+            reactorStability: this.numericOrNull(core.reactorStability),
+            engineEfficiency: this.numericOrNull(core.engineEfficiency),
+            manifoldEfficiency: this.numericOrNull(core.manifoldEfficiency),
             armorEfficiency: this.numericOrNull(core.armorEfficiency) ?? 1,
             hardpoints: this.numericOrNull(core.hardpoints),
             effectiveHulls: this.getEffectiveHullCount(),
@@ -672,11 +689,13 @@ class OutfitWidget extends Widget {
     }
 
     renderWeaponCategory(category, title) {
+        const turretColumn = category === 'offensive';
+        const arcColumn = category === 'offensive';
         return `<div class="${category}-weapons-group">
             <h5>${title}</h5>
             <button type="button" data-weapon-action="add" data-category="${category}">Add Weapon</button>
             <table class="weapons-table">
-                <thead><tr><th>Weapon</th><th>Arc</th><th>Count</th><th>Cost</th><th></th></tr></thead>
+                <thead><tr><th>Weapon</th>${turretColumn ? '<th>Turret</th>' : ''}${arcColumn ? '<th>Arc</th>' : ''}<th>Count</th><th>Cost</th><th></th></tr></thead>
                 <tbody id="${this.id}-${category}-weapons-body">${this.renderWeaponRows(category)}</tbody>
             </table>
         </div>`;
@@ -695,7 +714,9 @@ class OutfitWidget extends Widget {
 
     renderWeaponRows(category) {
         const weapons = this.outfitData.weapons?.[category] || [];
-        if (!weapons.length) return '<tr class="no-weapons"><td colspan="5">No weapons added</td></tr>';
+        if (!weapons.length) {
+            return `<tr class="no-weapons"><td colspan="${category === 'offensive' ? 6 : 4}">No weapons added</td></tr>`;
+        }
         return weapons.map((weapon, index) => this.renderWeaponRow(category, weapon, index)).join('');
     }
 
@@ -703,16 +724,25 @@ class OutfitWidget extends Widget {
         const all = category === 'offensive' ? this.getOffensiveWeapons() : this.getPDWeapons();
         const weaponOptions = this.renderWeaponOptions(all, weapon.weaponId);
         const selected = all.find(item => item.id === weapon.weaponId);
-        const arc = this.getValidWeaponArc(weapon.arc, selected?.isMain);
+        const turretDisabled = category === 'offensive' && this.isTurretOptionDisabled(selected);
+        const isTurreted = category === 'offensive' && !turretDisabled && !!weapon.isTurreted;
+        const arc = this.getValidWeaponArc(weapon.arc, selected?.isMain, isTurreted);
         const arcOption = (value, label) => {
             const disabled = selected?.isMain && (value === 'F' || value === 'A');
             return `<label class="arc-option${disabled ? ' disabled' : ''}"><input type="checkbox" data-arc-checkbox data-category="${category}" data-index="${index}" value="${value}" ${arc.includes(value) ? 'checked' : ''} ${disabled ? 'disabled' : ''}> ${label}</label>`;
         };
+        const arcField = category === 'offensive'
+            ? `<td class="arc-field">${arcOption('F', 'Fore')}${arcOption('P', 'Port')}${arcOption('S', 'Starboard')}${arcOption('A', 'Aft')}</td>`
+            : '';
+        const turretOption = category === 'offensive'
+            ? `<td class="turret-field"><label class="turret-option${turretDisabled ? ' disabled' : ''}"><input type="checkbox" data-weapon-field="isTurreted" data-category="${category}" data-index="${index}" aria-label="Install as turret" ${isTurreted ? 'checked' : ''} ${turretDisabled ? 'disabled' : ''}> Turret</label></td>`
+            : '';
         return `<tr>
             <td><select data-weapon-field="weaponId" data-category="${category}" data-index="${index}">
                 <option value="">Select weapon...</option>${weaponOptions}
             </select></td>
-            <td class="arc-field">${arcOption('F', 'Fore')}${arcOption('P', 'Port')}${arcOption('S', 'Starboard')}${arcOption('A', 'Aft')}</td>
+            ${turretOption}
+            ${arcField}
             <td><input type="number" min="0" step="1" value="${this.parseCount(weapon.count)}" data-weapon-field="count" data-category="${category}" data-index="${index}"></td>
             <td class="cost-cell">${OutfitWidget.escapeHTML(this.getWeaponCostDisplay(selected, this.parseCount(weapon.count)))}</td>
             <td><button type="button" data-weapon-action="remove" data-category="${category}" data-index="${index}" aria-label="Remove weapon">×</button></td>
@@ -737,12 +767,12 @@ class OutfitWidget extends Widget {
 
     getWeaponResourceUse() {
         const resourceUse = { hardpoints: 0, utilities: 0, emplacements: 0 };
-        const addWeapon = (weaponId, count, arc = '') => {
+        const addWeapon = (weaponId, count, arc = '', isTurreted = false, hasSelectableArc = false) => {
             const weapon = this.getWeaponDefinition(weaponId);
             if (!weapon || !weapon.resourceType ||
                 !Object.prototype.hasOwnProperty.call(resourceUse, weapon.resourceType)) return;
-            const validArc = this.getValidWeaponArc(arc, weapon.isMain);
-            const arcSurcharge = validArc.length > 1 ? 1 : 0;
+            const validArc = this.getValidWeaponArc(arc, weapon.isMain, isTurreted);
+            const arcSurcharge = hasSelectableArc && validArc.length > 1 ? 1 : 0;
             resourceUse[weapon.resourceType] += this.parseCount(count) *
                 (this.parseCount(weapon.resourceCount) + arcSurcharge);
         };
@@ -750,7 +780,13 @@ class OutfitWidget extends Widget {
         addWeapon(this.outfitData.weapons?.spinal, 1);
         for (const category of ['offensive', 'defensive']) {
             for (const weapon of this.outfitData.weapons?.[category] || []) {
-                addWeapon(weapon.weaponId, weapon.count, weapon.arc);
+                addWeapon(
+                    weapon.weaponId,
+                    weapon.count,
+                    weapon.arc,
+                    category === 'offensive' && weapon.isTurreted,
+                    category === 'offensive'
+                );
             }
         }
         return resourceUse;
@@ -923,8 +959,8 @@ class OutfitWidget extends Widget {
         const core = this.getCoreData();
         this.outfitData.selectedCore = core ? this.serializeCore(core) : null;
         this.outfitData.ignoreTechRequirements = this.ignoreTechRequirements = !!this.outfitData.ignoreTechRequirements;
-        this.outfitData.weapons.offensive.forEach(weapon => this.applyWeaponRequirements(weapon));
-        this.outfitData.weapons.defensive.forEach(weapon => this.applyWeaponRequirements(weapon));
+        this.outfitData.weapons.offensive.forEach(weapon => this.applyWeaponRequirements(weapon, 'offensive'));
+        this.outfitData.weapons.defensive.forEach(weapon => this.applyWeaponRequirements(weapon, 'defensive'));
         const requiredTech = this.getSelectedTechRequirements();
         this.outfitData.requiredTech = requiredTech;
         this.outfitData.techRequirement = requiredTech;
@@ -949,7 +985,7 @@ class OutfitWidget extends Widget {
         };
     }
 
-    applyWeaponRequirements(weapon) {
+    applyWeaponRequirements(weapon, category) {
         const definition = this.getAllWeapons().find(item => item.id === weapon.weaponId);
         const required = definition?.techRequirement || weapon.techRequirement || null;
         weapon.name = definition?.name || weapon.name || '';
@@ -960,7 +996,8 @@ class OutfitWidget extends Widget {
         weapon.resourceCount = definition?.resourceCount ?? weapon.resourceCount ?? null;
         weapon.isSpinal = definition?.isSpinal ?? weapon.isSpinal ?? false;
         weapon.isMain = definition?.isMain ?? weapon.isMain ?? false;
-        this.normalizeWeaponArc(weapon);
+        weapon.isTurreted = category === 'offensive' && Boolean(weapon.isTurreted);
+        this.normalizeWeaponArc(weapon, category);
     }
 
     loadSerializedData(data = {}) {
@@ -991,7 +1028,7 @@ class OutfitWidget extends Widget {
         };
         delete this.outfitData.developed;
         for (const category of ['offensive', 'defensive']) {
-            this.outfitData.weapons[category].forEach(weapon => this.applyWeaponRequirements(weapon));
+            this.outfitData.weapons[category].forEach(weapon => this.applyWeaponRequirements(weapon, category));
         }
         this.ignoreTechRequirements = data.ignoreTechRequirements ?? incoming.ignoreTechRequirements ?? false;
         this.outfitData.ignoreTechRequirements = this.ignoreTechRequirements;

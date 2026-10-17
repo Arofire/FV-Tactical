@@ -57,8 +57,8 @@
     ],
     "description": "Simulation systems accounting for relativistic effects"
   },
-  "chemomechanical": {
-    "name": "Chemomechanical",
+  "thermal": {
+    "name": "Thermal",
     "category": "Energy Generation",
     "abbreviation": "EG0",
     "cost": 0,
@@ -71,7 +71,7 @@
     "abbreviation": "EG1",
     "cost": 30,
     "prerequisites": [
-      "chemomechanical"
+      "thermal"
     ],
     "description": "Nuclear fission power generation"
   },
@@ -677,7 +677,7 @@
   },
   "heavy-chemical-laser": {
     "name": "Heavy Chemical LASER",
-    "category": "LASER - Ordnance",
+    "category": "LASER - ChemLASER",
     "cost": 0,
     "prerequisites": [
       "nuclear-cannon"
@@ -686,7 +686,7 @@
   },
   "light-chemical-laser": {
     "name": "Light Chemical LASER",
-    "category": "LASER - Ordnance",
+    "category": "LASER - ChemLASER",
     "cost": 0,
     "prerequisites": [
       "heavy-chemical-laser"
@@ -695,7 +695,7 @@
   },
   "pd-chemical-laser": {
     "name": "PD Chemical LASER",
-    "category": "LASER - Ordnance",
+    "category": "LASER - ChemLASER",
     "cost": 0,
     "prerequisites": [
       "heavy-chemical-laser"
@@ -704,7 +704,7 @@
   },
   "chemlaser-warhead": {
     "name": "ChemLASER Warhead",
-    "category": "LASER - Ordnance",
+    "category": "LASER - ChemLASER",
     "cost": 0,
     "prerequisites": [
       "heavy-chemical-laser"
@@ -713,7 +713,7 @@
   },
   "heavy-optical-aperture": {
     "name": "Heavy Optical Aperture",
-    "category": "LASER - Basic Collimator",
+    "category": "LASER - Optical Aperture",
     "cost": 0,
     "prerequisites": [
       "heavy-chemical-laser"
@@ -722,7 +722,7 @@
   },
   "light-optical-aperture": {
     "name": "Light Optical Aperture",
-    "category": "LASER - Basic Collimator",
+    "category": "LASER - Optical Aperture",
     "cost": 0,
     "prerequisites": [
       "heavy-optical-aperture"
@@ -731,7 +731,7 @@
   },
   "pd-optical-aperture": {
     "name": "PD Optical Aperture",
-    "category": "LASER - Basic Collimator",
+    "category": "LASER - Optical Aperture",
     "cost": 0,
     "prerequisites": [
       "heavy-optical-aperture"
@@ -1227,7 +1227,7 @@
   },
   "heavy-photolytic-xraser": {
     "name": "Heavy Photolytic XRASER",
-    "category": "LASER/Kinetic - XRASER",
+    "category": "Energetic - XRASER",
     "cost": 0,
     "prerequisites": [
       "heavy-railgun",
@@ -1237,7 +1237,7 @@
   },
   "light-photolytic-xraser": {
     "name": "Light Photolytic XRASER",
-    "category": "LASER/Kinetic - XRASER",
+    "category": "Energetic - XRASER",
     "cost": 0,
     "prerequisites": [
       "heavy-photolytic-xraser"
@@ -1246,7 +1246,7 @@
   },
   "advanced-photolytic-xraser": {
     "name": "Advanced Photolytic XRASER",
-    "category": "LASER/Kinetic - Advanced XRASER",
+    "category": "Energetic - Advanced XRASER",
     "cost": 0,
     "prerequisites": [
       "heavy-photolytic-xraser"
@@ -1255,7 +1255,7 @@
   },
   "heavy-z-pinch-graser": {
     "name": "Heavy Z-Pinch GRASER",
-    "category": "LASER/Kinetic - GRASER",
+    "category": "Energetic - GRASER",
     "cost": 0,
     "prerequisites": [
       "heavy-photolytic-xraser"
@@ -1264,7 +1264,7 @@
   },
   "light-z-pinch-graser": {
     "name": "Light Z-Pinch GRASER",
-    "category": "LASER/Kinetic - GRASER",
+    "category": "Energetic - GRASER",
     "cost": 0,
     "prerequisites": [
       "heavy-z-pinch-graser"
@@ -1273,7 +1273,7 @@
   },
   "advanced-z-pinch-graser": {
     "name": "Advanced Z-Pinch GRASER",
-    "category": "LASER/Kinetic - Advanced GRASER",
+    "category": "Energetic - Advanced GRASER",
     "cost": 0,
     "prerequisites": [
       "heavy-z-pinch-graser"
@@ -1282,7 +1282,7 @@
   },
   "pulsar-cannon": {
     "name": "PULSAR Cannon",
-    "category": "LASER/Kinetic - Star Cannon",
+    "category": "Energetic - Star Cannon",
     "cost": 0,
     "prerequisites": [
       "heavy-z-pinch-graser"
@@ -1291,7 +1291,7 @@
   },
   "blitzar-cannon": {
     "name": "BLITZAR Cannon",
-    "category": "LASER/Kinetic - Star Cannon",
+    "category": "Energetic - Star Cannon",
     "cost": 0,
     "prerequisites": [
       "pulsar-cannon"
@@ -1300,7 +1300,7 @@
   },
   "quasar-cannon": {
     "name": "QUASAR Cannon",
-    "category": "LASER/Kinetic - Star Cannon",
+    "category": "Energetic - Star Cannon",
     "cost": 0,
     "prerequisites": [
       "blitzar-cannon"
@@ -1309,7 +1309,7 @@
   },
   "heavy-plasma-cannon": {
     "name": "Heavy Plasma Cannon",
-    "category": "Kinetic/Particle - Plasma Cannon",
+    "category": "Plasma - Plasma Cannon",
     "cost": 0,
     "prerequisites": [
       "nuclear-coilgun",
@@ -1319,7 +1319,7 @@
   },
   "light-plasma-cannon": {
     "name": "Light Plasma Cannon",
-    "category": "Kinetic/Particle - Plasma Cannon",
+    "category": "Plasma - Plasma Cannon",
     "cost": 0,
     "prerequisites": [
       "heavy-plasma-cannon"
@@ -1328,7 +1328,7 @@
   },
   "spinal-plasma-cannon-01": {
     "name": "Spinal Plasma Cannon-01",
-    "category": "Kinetic/Particle - Plasma Cannon",
+    "category": "Plasma - Plasma Cannon",
     "cost": 0,
     "prerequisites": [
       "heavy-plasma-cannon"
@@ -1337,7 +1337,7 @@
   },
   "spinal-plasma-cannon-02": {
     "name": "Spinal Plasma Cannon-02",
-    "category": "Kinetic/Particle - Plasma Cannon",
+    "category": "Plasma - Plasma Cannon",
     "cost": 6,
     "prerequisites": [
       "spinal-plasma-cannon-01"
@@ -1346,7 +1346,7 @@
   },
   "spinal-plasma-cannon-03": {
     "name": "Spinal Plasma Cannon-03",
-    "category": "Kinetic/Particle - Plasma Cannon",
+    "category": "Plasma - Plasma Cannon",
     "cost": 6,
     "prerequisites": [
       "spinal-plasma-cannon-01"
@@ -1355,7 +1355,7 @@
   },
   "spinal-plasma-cannon-04": {
     "name": "Spinal Plasma Cannon-04",
-    "category": "Kinetic/Particle - Plasma Cannon",
+    "category": "Plasma - Plasma Cannon",
     "cost": 6,
     "prerequisites": [
       "spinal-plasma-cannon-01"
@@ -1364,7 +1364,7 @@
   },
   "spinal-plasma-cannon-05": {
     "name": "Spinal Plasma Cannon-05",
-    "category": "Kinetic/Particle - Plasma Cannon",
+    "category": "Plasma - Plasma Cannon",
     "cost": 6,
     "prerequisites": [
       "spinal-plasma-cannon-01"
@@ -1373,7 +1373,7 @@
   },
   "plasma-bottle-warhead": {
     "name": "Plasma Bottle Warhead",
-    "category": "Kinetic/Particle - Plasma Cannon",
+    "category": "Plasma - Plasma Cannon",
     "cost": 0,
     "prerequisites": [
       "heavy-plasma-cannon"
@@ -1382,7 +1382,7 @@
   },
   "troop-plasma": {
     "name": "Troop Plasma",
-    "category": "Kinetic/Particle - Miniature Plasma",
+    "category": "Plasma - Miniature Plasma",
     "cost": 0,
     "prerequisites": [
       "heavy-plasma-cannon"
@@ -1391,7 +1391,7 @@
   },
   "magnetic-ring": {
     "name": "Magnetic Ring",
-    "category": "Kinetic/Particle - MARS",
+    "category": "Plasma - MARS",
     "cost": 0,
     "prerequisites": [
       "heavy-plasma-cannon"
@@ -1400,7 +1400,7 @@
   },
   "pd-magnetic-ring": {
     "name": "PD Magnetic Ring",
-    "category": "Kinetic/Particle - MARS",
+    "category": "Plasma - MARS",
     "cost": 0,
     "prerequisites": [
       "magnetic-ring"
@@ -1409,7 +1409,7 @@
   },
   "spinal-corona-cannon-01": {
     "name": "Spinal Corona Cannon-01",
-    "category": "Kinetic/Particle - MARS",
+    "category": "Plasma - MARS",
     "cost": 0,
     "prerequisites": [
       "magnetic-ring"
@@ -1418,7 +1418,7 @@
   },
   "spinal-corona-cannon-02": {
     "name": "Spinal Corona Cannon-02",
-    "category": "Kinetic/Particle - MARS",
+    "category": "Plasma - MARS",
     "cost": 6,
     "prerequisites": [
       "spinal-corona-cannon-01"
@@ -1427,7 +1427,7 @@
   },
   "spinal-corona-cannon-03": {
     "name": "Spinal Corona Cannon-03",
-    "category": "Kinetic/Particle - MARS",
+    "category": "Plasma - MARS",
     "cost": 6,
     "prerequisites": [
       "spinal-corona-cannon-01"
@@ -1436,7 +1436,7 @@
   },
   "spinal-corona-cannon-04": {
     "name": "Spinal Corona Cannon-04",
-    "category": "Kinetic/Particle - MARS",
+    "category": "Plasma - MARS",
     "cost": 6,
     "prerequisites": [
       "spinal-corona-cannon-01"
@@ -1445,7 +1445,7 @@
   },
   "spinal-corona-cannon-05": {
     "name": "Spinal Corona Cannon-05",
-    "category": "Kinetic/Particle - MARS",
+    "category": "Plasma - MARS",
     "cost": 6,
     "prerequisites": [
       "spinal-corona-cannon-01"
@@ -1454,7 +1454,7 @@
   },
   "laser-coupled-particle-beam": {
     "name": "LASER Coupled Particle Beam",
-    "category": "Particle/LASER - Coupled Beam",
+    "category": "Ionic - Coupled Beam",
     "cost": 0,
     "prerequisites": [
       "heavy-multiplex-aperture",
@@ -1464,7 +1464,7 @@
   },
   "laser-coupled-particle-pd": {
     "name": "LASER Coupled Particle PD",
-    "category": "Particle/LASER - Coupled Beam",
+    "category": "Ionic - Coupled Beam",
     "cost": 0,
     "prerequisites": [
       "laser-coupled-particle-beam"
@@ -1473,7 +1473,7 @@
   },
   "relativistic-particle-beam": {
     "name": "Relativistic Particle Beam",
-    "category": "Particle/LASER - Relativistic Beam",
+    "category": "Ionic - Relativistic Beam",
     "cost": 0,
     "prerequisites": [
       "laser-coupled-particle-beam"
@@ -1482,7 +1482,7 @@
   },
   "pd-relativistic-particle-beam": {
     "name": "PD Relativistic Particle Beam",
-    "category": "Particle/LASER - Relativistic Beam",
+    "category": "Ionic - Relativistic Beam",
     "cost": 0,
     "prerequisites": [
       "relativistic-particle-beam"
@@ -1491,7 +1491,7 @@
   },
   "spinal-false-vacuum-projector-01": {
     "name": "Spinal False Vacuum Projector-01",
-    "category": "Particle/LASER - False Vacuum Projector",
+    "category": "Ionic - False Vacuum Projector",
     "cost": 0,
     "prerequisites": [
       "relativistic-particle-beam"
@@ -1500,7 +1500,7 @@
   },
   "spinal-false-vacuum-projector-02": {
     "name": "Spinal False Vacuum Projector-02",
-    "category": "Particle/LASER - False Vacuum Projector",
+    "category": "Ionic - False Vacuum Projector",
     "cost": 6,
     "prerequisites": [
       "spinal-false-vacuum-projector-01"
@@ -1509,7 +1509,7 @@
   },
   "spinal-false-vacuum-projector-03": {
     "name": "Spinal False Vacuum Projector-03",
-    "category": "Particle/LASER - False Vacuum Projector",
+    "category": "Ionic - False Vacuum Projector",
     "cost": 6,
     "prerequisites": [
       "spinal-false-vacuum-projector-01"
@@ -1518,7 +1518,7 @@
   },
   "spinal-false-vacuum-projector-04": {
     "name": "Spinal False Vacuum Projector-04",
-    "category": "Particle/LASER - False Vacuum Projector",
+    "category": "Ionic - False Vacuum Projector",
     "cost": 6,
     "prerequisites": [
       "spinal-false-vacuum-projector-01"
@@ -1527,7 +1527,7 @@
   },
   "spinal-false-vacuum-projector-05": {
     "name": "Spinal False Vacuum Projector-05",
-    "category": "Particle/LASER - False Vacuum Projector",
+    "category": "Ionic - False Vacuum Projector",
     "cost": 6,
     "prerequisites": [
       "spinal-false-vacuum-projector-01"

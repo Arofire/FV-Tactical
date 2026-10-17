@@ -26,7 +26,7 @@ A web-based node-driven design tool for tabletop wargaming spacecraft and milita
 - **Troops**: Manage military units with equipment and specializations
 - **Missiles**: Design guided weapons with warheads and guidance systems
 - **Ship Core**: Configure power technology, efficiencies, and gearing
-- **Hull Plan**: Visualize and export hull allocation
+- **Hull Plan**: Visualize hull allocation, export JSON keyed to the build-sheet form fields, or download a filled PDF build sheet
 
 ### 💰 **Economy Modes**
 - **Skirmish** keeps option costs in CV
@@ -140,6 +140,11 @@ The bundled weapon catalogue is imported from the [published weapons CSV](https:
 - **Storage**: LocalStorage for persistence, JSON for import/export
 - **Graphics**: SVG for connection rendering, CSS for styling
 - **Architecture**: Modular class-based design with event-driven updates
+- **Hull Plan PDF export**: Uses `data/Build Sheet Ship.pdf` and loads pinned `pdf-lib` 1.17.1 from jsDelivr only when PDF export is selected; an internet connection is required for that option.
+
+Hull Plan JSON exports use schema `fv-tactical.hull-plan/v2`. The `formFields` object is keyed by the PDF template's active field names, while `unavailableFormFields` lists values without a connected source and `formFieldMappingNotes` documents proposed mappings that may need adjustment. The filled PDF leaves unavailable text values blank and reports their count.
+
+The PDF/JSON emplacement-weapons list labels weapons as Tertiary (one emplacement), Secondary (two), or Primary (three or more), followed by the Turreted state when selected, available selected arcs, and the weapon name. Turreted arcs use initials; other selectable arcs use full names. The name itself identifies Main or Spinal weapons. Repeated identical entries are grouped with an `xN` quantity suffix.
 
 ## Technology Tree
 

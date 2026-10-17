@@ -432,19 +432,20 @@ class ShipWidget extends Widget {
             compositionCapacity
         );
         compositionSection.titleElement.appendChild(compositionCounter);
-        const militaryHullInputs = this.militaryHullTypes.map(({ key, label }) => `
-            <div class="composition-item">
-                <label for="${this.id}-hull-${key}">${label}</label>
-                <input type="number" class="hull-spin" data-hull="${key}" id="${this.id}-hull-${key}" min="0" step="1" value="${this.shipData.hullComposition[key] ?? 0}">
-                ${key === 'core' ? `<output class="composition-value class-core-value" id="${this.id}-core-hull-value" aria-label="Core hull count"></output>` : ''}
-            </div>
-        `).join('');
         const containmentHullInput = `
             <div class="composition-item">
                 <label for="${this.id}-containment-hulls">Containment</label>
                 <input type="number" class="hull-spin" id="${this.id}-containment-hulls" min="0" step="1" value="${this.getCivilHullSlots()}">
             </div>
         `;
+        const militaryHullInputs = this.militaryHullTypes.map(({ key, label }) => `
+            ${key === 'core' ? containmentHullInput : ''}
+            <div class="composition-item">
+                <label for="${this.id}-hull-${key}">${label}</label>
+                <input type="number" class="hull-spin" data-hull="${key}" id="${this.id}-hull-${key}" min="0" step="1" value="${this.shipData.hullComposition[key] ?? 0}">
+                ${key === 'core' ? `<output class="composition-value class-core-value" id="${this.id}-core-hull-value" aria-label="Core hull count"></output>` : ''}
+            </div>
+        `).join('');
         const civilHullInputs = this.civilHullTypes.map(({ key, label }) => `
             <div class="composition-item">
                 <label>${label}</label>
@@ -457,7 +458,6 @@ class ShipWidget extends Widget {
             <div class="composition-group military-hulls">
                 <div class="composition-grid">
                     ${militaryHullInputs}
-                    ${containmentHullInput}
                 </div>
             </div>
             <div class="containment-relationship" aria-hidden="true">

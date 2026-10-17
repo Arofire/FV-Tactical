@@ -580,31 +580,16 @@
     white-space: nowrap;
 }
 
+.outfit-core-source[hidden] {
+    display: none;
+}
+
 .outfit-resource-used.is-over-capacity {
     color: #ff6666;
 }
 
 .outfit-resource-capacity.has-unused-capacity {
     color: #f0f0f0;
-}
-
-.outfit-utilities-subcategory {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px solid #444;
-}
-
-.outfit-utilities-subcategory-title {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    margin: 0;
-    color: #4a90e2;
-    font-size: 13px;
-    font-weight: 600;
 }
 
 .outfit-resource-note {
@@ -824,7 +809,7 @@
 }
 
 .containment-relationship-stem {
-    left: 75%;
+    left: 25%;
     top: 0;
     height: 8px;
 }
@@ -1363,8 +1348,13 @@
 }
 
 .hull-plan-export {
+    position: relative;
+    display: inline-block;
     flex: 0 0 auto;
     margin-bottom: 8px;
+}
+
+.hull-plan-export-trigger {
     padding: 7px 10px;
     border: 1px solid #5378a6;
     border-radius: 4px;
@@ -1373,8 +1363,44 @@
     cursor: pointer;
 }
 
-.hull-plan-export:hover {
+.hull-plan-export-trigger:hover,
+.hull-plan-export-trigger[aria-expanded="true"] {
     background: #345a80;
+}
+
+.hull-plan-export-menu[hidden] {
+    display: none;
+}
+
+.hull-plan-export-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10001;
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    padding: 4px;
+    border: 1px solid #65788b;
+    border-radius: 4px;
+    background: #20262d;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+.hull-plan-export-menu button {
+    padding: 7px 9px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: #f0f5fa;
+    text-align: left;
+    cursor: pointer;
+}
+
+.hull-plan-export-menu button:hover,
+.hull-plan-export-menu button:focus-visible {
+    background: #345a80;
+    outline: none;
 }
 
 .hull-plan-open,
@@ -1542,6 +1568,13 @@
 .hull-plan-cell-code {
     color: #9cc9f1;
     font-size: 16px;
+}
+
+.hull-plan-weapon-instance {
+    color: #fff;
+    font-size: 8px;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .hull-plan-hangar { background: #004209; }
@@ -2274,11 +2307,13 @@
     color: #4a90e2;
 }
 
-.arc-option.disabled {
+.arc-option.disabled,
+.turret-option.disabled {
     color: #777;
     cursor: not-allowed;
 }
 
-.arc-option.disabled input {
+.arc-option.disabled input,
+.turret-option.disabled input {
     cursor: not-allowed;
 }
