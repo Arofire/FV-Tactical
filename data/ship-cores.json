@@ -1,0 +1,49 @@
+{
+  "reactor": {
+    "label": "Reactor",
+    "statField": "reactorStability",
+    "statLabel": "Reactor Threshold",
+    "formula": "base * pips * coreSize",
+    "costPerThreshold": 5,
+    "defaultStat": 0,
+    "options": {
+      "thermal": { "name": "Thermal", "requiredTech": ["thermal"], "base": 0.6 },
+      "fission": { "name": "Fission", "requiredTech": ["fission"], "base": 0.8 },
+      "fusion": { "name": "Fusion", "requiredTech": ["fusion"], "base": 1.2 },
+      "antimatter": { "name": "Antimatter", "requiredTech": ["antimatter"], "base": 1.6 },
+      "singularity": { "name": "Singularity", "requiredTech": ["singularity"], "base": 2 },
+      "zero-point-vacuum": { "name": "Zero Point Vacuum", "requiredTech": ["zero-point-vacuum"] }
+    }
+  },
+  "engine": {
+    "label": "Engine",
+    "statField": "engineEfficiency",
+    "statLabel": "Engine Exponent",
+    "formula": "base + perPip * pips",
+    "defaultStat": 0,
+    "options": {
+      "automation": { "name": "Automation", "requiredTech": ["automation"], "base": 4, "perPip": -0.18, "reaction": true },
+      "microgravity-engineering": { "name": "Microgravity Engineering", "requiredTech": ["microgravity-engineering"], "base": 2.71, "perPip": -0.09, "reaction": true },
+      "atomic-manufacturing": { "name": "Atomic Manufacturing", "requiredTech": ["atomic-manufacturing"], "base": 1.93, "perPip": -0.07, "reaction": true },
+      "metamaterials": { "name": "Metamaterials", "requiredTech": ["metamaterials"], "base": 1.6, "perPip": -0.05, "reaction": true },
+      "chronal-condensates": { "name": "Chronal Condensates", "requiredTech": ["chronal-condensates"], "base": 1.42, "perPip": -0.03, "reaction": true },
+      "boson-mastery": { "name": "Boson Mastery", "requiredTech": ["boson-mastery"], "reaction": true }
+    }
+  },
+  "manifold": {
+    "label": "Manifold",
+    "statField": "manifoldEfficiency",
+    "statLabel": "Manifold Multiplier",
+    "costPerEntropy": 1,
+    "formula": "base + perPip * pips",
+    "defaultStat": 0,
+    "options": {
+      "intelligence-models": { "name": "Intelligence Models", "requiredTech": ["intelligence-models"], "base": 1.089, "perPip": 0.041 },
+      "quantum-integration": { "name": "Quantum Integration", "requiredTech": ["quantum-integration"], "base": 0, "perPip": 0.24 },
+      "living-network": { "name": "Living Network", "requiredTech": ["living-network"], "base": 1.373, "perPip": 0.045 },
+      "oracle-machines": { "name": "Oracle Machines", "requiredTech": ["oracle-machines"], "base": 1.205, "perPip": 0.584 },
+      "conformal-field-computing": { "name": "Conformal Field Computing", "requiredTech": ["conformal-field-computing"], "base": 1.615, "perPip": 0.023 },
+      "relativistic-simulation": { "name": "Relativistic Simulation", "requiredTech": ["relativistic-simulation"] }
+    }
+  }
+}

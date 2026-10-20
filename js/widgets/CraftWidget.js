@@ -7,7 +7,7 @@ class CraftWidget extends Widget {
             role: '',
             notes: '',
             operational: false,
-            ignoreTechRequirements: false,
+            ignoreRequiredTech: false,
             profile: 'medium',
             roles: [],
             power: 'standard',
@@ -150,7 +150,7 @@ class CraftWidget extends Widget {
             <div class="ship-information-header">
                 <label class="ship-flag"><input id="${this.id}-operational" type="checkbox"> Operational</label>
             </div>
-            <div class="input-group"><label><input id="${this.id}-ignore-tech" type="checkbox"> Ignore Tech Requirements</label></div>
+            <div class="input-group"><label><input id="${this.id}-ignore-required-tech" type="checkbox"> Ignore Required Tech</label></div>
         `);
         sections.appendChild(info.section);
 
@@ -196,8 +196,8 @@ class CraftWidget extends Widget {
             this.craftData.operational = event.target.checked;
             this.refreshSummary();
         });
-        root.querySelector(`#${this.id}-ignore-tech`).addEventListener('change', event => {
-            this.craftData.ignoreTechRequirements = event.target.checked;
+        root.querySelector(`#${this.id}-ignore-required-tech`).addEventListener('change', event => {
+            this.craftData.ignoreRequiredTech = event.target.checked;
             this.refreshSummary();
         });
         root.querySelector(`#${this.id}-profile-select`).addEventListener('change', event => {
@@ -413,20 +413,22 @@ class CraftWidget extends Widget {
     }
 
     loadSerializedData(data = {}) {
-        const source = data.craftData || data;
+        const source = data;
         this.craftData = {
             name: source.name ?? 'New Craft',
             role: source.role ?? '',
-            notes: source.notes ?? source.description ?? '',
-            operational: Boolean(source.operational ?? source.developed),
-            ignoreTechRequirements: Boolean(source.ignoreTechRequirements),
+            notes: source.notes ?? '',
+            operational: Boolean(source.operational),
+            ignoreRequiredTech: Boolean(source.ignoreRequiredTech),
             profile: source.profile || 'medium',
-            roles: Array.isArray(source.roles) ? source.roles.slice() : (source.roleId ? [source.roleId] : []),
+            roles: Array.isArray(source.roles) ? source.roles.slice() : [],
             power: source.power || 'standard',
             requiredTech: Array.isArray(source.requiredTech) ? source.requiredTech.slice() : [],
             loadout: {
-                features: [], hardpoints: [], utilities: [], equipment: [],
-                ...(source.loadout || {})
+                features: Array.isArray(source.loadout?.features) ? source.loadout.features.slice() : [],
+                hardpoints: Array.isArray(source.loadout?.hardpoints) ? source.loadout.hardpoints.slice() : [],
+                utilities: Array.isArray(source.loadout?.utilities) ? source.loadout.utilities.slice() : [],
+                equipment: Array.isArray(source.loadout?.equipment) ? source.loadout.equipment.slice() : []
             }
         };
         this.enforceRoleLimit();
@@ -436,7 +438,7 @@ class CraftWidget extends Widget {
             this.element.querySelector(`#${this.id}-role`).value = this.craftData.role;
             this.element.querySelector(`#${this.id}-notes`).value = this.craftData.notes;
             this.element.querySelector(`#${this.id}-operational`).checked = this.craftData.operational;
-            this.element.querySelector(`#${this.id}-ignore-tech`).checked = this.craftData.ignoreTechRequirements;
+            this.element.querySelector(`#${this.id}-ignore-required-tech`).checked = this.craftData.ignoreRequiredTech;
             this.updateControls();
             this.updateStats();
         }
@@ -454,7 +456,7 @@ class CraftWidget extends Widget {
         [this.getProfile()?.name, ...(this.craftData.roles || []).map(id => this.getCatalogue('roles').find(role => role.id === id)?.name).filter(Boolean)]
             .filter(Boolean).forEach(value => badges.appendChild(this.createBadge(value, 'info')));
         if (this.craftData.operational) badges.appendChild(this.createBadge('Operational', 'success'));
-        if (this.craftData.ignoreTechRequirements) badges.appendChild(this.createBadge('Tech Unlocked', 'warning'));
+        if (this.craftData.ignoreRequiredTech) badges.appendChild(this.createBadge('Required Tech Ignored', 'warning'));
         container.appendChild(badges);
         const grid = document.createElement('div');
         grid.className = 'summary-grid';

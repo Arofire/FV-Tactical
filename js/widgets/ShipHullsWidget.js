@@ -1,4 +1,21 @@
 class ShipHullsWidget extends Widget {
+    static calculateEntropyBands(entropyCapacity, radiatorOffset = 0) {
+        if (!Number.isFinite(entropyCapacity) || entropyCapacity < 0 ||
+            !Number.isFinite(radiatorOffset)) {
+            return null;
+        }
+        return Array.from({ length: 6 }, (_, index) => {
+            const base = Math.min(
+                entropyCapacity,
+                Math.max(1, Math.round(entropyCapacity * (index + 1) / 6))
+            );
+            return Math.min(
+                entropyCapacity,
+                Math.max(0, base + radiatorOffset * (index + 1))
+            );
+        });
+    }
+
     constructor(x = 100, y = 100) {
         super('shipHulls', 'Hull Plan', x, y, null);
         this.hullPlanFlyoutLocked = false;
@@ -307,7 +324,6 @@ class ShipHullsWidget extends Widget {
 
         const componentTypes = {
             ship: 'Class',
-            shipPrototype: 'Class',
             shipCore: 'Core',
             outfit: 'Outfit'
         };
@@ -365,10 +381,10 @@ class ShipHullsWidget extends Widget {
 
     getModel(components = this.getConnectedComponents()) {
         const classes = this.getSourceData(components, 'Class');
-        const classData = classes[0]?.shipData || classes[0] || null;
+        const classData = classes[0]?.shipData || null;
         const outfits = this.getSourceData(components, 'Outfit')
             .map(data => {
-                const outfit = data?.outfitData || data || {};
+                const outfit = data?.outfitData || {};
                 return {
                     ...outfit,
                     spinalWeapon: data?.spinalWeapon || outfit.spinalWeapon || null
@@ -377,38 +393,25 @@ class ShipHullsWidget extends Widget {
             .filter(Boolean);
         const cores = outfits.map(outfit => outfit.selectedCore).filter(Boolean);
         const hullComposition = classData?.hullComposition || {};
-        const outfitModules = outfits.flatMap(outfit => outfit.systemsData?.modules || []);
-        const quantumModules = outfitModules.filter(module =>
-            /quantum|\bqsystem\b/i.test(`${module.moduleId || ''} ${module.name || ''}`)
-        );
-        const quantumHullCount = quantumModules.reduce(
-            (sum, module) => sum + this.getSystemModuleSize(module),
-            0
-        );
-
         const rawCounts = {
-            Emplacement: this.getCount(hullComposition, ['emplacement', 'Emplacement']),
-            Hangar: this.getCount(hullComposition, ['hangar', 'Hangar']),
-            Magazine: this.getCount(hullComposition, ['magazine', 'Magazine']),
-            System: null,
-            Quantum: quantumModules.length ? quantumHullCount : (classData ? 0 : null),
-            Freight: this.getCount(hullComposition, ['freight', 'Freight', 'containment']),
-            Tankage: this.getCount(hullComposition, ['tankage', 'Tankage', 'remass']),
-            Core: this.getCount(hullComposition, ['core', 'Core'])
+            Emplacement: this.getCount(hullComposition, ['emplacement']),
+            Hangar: this.getCount(hullComposition, ['hangar']),
+            Magazine: this.getCount(hullComposition, ['magazine']),
+            System: this.getCount(hullComposition, ['system']),
+            Freight: this.getCount(hullComposition, ['freight']),
+            Tankage: this.getCount(hullComposition, ['tankage']),
+            Core: this.getCount(hullComposition, ['core'])
         };
-        const systemHullCapacity = this.getCount(hullComposition, ['system', 'System']);
-        const fittedSystemHulls = systemHullCapacity === null
-            ? outfits.reduce((sum, outfit) => sum + this.numeric(outfit.systemsData?.usedSystemHulls), 0)
-            : systemHullCapacity;
-        rawCounts.System = fittedSystemHulls === 0 && !classData && !outfits.some(outfit =>
-            outfit.systemsData?.usedSystemHulls !== undefined
-        )
-            ? null
-            : Math.max(0, fittedSystemHulls - quantumHullCount);
+        if (rawCounts.System === null && outfits.length > 0) {
+            rawCounts.System = outfits.reduce(
+                (sum, outfit) => sum + this.numeric(outfit.resourceUse?.systems),
+                0
+            );
+        }
 
         if (rawCounts.Core === null && outfits.length) {
             const outfitCore = outfits
-                .map(outfit => this.getCount(outfit.resources || {}, ['core', 'Core']))
+                .map(outfit => this.getCount(outfit.resources || {}, ['core']))
                 .find(count => count !== null);
             if (outfitCore !== undefined) rawCounts.Core = outfitCore;
         }
@@ -426,7 +429,7 @@ class ShipHullsWidget extends Widget {
         const complete = Object.values(counts).every(count => count !== null);
         const total = complete ? knownTotal : null;
         const utilityValues = outfits
-            .map(outfit => this.getCount(outfit.resources || {}, ['utilities', 'utility']))
+            .map(outfit => this.getCount(outfit.resources || {}, ['utilities']))
             .filter(value => value !== null);
         const utilityTotal = utilityValues.length
             ? utilityValues.reduce((sum, value) => sum + value, 0)
@@ -439,7 +442,7 @@ class ShipHullsWidget extends Widget {
                 'armor', 'armour',
             ]));
         const outfitHardpoints = outfits
-            .map(outfit => this.getCount(outfit.resources || {}, ['hardpoints', 'Hardpoints']))
+            .map(outfit => this.getCount(outfit.resources || {}, ['hardpoints']))
             .find(count => count !== null);
         const hardpoints = outfitHardpoints ?? null;
         const containmentHullBasis = counts.Freight === null || counts.Tankage === null
@@ -476,29 +479,13 @@ class ShipHullsWidget extends Widget {
         return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
     }
 
-    getSystemModuleSize(module) {
-        const size = module.systemHulls ?? module.size ?? module.systemSize ?? module.hulls;
-        return size === undefined || size === null ? 1 : this.numeric(size);
-    }
-
     createHullItems(outfits) {
         const items = {
             Emplacement: [],
-            System: [],
-            Quantum: []
+            System: []
         };
         const emplacementWeapons = [];
         for (const outfit of outfits) {
-            const modules = outfit.systemsData?.modules || [];
-            for (const module of modules) {
-                const item = {
-                    name: module.name || module.moduleId || 'System module',
-                    count: this.getSystemModuleSize(module),
-                    moduleId: module.moduleId || null
-                };
-                items[/quantum|\bqsystem\b/i.test(`${module.moduleId || ''} ${module.name || ''}`) ? 'Quantum' : 'System'].push(item);
-            }
-
             const weapons = outfit.weapons || {};
             const addWeapon = (weapon, count) => {
                 const weaponCount = this.numeric(count);
@@ -641,21 +628,10 @@ class ShipHullsWidget extends Widget {
                 return;
             }
             for (const [key, item] of Object.entries(value)) {
-                const normalizedKey = key.toLowerCase();
-                if ((normalizedKey === 'technologies' || normalizedKey === 'technology' ||
-                    normalizedKey === 'techrequirements' || normalizedKey === 'techrequirement' ||
-                    normalizedKey === 'technologyid' || normalizedKey === 'technologyname' ||
-                    normalizedKey === 'techid' || normalizedKey === 'techs') && item) {
-                    const values = Array.isArray(item) ? item : [item];
-                    for (const entry of values) {
+                if (key === 'requiredTech' && Array.isArray(item)) {
+                    item.forEach(entry => {
                         if (typeof entry === 'string' && entry.trim()) found.add(entry.trim());
-                        else if (entry && typeof entry === 'object') {
-                            const name = entry.name || entry.id || entry.key;
-                            if (name) found.add(String(name));
-                            else Object.keys(entry).forEach(technology => found.add(technology));
-                        }
-                    }
-                    visit(item);
+                    });
                 } else {
                     visit(item);
                 }
@@ -695,10 +671,6 @@ class ShipHullsWidget extends Widget {
         const ship = classData || {};
         const outfitData = outfits;
         const sources = components.map(component => component.data);
-        const magneticSystems = outfitData.reduce(
-            (sum, outfit) => sum + this.numeric(outfit.systemsData?.heatManagement?.magneticSystems),
-            0
-        );
         const reserve = this.getMetricValue(sources, ['magneticReserve', 'barrierReserve', 'magneticBarrierReserve']);
         const barriers = this.getMetricValue(sources, ['magneticBarriers', 'magneticBarrier', 'barriers']);
         const activeArmor = this.getMetricValue(sources, ['activeArmor', 'activeArmour']);
@@ -706,17 +678,48 @@ class ShipHullsWidget extends Widget {
         const crewCapacity = this.getMetricValue(sources, [
             'crewBerthings', 'crewBerths', 'crewCapacity', 'berthingCapacity', 'berthCapacity'
         ]);
-        const activeRadiance = this.getMetricValue(sources, ['activeRadiance']);
-        const passiveRadiance = this.getMetricValue(sources, ['passiveRadiance']);
+        const sumDeviceMetric = (collection, property) => outfitData.reduce((total, outfit) =>
+            total + (Array.isArray(outfit.utilityDevices?.[collection])
+                ? outfit.utilityDevices[collection].reduce((subtotal, selection) => {
+                    const value = Number(selection?.[property]);
+                    return subtotal + (Number.isFinite(value)
+                        ? value * this.numeric(selection?.count)
+                        : 0);
+                }, 0)
+                : 0), 0);
+        const sumEntropyRadiance = () => outfitData.reduce((total, outfit) => {
+            const systems = outfit.systems?.entropy;
+            if (!systems || typeof systems !== 'object') return total;
+            return total + Object.values(systems).reduce((subtotal, selection) => {
+                const value = Number(selection?.radiance);
+                return subtotal + (Number.isFinite(value)
+                    ? value * this.numeric(selection?.count)
+                    : 0);
+            }, 0);
+        }, 0);
+        const radiatorRadiance = sumDeviceMetric('radiators', 'radiance');
+        const passiveDeviceRadiance = sumEntropyRadiance();
+        const combineRadiance = (existing, added) => {
+            if (existing === null && added === 0) return null;
+            const value = Number(existing);
+            return (Number.isFinite(value) ? value : 0) + added;
+        };
+        const activeRadiance = combineRadiance(
+            this.getMetricValue(sources, ['activeRadiance']),
+            radiatorRadiance
+        );
+        const passiveRadiance = combineRadiance(
+            this.getMetricValue(sources, ['passiveRadiance']),
+            passiveDeviceRadiance
+        );
         const coreInterval = this.getMetricValue([...sources, ...cores], ['coreInterval']);
         const entropyCapacity = counts.Emplacement === null || counts.System === null
             ? null
             : 2 * (counts.Emplacement + counts.System);
-        const entropyBands = !entropyCapacity
+        const radiatorOffset = sumDeviceMetric('radiators', 'offset');
+        const entropyBands = entropyCapacity === null
             ? null
-            : Array.from({ length: 6 }, (_, index) =>
-                Math.min(entropyCapacity, Math.max(1, Math.round(entropyCapacity * (index + 1) / 6)))
-            );
+            : ShipHullsWidget.calculateEntropyBands(entropyCapacity, radiatorOffset);
         const magazineCells = counts.Magazine === null ? null : counts.Magazine * 25;
         const hangarBays = counts.Hangar === null ? null : counts.Hangar * 4;
 
@@ -736,7 +739,7 @@ class ShipHullsWidget extends Widget {
                 label: 'Magnetic barriers / reserve',
                 value: barriers !== null || reserve !== null
                     ? [barriers !== null ? `${barriers} barriers` : null, reserve !== null ? `${reserve} reserve` : null].filter(Boolean).join(' · ')
-                    : magneticSystems > 0 ? `${magneticSystems} magnetic system(s); barrier/reserve not reported` : 'Not available from connected data',
+                    : 'Not available from connected data',
                 available: barriers !== null || reserve !== null
             },
             metric('Crew berthings', crewCapacity),
@@ -757,7 +760,6 @@ class ShipHullsWidget extends Widget {
             Hangar: 'H',
             Magazine: 'M',
             System: 'S',
-            Quantum: 'Q',
             Freight: 'F',
             Tankage: 'T',
             Core: 'C'
@@ -765,7 +767,7 @@ class ShipHullsWidget extends Widget {
     }
 
     static get STACK_ORDER() {
-        return ['Core', 'Quantum'];
+        return ['Core'];
     }
 
     static get FLOW_ORDER() {
@@ -842,7 +844,7 @@ class ShipHullsWidget extends Widget {
         armorTitle.textContent = 'Armor & field systems';
         const armorContent = document.createElement('div');
         armorContent.className = 'section-content';
-        armorContent.appendChild(this.createTable(null, [
+        armorContent.appendChild(this.createPropertiesGrid([
             metrics[0], metrics[1], metrics[2]
         ]));
         armorSection.append(armorTitle, armorContent);
@@ -937,41 +939,46 @@ class ShipHullsWidget extends Widget {
         }
         this.positionHullPlanFlyout();
 
-        container.appendChild(this.createTable(null, metrics.slice(3)));
+        const statisticsSection = document.createElement('section');
+        statisticsSection.className = 'widget-section hull-plan-metrics-section';
+        const statisticsTitle = document.createElement('h4');
+        statisticsTitle.className = 'section-title';
+        statisticsTitle.textContent = 'Ship statistics';
+        const statisticsContent = document.createElement('div');
+        statisticsContent.className = 'section-content';
+        statisticsContent.appendChild(this.createPropertiesGrid(metrics.slice(3)));
+        statisticsSection.append(statisticsTitle, statisticsContent);
+        container.appendChild(statisticsSection);
         if (model.technologies.length) {
             const techSection = document.createElement('section');
-            techSection.className = 'hull-plan-technologies';
+            techSection.className = 'widget-section hull-plan-metrics-section';
             const techTitle = document.createElement('h4');
+            techTitle.className = 'section-title';
             techTitle.textContent = 'Technologies';
-            const techList = document.createElement('p');
-            techList.textContent = model.technologies.join(', ');
-            techSection.append(techTitle, techList);
+            const techContent = document.createElement('div');
+            techContent.className = 'section-content';
+            techContent.appendChild(this.createPropertiesGrid([{
+                label: 'Required',
+                value: model.technologies.join(', '),
+                available: true
+            }]));
+            techSection.append(techTitle, techContent);
             container.appendChild(techSection);
         }
     }
 
-    createTable(title, rows) {
-        const table = document.createElement('table');
-        table.className = 'hull-plan-table';
-        if (title) {
-            const caption = document.createElement('caption');
-            caption.textContent = title;
-            table.appendChild(caption);
-        }
-        const body = document.createElement('tbody');
+    createPropertiesGrid(rows) {
+        const grid = document.createElement('dl');
+        grid.className = 'hull-plan-properties-grid';
         for (const row of rows) {
-            const tr = document.createElement('tr');
-            const label = document.createElement('th');
-            label.scope = 'row';
+            const label = document.createElement('dt');
             label.textContent = row.label;
-            const value = document.createElement('td');
+            const value = document.createElement('dd');
             value.textContent = row.value;
             if (!row.available) value.className = 'unavailable';
-            tr.append(label, value);
-            body.appendChild(tr);
+            grid.append(label, value);
         }
-        table.appendChild(body);
-        return table;
+        return grid;
     }
 
     getExportData() {
@@ -979,7 +986,8 @@ class ShipHullsWidget extends Widget {
         const model = this.getModel(components);
         const metrics = this.getMetrics(model);
         const layout = this.createLayout(model.counts);
-        const formFields = this.getPdfFormFields(model, layout, metrics);
+        const riggingTotals = this.getConnectedRiggingTotals(components);
+        const formFields = this.getPdfFormFields(model, layout, metrics, riggingTotals);
         const exportedCellCounts = {};
         const layoutCells = layout.cells.map(cell => {
             exportedCellCounts[cell.category] = (exportedCellCounts[cell.category] || 0) + 1;
@@ -1018,11 +1026,11 @@ class ShipHullsWidget extends Widget {
                 .map(([fieldName]) => fieldName),
             formFieldMappingNotes: {
                 ArmourHull: 'Uses a separate armour count when present; otherwise falls back to the outfit armour value.',
-                CampaignValue: 'Uses explicit industry/materiel values when present; Hull Plan does not calculate campaign cost.',
-                CombatValue: 'Uses explicit ship combatValue/combatCost data; Hull Plan does not calculate ship combat value.',
-                CoreCombatValue: 'Uses explicit core combatValue/combatCost data; Hull Plan does not calculate core combat value.',
+                CampaignValue: 'Uses the connected widgets\' campaign resource totals (IP, MP, and EP) for the active economy mode.',
+                CombatValue: 'Uses the connected widgets\' combat value total when the active economy mode provides CV.',
+                CoreCombatValue: 'Uses the connected core\'s serialized cost.',
                 CoreName: 'Uses the core name or widget title; falls back to the selected reactor, engine, and manifold names.',
-                DevValue: 'Uses ship developmentCost, falling back to Statistics developmentPoints.'
+                DevValue: 'Uses the connected ship class development cost, falling back to its serialized value. The totals object reports the full connected development-point total.'
             },
             hullCodes: { ...ShipHullsWidget.HULL_CODES },
             layout: {
@@ -1036,7 +1044,9 @@ class ShipHullsWidget extends Widget {
                 utility: model.utilityTotal,
                 containmentHullBasis: model.containmentHullBasis,
                 byHullType: model.counts,
-                requested: metrics
+                requested: metrics,
+                developmentPoints: riggingTotals.developmentPoints,
+                resourceCost: riggingTotals.resourceCost
             },
             technologies: model.technologies,
             unavailableMetrics: metrics.filter(item => !item.available).map(item => item.label),
@@ -1044,7 +1054,64 @@ class ShipHullsWidget extends Widget {
         };
     }
 
-    getPdfFormFields(model, layout, metrics) {
+    getConnectedRiggingTotals(components) {
+        const resourceCost = {};
+        let developmentPoints = null;
+        let classDevelopmentPoints = null;
+        let coreDevelopmentPoints = null;
+        const hasConnectedCoreWidget = components.some(component =>
+            component.sourceWidgetType === 'shipCore'
+        );
+        const visitedWidgets = new Set();
+        for (const component of components) {
+            if (!component.sourceWidgetId || visitedWidgets.has(component.sourceWidgetId)) continue;
+            visitedWidgets.add(component.sourceWidgetId);
+            const widget = window.widgetManager?.getWidget(component.sourceWidgetId);
+            for (const [unit, value] of Object.entries(widget?.getCostTotals?.() || {})) {
+                if (Number.isFinite(value)) {
+                    resourceCost[unit] = (resourceCost[unit] || 0) + value;
+                }
+            }
+
+            const serializedData = component.data || {};
+            const fallbackDevelopmentCost = component.sourceWidgetType === 'ship'
+                ? serializedData.shipData?.developmentCost
+                : component.sourceWidgetType === 'shipCore'
+                    ? serializedData.developmentCost
+                : component.sourceWidgetType === 'outfit' && !hasConnectedCoreWidget
+                    ? serializedData.outfitData?.selectedCore?.developmentCost
+                : null;
+            const widgetDevelopmentCost = widget?.getDevelopmentCost?.();
+            const value = Number.isFinite(widgetDevelopmentCost)
+                ? widgetDevelopmentCost
+                : fallbackDevelopmentCost;
+            if (Number.isFinite(value)) {
+                developmentPoints = (developmentPoints || 0) + value;
+                if (component.sourceWidgetType === 'ship') {
+                    classDevelopmentPoints = (classDevelopmentPoints || 0) + value;
+                } else if (component.sourceWidgetType === 'shipCore') {
+                    coreDevelopmentPoints = (coreDevelopmentPoints || 0) + value;
+                } else if (component.sourceWidgetType === 'outfit' && !hasConnectedCoreWidget) {
+                    coreDevelopmentPoints = (coreDevelopmentPoints || 0) + value;
+                }
+            }
+        }
+        return { developmentPoints, classDevelopmentPoints, coreDevelopmentPoints, resourceCost };
+    }
+
+    formatCampaignResourceCost(resourceCost) {
+        const values = ['IP', 'MP', 'EP']
+            .filter(unit => Number.isFinite(resourceCost[unit]))
+            .map(unit => `${resourceCost[unit]} ${unit}`);
+        return values.length ? values.join(' + ') : null;
+    }
+
+    getPdfFormFields(model, layout, metrics, riggingTotals = {
+        developmentPoints: null,
+        classDevelopmentPoints: null,
+        coreDevelopmentPoints: null,
+        resourceCost: {}
+    }) {
         const classData = model.classData || {};
         const coreComponent = model.components.find(component =>
             component.sourceWidgetType === 'shipCore'
@@ -1053,9 +1120,10 @@ class ShipHullsWidget extends Widget {
             ...(coreComponent?.data || {}),
             ...(model.cores[0] || {})
         };
+        const resourceCost = riggingTotals.resourceCost || {};
         const className = classData.name ||
             model.components.find(component =>
-                ['ship', 'shipPrototype'].includes(component.sourceWidgetType)
+                component.sourceWidgetType === 'ship'
             )?.sourceWidgetTitle || null;
         const outfitNames = model.outfits.map(outfit => outfit.name).filter(Boolean);
         const metricValue = label => {
@@ -1102,18 +1170,17 @@ class ShipHullsWidget extends Widget {
         const statistics = classData.statistics || {};
         const coreName = firstValue(
             core.name,
-            core.coreName,
             coreComponent?.sourceWidgetTitle,
             [core.reactor, core.engine, core.manifold].filter(Boolean).join(' / ')
         );
         const formFields = {
-            DevValue: firstValue(classData.developmentCost, statistics.developmentPoints),
-            CombatValue: firstValue(
-                classData.combatValue,
-                classData.combatCost,
-                this.getMetricValue([classData], ['combatValue', 'combatCost'])
+            DevValue: firstValue(
+                riggingTotals.classDevelopmentPoints,
+                classData.developmentCost,
+                statistics.developmentPoints
             ),
-            CampaignValue: classIndMatValue,
+            CombatValue: firstValue(resourceCost.CV),
+            CampaignValue: this.formatCampaignResourceCost(resourceCost) ?? classIndMatValue,
             HullWidth: firstValue(classData.hullWidth, classData.width, layout.cols),
             ClassOutfit: [
                 className,
@@ -1126,13 +1193,12 @@ class ShipHullsWidget extends Widget {
             SystemHull: model.counts.System,
             UtilityHull: model.utilityTotal,
             CoreName: coreName,
-            CoreSize: firstValue(core.powerplantSize, core.size),
+            CoreSize: firstValue(core.powerplantSize),
             CoreManifoldTech: core.manifold || null,
             UtilityReserved: model.outfits.length
                 ? model.outfits.reduce((sum, outfit) =>
                     sum + this.numeric(outfit.resourceUse?.utilities), 0)
                 : null,
-            QuantumHull: model.counts.Quantum,
             ArmourHits: model.outfits.length ? model.armor : null,
             CoreManifoldPips: firstValue(core.manifoldValue, core.manifoldPips),
             CoreManifoldEffect: firstValue(core.manifoldEfficiency, core.manifoldEffect),
@@ -1143,8 +1209,8 @@ class ShipHullsWidget extends Widget {
             CoreEnginePips: firstValue(core.engineValue, core.enginePips),
             CoreEngineEffect: firstValue(core.engineEfficiency, core.engineEffect),
             CoreOperational: typeof core.operational === 'boolean' ? core.operational : null,
-            CoreDevValue: firstValue(core.developmentCost, core.devValue),
-            CoreCombatValue: firstValue(core.combatValue, core.combatCost),
+            CoreDevValue: firstValue(riggingTotals.coreDevelopmentPoints, core.developmentCost),
+            CoreCombatValue: firstValue(core.cost, core.combatValue, core.combatCost),
             FreightHull: model.counts.Freight,
             TankageHull: model.counts.Tankage,
             HullCount: model.total,
@@ -1310,6 +1376,18 @@ class ShipHullsWidget extends Widget {
         const container = this.element.querySelector(`#${this.id}-plan-view`);
         if (!container) return;
         this.renderPlan(container, this.getModel());
+        this.refreshCostMetrics();
+    }
+
+    // Sums each resource across the widgets feeding this plan.
+    refreshCostMetrics() {
+        const totals = this.getConnectedRiggingTotals(this.getConnectedComponents());
+        this.setHeaderMetric('dvp', '', this.formatDevelopmentCost(totals.developmentPoints));
+        this.setHeaderMetric('cost', '', this.formatCostTotals(totals.resourceCost));
+    }
+
+    onEconomyModeChanged() {
+        this.refreshCostMetrics();
     }
 
     renderSummary(container) {

@@ -95,16 +95,20 @@ class Widget {
         const controls = document.createElement('div');
         controls.className = 'widget-controls';
 
+        const metrics = document.createElement('div');
+        metrics.className = 'widget-metrics';
+        this.metricsElement = metrics;
+
         const technologyBtn = document.createElement('button');
         technologyBtn.className = 'widget-control-btn technology';
         technologyBtn.textContent = '⚗';
-        technologyBtn.title = 'View technology requirements';
-        technologyBtn.setAttribute('aria-label', 'View technology requirements');
+        technologyBtn.title = 'View required tech';
+        technologyBtn.setAttribute('aria-label', 'View required tech');
         technologyBtn.onclick = (e) => {
             e.stopPropagation();
-            this.showTechnologyRequirements().catch(error => {
-                console.error('Unable to show technology requirements:', error);
-                window.app?.showNotification(`Unable to load technology requirements: ${error.message}`, 'error');
+            this.showRequiredTech().catch(error => {
+                console.error('Unable to show required tech:', error);
+                window.app?.showNotification(`Unable to load required tech: ${error.message}`, 'error');
             });
         };
 
@@ -208,7 +212,7 @@ class Widget {
         }
 
         this.sectionsContainer = sectionsContainer;
-
+        sectionsContainer.prepend(metrics);
         this.element.appendChild(header);
         this.element.appendChild(content);
 
@@ -244,6 +248,57 @@ class Widget {
         if (this.element) return; // prevent double init
         this.create();
         this.setupEventListeners();
+    }
+
+    // Cost per resource unit (e.g. { CV: 12 }) for widgets that contribute to a hull plan total.
+    getCostTotals() {
+        return {};
+    }
+
+    // DvP is formulaic; the formula does not exist yet.
+    getDevelopmentCost() {
+        return null;
+    }
+
+    // A null text removes the metric.
+    setHeaderMetric(key, label, text) {
+        if (!this.metricsElement) return;
+        let metric = this.metricsElement.querySelector(`[data-metric="${key}"]`);
+        if (text === null || text === undefined) {
+            metric?.remove();
+            return;
+        }
+        if (!metric) {
+            metric = document.createElement('span');
+            metric.className = 'widget-metric';
+            metric.dataset.metric = key;
+            const labelElement = document.createElement('span');
+            labelElement.className = 'widget-metric-label';
+            const valueElement = document.createElement('span');
+            valueElement.className = 'widget-metric-value';
+            metric.append(labelElement, valueElement);
+            if (key === 'dvp') this.metricsElement.prepend(metric);
+            else this.metricsElement.appendChild(metric);
+        }
+        metric.querySelector('.widget-metric-label').textContent = label || '';
+        metric.querySelector('.widget-metric-value').textContent = text;
+    }
+
+    // Skirmish shows CV; campaign shows the non-zero IP/MP/EP amounts.
+    formatCostTotals(totals) {
+        const units = window.empire?.economyMode === 'campaign' ? ['IP', 'MP', 'EP'] : ['CV'];
+        const parts = units
+            .filter(unit => Number(totals[unit]) > 0)
+            .map(unit => `${totals[unit].toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`);
+        return parts.length ? parts.join(' + ') : `0 ${units[0]}`;
+    }
+
+    formatDevelopmentCost(value) {
+        return `${Number.isFinite(value) ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'} DvP`;
+    }
+
+    refreshDevelopmentMetric() {
+        this.setHeaderMetric('dvp', '', this.formatDevelopmentCost(this.getDevelopmentCost()));
     }
 
     beginTitleEdit() {
@@ -294,7 +349,7 @@ class Widget {
         // Base implementation - override in subclasses that have tech-dependent content
     }
 
-    async showTechnologyRequirements() {
+    async showRequiredTech() {
         const technologies = await TechTree.ensureLoaded();
         const selectedTechIds = new Set();
         const visit = (value, key = '') => {
@@ -308,8 +363,7 @@ class Widget {
             }
             if (typeof value !== 'string') return;
 
-            if (/required.?tech|tech.?requirement/i.test(key) ||
-                /technology|reactor|engine|manifold/i.test(key)) {
+            if (key === 'requiredTech') {
                 if (Object.prototype.hasOwnProperty.call(technologies, value)) {
                     selectedTechIds.add(value);
                 }
@@ -329,12 +383,12 @@ class Widget {
         const header = document.createElement('header');
         const title = document.createElement('h2');
         title.id = `${this.id}-technology-title`;
-        title.textContent = `${this.title} — Technology Requirements`;
+        title.textContent = `${this.title} — Required Tech`;
         const closeButton = document.createElement('button');
         closeButton.type = 'button';
         closeButton.className = 'technology-modal-close';
         closeButton.textContent = '×';
-        closeButton.setAttribute('aria-label', 'Close technology requirements');
+        closeButton.setAttribute('aria-label', 'Close required tech');
         closeButton.addEventListener('click', () => modal.remove());
         header.append(title, closeButton);
 
@@ -350,12 +404,7 @@ class Widget {
         const getRequirementIds = techId => {
             const technology = technologies[techId];
             if (!technology) return [];
-            return [
-                ...(technology.prerequisites || []),
-                ...(technology.specialRequirement && technology.specialRequirement !== 'Tier3'
-                    ? [technology.specialRequirement]
-                    : [])
-            ].filter(id => technologies[id]);
+            return (technology.requiredTech || []).filter(id => technologies[id]);
         };
 
         const includeRequiredTech = techId => {
@@ -407,7 +456,7 @@ class Widget {
         if (selectedTechIds.size === 0) {
             const empty = document.createElement('li');
             empty.className = 'technology-tree-empty';
-            empty.textContent = 'No technology requirements found for the current selections.';
+            empty.textContent = 'No required tech found for the current selections.';
             tree.appendChild(empty);
         } else {
             const rootTechIds = [...requiredTechIds].filter(techId =>
@@ -1818,6 +1867,7 @@ class Widget {
         if (typeof widget.onParentLinked === 'function') {
             widget.onParentLinked(this);
         }
+        this.onChildrenChanged?.();
         this.autoArrangeHierarchy();
         if (window.widgetManager) {
             this.parents.forEach(parentId => {
@@ -1837,6 +1887,7 @@ class Widget {
         if (typeof widget.onParentUnlinked === 'function') {
             widget.onParentUnlinked(this);
         }
+        this.onChildrenChanged?.();
         this.autoArrangeHierarchy();
         if (window.widgetManager) {
             this.parents.forEach(parentId => {

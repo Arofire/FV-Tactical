@@ -1,0 +1,12 @@
+{
+  "general": [
+    { "id": "berthing", "name": "Berthing", "cost": 4, "requiredTech": [] },
+    { "id": "craft-launcher", "name": "Craft Launcher", "cost": 15, "requiredTech": ["automation"] },
+    { "id": "laser-generator", "name": "Laser Generator", "cost": 10, "requiredTech": [], "technologyCategory": "LASER - Generator" },
+    { "id": "tending", "name": "Tending", "cost": 5, "requiredTech": ["microgravity-engineering"] }
+  ],
+  "entropy": [
+    { "id": "hyperspace-vents", "name": "Hyperspace Vents", "cost": 20, "radiance": 2, "requiredTech": ["chronal-condensates"] },
+    { "id": "demon-clarifiers", "name": "Demon Clarifiers", "cost": 25, "radiance": 3, "requiredTech": ["boson-mastery"] }
+  ]
+}

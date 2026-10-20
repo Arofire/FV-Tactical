@@ -143,7 +143,7 @@ class StatisticsWidget extends Widget {
             item.textContent = widget.title || widget.type;
             list.appendChild(item);
 
-            if (!primaryShip && (widget.type === 'ship' || widget.type === 'shipPrototype')) {
+            if (!primaryShip && widget.type === 'ship') {
                 primaryShip = widget;
             }
         });
@@ -174,8 +174,12 @@ class StatisticsWidget extends Widget {
     }
 
     loadSerializedData(data) {
-        if (data.stats) {
-            this.stats = { ...this.stats, ...data.stats };
+        const incoming = data.stats;
+        if (incoming && typeof incoming === 'object') {
+            this.stats = Object.fromEntries(Object.keys(this.stats).map(key => [
+                key,
+                Object.prototype.hasOwnProperty.call(incoming, key) ? incoming[key] : this.stats[key]
+            ]));
             this.refreshStatInputs();
         }
         this.syncToShip();

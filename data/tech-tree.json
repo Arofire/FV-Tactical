@@ -4,7 +4,7 @@
     "category": "Information Technology",
     "abbreviation": "IT0",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Basic artificial intelligence and data processing systems"
   },
   "quantum-integration": {
@@ -12,7 +12,7 @@
     "category": "Information Technology",
     "abbreviation": "IT1",
     "cost": 30,
-    "prerequisites": [
+    "requiredTech": [
       "intelligence-models"
     ],
     "description": "Integration of quantum computing with classical systems"
@@ -22,7 +22,7 @@
     "category": "Information Technology",
     "abbreviation": "IT2",
     "cost": 60,
-    "prerequisites": [
+    "requiredTech": [
       "quantum-integration"
     ],
     "description": "Self-adapting and evolving network systems"
@@ -32,7 +32,7 @@
     "category": "Information Technology",
     "abbreviation": "IT3",
     "cost": 90,
-    "prerequisites": [
+    "requiredTech": [
       "living-network"
     ],
     "description": "Predictive computational systems with near-perfect accuracy"
@@ -42,7 +42,7 @@
     "category": "Information Technology",
     "abbreviation": "IT4",
     "cost": 120,
-    "prerequisites": [
+    "requiredTech": [
       "oracle-machines"
     ],
     "description": "Computing systems based on conformal field theory"
@@ -52,7 +52,7 @@
     "category": "Information Technology",
     "abbreviation": "IT5",
     "cost": 150,
-    "prerequisites": [
+    "requiredTech": [
       "conformal-field-computing"
     ],
     "description": "Simulation systems accounting for relativistic effects"
@@ -62,7 +62,7 @@
     "category": "Energy Generation",
     "abbreviation": "EG0",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Basic chemical and mechanical energy generation"
   },
   "fission": {
@@ -70,7 +70,7 @@
     "category": "Energy Generation",
     "abbreviation": "EG1",
     "cost": 30,
-    "prerequisites": [
+    "requiredTech": [
       "thermal"
     ],
     "description": "Nuclear fission power generation"
@@ -80,7 +80,7 @@
     "category": "Energy Generation",
     "abbreviation": "EG2",
     "cost": 60,
-    "prerequisites": [
+    "requiredTech": [
       "fission"
     ],
     "description": "Controlled nuclear fusion power systems"
@@ -90,7 +90,7 @@
     "category": "Energy Generation",
     "abbreviation": "EG3",
     "cost": 90,
-    "prerequisites": [
+    "requiredTech": [
       "fusion"
     ],
     "description": "Antimatter containment and power generation"
@@ -100,7 +100,7 @@
     "category": "Energy Generation",
     "abbreviation": "EG4",
     "cost": 120,
-    "prerequisites": [
+    "requiredTech": [
       "antimatter"
     ],
     "description": "Controlled singularity power extraction"
@@ -110,7 +110,7 @@
     "category": "Energy Generation",
     "abbreviation": "EG5",
     "cost": 150,
-    "prerequisites": [
+    "requiredTech": [
       "singularity"
     ],
     "description": "Zero-point energy harvesting from quantum vacuum"
@@ -120,7 +120,7 @@
     "category": "Materials Science",
     "abbreviation": "MS0",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Basic industrial automation and manufacturing"
   },
   "microgravity-engineering": {
@@ -128,7 +128,7 @@
     "category": "Materials Science",
     "abbreviation": "MS1",
     "cost": 30,
-    "prerequisites": [
+    "requiredTech": [
       "automation"
     ],
     "description": "Engineering and manufacturing in microgravity environments"
@@ -138,7 +138,7 @@
     "category": "Materials Science",
     "abbreviation": "MS2",
     "cost": 60,
-    "prerequisites": [
+    "requiredTech": [
       "microgravity-engineering"
     ],
     "description": "Precision manufacturing at the atomic level"
@@ -148,7 +148,7 @@
     "category": "Materials Science",
     "abbreviation": "MS3",
     "cost": 90,
-    "prerequisites": [
+    "requiredTech": [
       "atomic-manufacturing"
     ],
     "description": "Artificially structured materials with novel properties"
@@ -158,7 +158,7 @@
     "category": "Materials Science",
     "abbreviation": "MS4",
     "cost": 120,
-    "prerequisites": [
+    "requiredTech": [
       "metamaterials"
     ],
     "description": "Time-affecting material states and condensates"
@@ -168,7 +168,7 @@
     "category": "Materials Science",
     "abbreviation": "MS5",
     "cost": 150,
-    "prerequisites": [
+    "requiredTech": [
       "chronal-condensates"
     ],
     "description": "Complete control over bosonic matter states"
@@ -177,21 +177,21 @@
     "name": "Heavy Cannon",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Heavy kinetic projectile weapons"
   },
   "light-cannon": {
     "name": "Light Cannon",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Light kinetic projectile weapons"
   },
   "nuclear-cannon": {
     "name": "Nuclear Cannon",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-cannon"
     ],
     "description": "Nuclear-enhanced kinetic weapons"
@@ -200,49 +200,49 @@
     "name": "PD Gun Pack",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Point defense gun systems"
   },
   "pd-chaingun": {
     "name": "PD Chaingun",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Rapid-fire point defense systems"
   },
   "troop-light-weapons": {
     "name": "Troop Light Weapons",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Personal light weapons for troops"
   },
   "troop-heavy-weapons": {
     "name": "Troop Heavy Weapons",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Heavy weapons for infantry units"
   },
   "troop-anti-tank-weapons": {
     "name": "Troop Anti-Tank Weapons",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Anti-armor weapons for ground forces"
   },
   "troop-nuclear-weapons": {
     "name": "Troop Nuclear Weapons",
     "category": "Gun",
     "cost": 0,
-    "prerequisites": [],
+    "requiredTech": [],
     "description": "Tactical nuclear weapons for troops"
   },
   "heavy-chemrail": {
     "name": "Heavy Chemrail",
     "category": "Kinetic - Chemrail",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-cannon"
     ],
     "description": "Heavy chemical-assisted railgun systems"
@@ -251,7 +251,7 @@
     "name": "Nuclear Chemrail",
     "category": "Kinetic - Chemrail",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-chemrail"
     ],
     "description": "Nuclear-enhanced chemrail technology"
@@ -260,7 +260,7 @@
     "name": "Light Chemrail",
     "category": "Kinetic - Chemrail",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-chemrail"
     ],
     "description": "Light chemical-assisted railgun systems"
@@ -269,7 +269,7 @@
     "name": "PD Chemrail",
     "category": "Kinetic - Chemrail",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-chemrail"
     ],
     "description": "Point defense chemrail systems"
@@ -278,7 +278,7 @@
     "name": "Heavy Railgun",
     "category": "Kinetic - Railgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-chemrail"
     ],
     "description": "Heavy electromagnetic railgun systems"
@@ -287,7 +287,7 @@
     "name": "Medium Railgun",
     "category": "Kinetic - Railgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-railgun"
     ],
     "description": "Medium electromagnetic railgun systems"
@@ -296,7 +296,7 @@
     "name": "Light Railgun",
     "category": "Kinetic - Railgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-railgun"
     ],
     "description": "Light electromagnetic railgun systems"
@@ -305,7 +305,7 @@
     "name": "PD Railgun",
     "category": "Kinetic - Railgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-railgun"
     ],
     "description": "Point defense railgun systems"
@@ -314,7 +314,7 @@
     "name": "Heavy Coilgun",
     "category": "Kinetic - Coilgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-chemrail"
     ],
     "description": "Heavy magnetic coilgun systems"
@@ -323,7 +323,7 @@
     "name": "Nuclear Coilgun",
     "category": "Kinetic - Coilgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-coilgun"
     ],
     "description": "Nuclear-enhanced coilgun technology"
@@ -332,7 +332,7 @@
     "name": "Light Coilgun",
     "category": "Kinetic - Coilgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-coilgun"
     ],
     "description": "Light magnetic coilgun systems"
@@ -341,7 +341,7 @@
     "name": "PD Coilgun",
     "category": "Kinetic - Coilgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-coilgun"
     ],
     "description": "Point defense coilgun systems"
@@ -350,7 +350,7 @@
     "name": "Spinal Coilgun-01",
     "category": "Kinetic - Coilgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-coilgun"
     ],
     "description": "First generation spinal-mount coilgun"
@@ -359,7 +359,7 @@
     "name": "Spinal Coilgun-02",
     "category": "Kinetic - Coilgun",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-coilgun-01"
     ],
     "description": "Second generation spinal-mount coilgun"
@@ -368,7 +368,7 @@
     "name": "Spinal Coilgun-03",
     "category": "Kinetic - Coilgun",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-coilgun-01"
     ],
     "description": "Third generation spinal-mount coilgun"
@@ -377,7 +377,7 @@
     "name": "Spinal Coilgun-04",
     "category": "Kinetic - Coilgun",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-coilgun-01"
     ],
     "description": "Fourth generation spinal-mount coilgun"
@@ -386,7 +386,7 @@
     "name": "Spinal Coilgun-05",
     "category": "Kinetic - Coilgun",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-coilgun-01"
     ],
     "description": "Fifth generation spinal-mount coilgun"
@@ -395,17 +395,17 @@
     "name": "Troop Coilgun",
     "category": "Kinetic - Miniature Coilgun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-coilgun"
     ],
-    "description": "Personal coilgun weapons for troops",
-    "specialRequirement": "Tier3"
+    "requiredEmpireTier": 3,
+    "description": "Personal coilgun weapons for troops"
   },
   "heavy-macron-gun": {
     "name": "Heavy Macron Gun",
     "category": "Kinetic - Macron Gun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-railgun"
     ],
     "description": "Heavy particle acceleration weapons"
@@ -414,7 +414,7 @@
     "name": "Light Macron Gun",
     "category": "Kinetic - Macron Gun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-macron-gun"
     ],
     "description": "Light particle acceleration weapons"
@@ -423,7 +423,7 @@
     "name": "Heavy Helical Driver",
     "category": "Kinetic - Helical Driver",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-railgun",
       "heavy-coilgun"
     ],
@@ -433,7 +433,7 @@
     "name": "Nuclear Helical Driver",
     "category": "Kinetic - Helical Driver",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-helical-driver"
     ],
     "description": "Nuclear-enhanced helical driver technology"
@@ -442,7 +442,7 @@
     "name": "Light Helical Driver",
     "category": "Kinetic - Helical Driver",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-helical-driver"
     ],
     "description": "Light helical magnetic acceleration systems"
@@ -451,7 +451,7 @@
     "name": "PD Helical Driver",
     "category": "Kinetic - Helical Driver",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-helical-driver"
     ],
     "description": "Point defense helical driver systems"
@@ -460,7 +460,7 @@
     "name": "Spinal Helical Driver-01",
     "category": "Kinetic - Helical Driver",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-helical-driver"
     ],
     "description": "First generation spinal-mount helical driver"
@@ -469,7 +469,7 @@
     "name": "Spinal Helical Driver-02",
     "category": "Kinetic - Helical Driver",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-helical-driver-01"
     ],
     "description": "Second generation spinal-mount helical driver"
@@ -478,7 +478,7 @@
     "name": "Spinal Helical Driver-03",
     "category": "Kinetic - Helical Driver",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-helical-driver-01"
     ],
     "description": "Third generation spinal-mount helical driver"
@@ -487,7 +487,7 @@
     "name": "Spinal Helical Driver-04",
     "category": "Kinetic - Helical Driver",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-helical-driver-01"
     ],
     "description": "Fourth generation spinal-mount helical driver"
@@ -496,7 +496,7 @@
     "name": "Spinal Helical Driver-05",
     "category": "Kinetic - Helical Driver",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-helical-driver-01"
     ],
     "description": "Fifth generation spinal-mount helical driver"
@@ -505,7 +505,7 @@
     "name": "Spinal Thermonuclear Torch-01",
     "category": "Kinetic - Thermonuclear Torch",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-macron-gun"
     ],
     "description": "First generation spinal thermonuclear torch"
@@ -514,7 +514,7 @@
     "name": "Spinal Thermonuclear Torch-02",
     "category": "Kinetic - Thermonuclear Torch",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-thermonuclear-torch-01"
     ],
     "description": "Second generation spinal thermonuclear torch"
@@ -523,7 +523,7 @@
     "name": "Spinal Thermonuclear Torch-03",
     "category": "Kinetic - Thermonuclear Torch",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-thermonuclear-torch-01"
     ],
     "description": "Third generation spinal thermonuclear torch"
@@ -532,7 +532,7 @@
     "name": "Spinal Thermonuclear Torch-04",
     "category": "Kinetic - Thermonuclear Torch",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-thermonuclear-torch-01"
     ],
     "description": "Fourth generation spinal thermonuclear torch"
@@ -541,7 +541,7 @@
     "name": "Spinal Thermonuclear Torch-05",
     "category": "Kinetic - Thermonuclear Torch",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-thermonuclear-torch-01"
     ],
     "description": "Fifth generation spinal thermonuclear torch"
@@ -550,7 +550,7 @@
     "name": "Thermonuclear Cluster Warhead",
     "category": "Kinetic - Thermonuclear Torch",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-thermonuclear-torch-01"
     ],
     "description": "Cluster warhead with thermonuclear payloads"
@@ -559,7 +559,7 @@
     "name": "Disruptor",
     "category": "Kinetic - Disruptor",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-macron-gun"
     ],
     "description": "Matter-disrupting weapon systems"
@@ -568,7 +568,7 @@
     "name": "Disruptor Warhead",
     "category": "Kinetic - Disruptor",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "disruptor"
     ],
     "description": "Warheads with disruptor technology"
@@ -577,17 +577,17 @@
     "name": "Heavy Field Effect Gun",
     "category": "Kinetic - Field Effect Gun",
     "cost": 0,
-    "prerequisites": [
-      "nuclear-helical-driver"
+    "requiredTech": [
+      "nuclear-helical-driver",
+      "zero-point-vacuum"
     ],
-    "description": "Heavy field-manipulation weapon systems",
-    "specialRequirement": "zero-point-vacuum"
+    "description": "Heavy field-manipulation weapon systems"
   },
   "light-field-effect-gun": {
     "name": "Light Field Effect Gun",
     "category": "Kinetic - Field Effect Gun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-field-effect-gun"
     ],
     "description": "Light field-manipulation weapon systems"
@@ -596,17 +596,17 @@
     "name": "Light Vortex Cannon",
     "category": "Kinetic - Vortex Cannon",
     "cost": 0,
-    "prerequisites": [
-      "heavy-field-effect-gun"
+    "requiredTech": [
+      "heavy-field-effect-gun",
+      "zero-point-vacuum"
     ],
-    "description": "Light vortex generation weapons",
-    "specialRequirement": "zero-point-vacuum"
+    "description": "Light vortex generation weapons"
   },
   "medium-vortex-cannon": {
     "name": "Medium Vortex Cannon",
     "category": "Kinetic - Vortex Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "light-vortex-cannon"
     ],
     "description": "Medium vortex generation weapons"
@@ -615,7 +615,7 @@
     "name": "Heavy Vortex Cannon",
     "category": "Kinetic - Vortex Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "medium-vortex-cannon"
     ],
     "description": "Heavy vortex generation weapons"
@@ -624,7 +624,7 @@
     "name": "Vortex Warhead",
     "category": "Kinetic - Vortex Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-vortex-cannon"
     ],
     "description": "Warheads with vortex generation capability"
@@ -633,17 +633,17 @@
     "name": "Spinal Wave-motion Cannon-01",
     "category": "Kinetic - Wave-motion Cannon",
     "cost": 0,
-    "prerequisites": [
-      "heavy-field-effect-gun"
+    "requiredTech": [
+      "heavy-field-effect-gun",
+      "zero-point-vacuum"
     ],
-    "description": "First generation spinal wave-motion cannon",
-    "specialRequirement": "zero-point-vacuum"
+    "description": "First generation spinal wave-motion cannon"
   },
   "spinal-wave-motion-cannon-02": {
     "name": "Spinal Wave-motion Cannon-02",
     "category": "Kinetic - Wave-motion Cannon",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-wave-motion-cannon-01"
     ],
     "description": "Second generation spinal wave-motion cannon"
@@ -652,7 +652,7 @@
     "name": "Spinal Wave-motion Cannon-03",
     "category": "Kinetic - Wave-motion Cannon",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-wave-motion-cannon-01"
     ],
     "description": "Third generation spinal wave-motion cannon"
@@ -661,7 +661,7 @@
     "name": "Spinal Wave-motion Cannon-04",
     "category": "Kinetic - Wave-motion Cannon",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-wave-motion-cannon-01"
     ],
     "description": "Fourth generation spinal wave-motion cannon"
@@ -670,7 +670,7 @@
     "name": "Spinal Wave-motion Cannon-05",
     "category": "Kinetic - Wave-motion Cannon",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-wave-motion-cannon-01"
     ],
     "description": "Fifth generation spinal wave-motion cannon"
@@ -679,7 +679,7 @@
     "name": "Heavy Chemical LASER",
     "category": "LASER - ChemLASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-cannon"
     ],
     "description": "Heavy chemical laser weapon systems"
@@ -688,7 +688,7 @@
     "name": "Light Chemical LASER",
     "category": "LASER - ChemLASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-chemical-laser"
     ],
     "description": "Light chemical laser weapon systems"
@@ -697,7 +697,7 @@
     "name": "PD Chemical LASER",
     "category": "LASER - ChemLASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-chemical-laser"
     ],
     "description": "Point defense chemical laser systems"
@@ -706,7 +706,7 @@
     "name": "ChemLASER Warhead",
     "category": "LASER - ChemLASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-chemical-laser"
     ],
     "description": "Chemical laser warhead systems"
@@ -715,7 +715,7 @@
     "name": "Heavy Optical Aperture",
     "category": "LASER - Optical Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-chemical-laser"
     ],
     "description": "Heavy optical focusing systems"
@@ -724,7 +724,7 @@
     "name": "Light Optical Aperture",
     "category": "LASER - Optical Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-optical-aperture"
     ],
     "description": "Light optical focusing systems"
@@ -733,7 +733,7 @@
     "name": "PD Optical Aperture",
     "category": "LASER - Optical Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-optical-aperture"
     ],
     "description": "Point defense optical focusing systems"
@@ -742,7 +742,7 @@
     "name": "Heavy Multiplex Aperture",
     "category": "LASER - Multiplex Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-optical-aperture"
     ],
     "description": "Heavy multiplexed laser focusing systems"
@@ -751,7 +751,7 @@
     "name": "Light Multiplex Aperture",
     "category": "LASER - Multiplex Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-multiplex-aperture"
     ],
     "description": "Light multiplexed laser focusing systems"
@@ -760,7 +760,7 @@
     "name": "PD Multiplex Aperture",
     "category": "LASER - Multiplex Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-multiplex-aperture"
     ],
     "description": "Point defense multiplexed laser focusing systems"
@@ -769,7 +769,7 @@
     "name": "Heavy Array Aperture",
     "category": "LASER - Phased Array Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-multiplex-aperture"
     ],
     "description": "Heavy phased array laser systems"
@@ -778,7 +778,7 @@
     "name": "Light Array Aperture",
     "category": "LASER - Phased Array Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-array-aperture"
     ],
     "description": "Light phased array laser systems"
@@ -787,7 +787,7 @@
     "name": "PD Array Aperture",
     "category": "LASER - Phased Array Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-array-aperture"
     ],
     "description": "Point defense phased array laser systems"
@@ -796,7 +796,7 @@
     "name": "Heavy UB Aperture",
     "category": "LASER - Uninterrupted Beam Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-array-aperture"
     ],
     "description": "Heavy uninterrupted beam laser systems"
@@ -805,7 +805,7 @@
     "name": "Light UB Aperture",
     "category": "LASER - Uninterrupted Beam Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-ub-aperture"
     ],
     "description": "Light uninterrupted beam laser systems"
@@ -814,7 +814,7 @@
     "name": "PD UB Aperture",
     "category": "LASER - Uninterrupted Beam Aperture",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-ub-aperture"
     ],
     "description": "Point defense uninterrupted beam laser systems"
@@ -824,17 +824,17 @@
     "category": "LASER - Generator",
     "abbreviation": "MASER01",
     "cost": 0,
-    "prerequisites": [
-      "heavy-chemical-laser"
+    "requiredTech": [
+      "heavy-chemical-laser",
+      "fusion"
     ],
-    "description": "First generation magnetron MASER systems",
-    "specialRequirement": "fusion"
+    "description": "First generation magnetron MASER systems"
   },
   "magnetron-maser-generator-02": {
     "name": "Magnetron MASER Generator-02",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "magnetron-maser-generator-01"
     ],
     "description": "Second generation magnetron MASER systems"
@@ -843,7 +843,7 @@
     "name": "Magnetron MASER Generator-03",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "magnetron-maser-generator-01"
     ],
     "description": "Third generation magnetron MASER systems"
@@ -852,7 +852,7 @@
     "name": "Magnetron MASER Generator-04",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "magnetron-maser-generator-01"
     ],
     "description": "Fourth generation magnetron MASER systems"
@@ -861,7 +861,7 @@
     "name": "Magnetron MASER Generator-05",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "magnetron-maser-generator-01"
     ],
     "description": "Fifth generation magnetron MASER systems"
@@ -871,17 +871,17 @@
     "category": "LASER - Generator",
     "abbreviation": "UVASER01",
     "cost": 0,
-    "prerequisites": [
-      "magnetron-maser-generator-01"
+    "requiredTech": [
+      "magnetron-maser-generator-01",
+      "fusion"
     ],
-    "description": "First generation excimer UVASER systems",
-    "specialRequirement": "fusion"
+    "description": "First generation excimer UVASER systems"
   },
   "excimer-uvaser-generator-02": {
     "name": "Excimer UVASER Generator-02",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "excimer-uvaser-generator-01"
     ],
     "description": "Second generation excimer UVASER systems"
@@ -890,7 +890,7 @@
     "name": "Excimer UVASER Generator-03",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "excimer-uvaser-generator-01"
     ],
     "description": "Third generation excimer UVASER systems"
@@ -899,7 +899,7 @@
     "name": "Excimer UVASER Generator-04",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "excimer-uvaser-generator-01"
     ],
     "description": "Fourth generation excimer UVASER systems"
@@ -908,7 +908,7 @@
     "name": "Excimer UVASER Generator-05",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "excimer-uvaser-generator-01"
     ],
     "description": "Fifth generation excimer UVASER systems"
@@ -918,17 +918,17 @@
     "category": "LASER - Generator",
     "abbreviation": "FEL01",
     "cost": 0,
-    "prerequisites": [
-      "excimer-uvaser-generator-01"
+    "requiredTech": [
+      "excimer-uvaser-generator-01",
+      "antimatter"
     ],
-    "description": "First generation free electron laser systems",
-    "specialRequirement": "antimatter"
+    "description": "First generation free electron laser systems"
   },
   "fel-generator-02": {
     "name": "FEL Generator-02",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "fel-generator-01"
     ],
     "description": "Second generation free electron laser systems"
@@ -937,7 +937,7 @@
     "name": "FEL Generator-03",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "fel-generator-01"
     ],
     "description": "Third generation free electron laser systems"
@@ -946,7 +946,7 @@
     "name": "FEL Generator-04",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "fel-generator-01"
     ],
     "description": "Fourth generation free electron laser systems"
@@ -955,7 +955,7 @@
     "name": "FEL Generator-05",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "fel-generator-01"
     ],
     "description": "Fifth generation free electron laser systems"
@@ -965,17 +965,17 @@
     "category": "LASER - Generator",
     "abbreviation": "HASER01",
     "cost": 0,
-    "prerequisites": [
-      "fel-generator-01"
+    "requiredTech": [
+      "fel-generator-01",
+      "zero-point-vacuum"
     ],
-    "description": "First generation hyperon laser systems",
-    "specialRequirement": "zero-point-vacuum"
+    "description": "First generation hyperon laser systems"
   },
   "haser-generator-02": {
     "name": "HASER Generator-02",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "haser-generator-01"
     ],
     "description": "Second generation hyperon laser systems"
@@ -984,7 +984,7 @@
     "name": "HASER Generator-03",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "haser-generator-01"
     ],
     "description": "Third generation hyperon laser systems"
@@ -993,7 +993,7 @@
     "name": "HASER Generator-04",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "haser-generator-01"
     ],
     "description": "Fourth generation hyperon laser systems"
@@ -1002,7 +1002,7 @@
     "name": "HASER Generator-05",
     "category": "LASER - Generator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "haser-generator-01"
     ],
     "description": "Fifth generation hyperon laser systems"
@@ -1011,7 +1011,7 @@
     "name": "Hyperon Warhead",
     "category": "LASER - Generator",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "haser-generator-01"
     ],
     "description": "Hyperon-based warhead systems"
@@ -1020,17 +1020,17 @@
     "name": "Troop LASER Weapons",
     "category": "LASER - Miniature",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-multiplex-aperture"
     ],
-    "description": "Personal laser weapons for troops",
-    "specialRequirement": "Tier3"
+    "requiredEmpireTier": 3,
+    "description": "Personal laser weapons for troops"
   },
   "electron-gun": {
     "name": "Electron Gun",
     "category": "Particle - Electron Gun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-cannon"
     ],
     "description": "Basic electron beam weapon systems"
@@ -1039,7 +1039,7 @@
     "name": "Electron Repeater",
     "category": "Particle - Electron Gun",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "electron-gun"
     ],
     "description": "Rapid-fire electron beam systems"
@@ -1048,7 +1048,7 @@
     "name": "LINAC",
     "category": "Particle - Linear Accelerator",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "electron-gun"
     ],
     "description": "Linear particle acceleration systems"
@@ -1057,7 +1057,7 @@
     "name": "TORAC",
     "category": "Particle - Toroidal Accelerator",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "electron-gun"
     ],
     "description": "Toroidal particle acceleration systems"
@@ -1066,7 +1066,7 @@
     "name": "PD TORAC",
     "category": "Particle - Toroidal Accelerator",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "torac"
     ],
     "description": "Point defense toroidal accelerator systems"
@@ -1075,7 +1075,7 @@
     "name": "Neutron Beam",
     "category": "Particle - Neutron Ordnance",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "electron-gun"
     ],
     "description": "Neutron beam weapon systems"
@@ -1084,7 +1084,7 @@
     "name": "Neutron Beam Warhead",
     "category": "Particle - Neutron Ordnance",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "neutron-beam"
     ],
     "description": "Neutron beam warhead systems"
@@ -1093,7 +1093,7 @@
     "name": "Spinal TUR-LINAC-01",
     "category": "Particle - Transuranic Linear Accelerator",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "linac"
     ],
     "description": "First generation transuranic linear accelerator"
@@ -1102,7 +1102,7 @@
     "name": "Spinal TUR-LINAC-02",
     "category": "Particle - Transuranic Linear Accelerator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-tur-linac-01"
     ],
     "description": "Second generation transuranic linear accelerator"
@@ -1111,7 +1111,7 @@
     "name": "Spinal TUR-LINAC-03",
     "category": "Particle - Transuranic Linear Accelerator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-tur-linac-01"
     ],
     "description": "Third generation transuranic linear accelerator"
@@ -1120,7 +1120,7 @@
     "name": "Spinal TUR-LINAC-04",
     "category": "Particle - Transuranic Linear Accelerator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-tur-linac-01"
     ],
     "description": "Fourth generation transuranic linear accelerator"
@@ -1129,7 +1129,7 @@
     "name": "Spinal TUR-LINAC-05",
     "category": "Particle - Transuranic Linear Accelerator",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-tur-linac-01"
     ],
     "description": "Fifth generation transuranic linear accelerator"
@@ -1138,17 +1138,17 @@
     "name": "Troop TORAC",
     "category": "Particle - Miniature Toroidal Accelerator",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "torac"
     ],
-    "description": "Personal toroidal accelerator weapons for troops",
-    "specialRequirement": "Tier3"
+    "requiredEmpireTier": 3,
+    "description": "Personal toroidal accelerator weapons for troops"
   },
   "h-torac": {
     "name": "H-TORAC",
     "category": "Particle - Hydrogen Toroidal Accelerator",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "torac"
     ],
     "description": "Hydrogen-optimized toroidal accelerator systems"
@@ -1157,7 +1157,7 @@
     "name": "Muon Projector",
     "category": "Particle - Muon Projector",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "h-torac"
     ],
     "description": "Muon particle projection systems"
@@ -1166,7 +1166,7 @@
     "name": "PD Muon Projector",
     "category": "Particle - Muon Projector",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "muon-projector"
     ],
     "description": "Point defense muon projection systems"
@@ -1175,7 +1175,7 @@
     "name": "Hadron Cannon",
     "category": "Particle - Hadron Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-tur-linac-01"
     ],
     "description": "Hadron particle cannon systems"
@@ -1184,7 +1184,7 @@
     "name": "Spinal Graviton Beam-01",
     "category": "Particle - Graviton Beam",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "hadron-cannon"
     ],
     "description": "First generation graviton beam systems"
@@ -1193,7 +1193,7 @@
     "name": "Spinal Graviton Beam-02",
     "category": "Particle - Graviton Beam",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-graviton-beam-01"
     ],
     "description": "Second generation graviton beam systems"
@@ -1202,7 +1202,7 @@
     "name": "Spinal Graviton Beam-03",
     "category": "Particle - Graviton Beam",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-graviton-beam-01"
     ],
     "description": "Third generation graviton beam systems"
@@ -1211,7 +1211,7 @@
     "name": "Spinal Graviton Beam-04",
     "category": "Particle - Graviton Beam",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-graviton-beam-01"
     ],
     "description": "Fourth generation graviton beam systems"
@@ -1220,7 +1220,7 @@
     "name": "Spinal Graviton Beam-05",
     "category": "Particle - Graviton Beam",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-graviton-beam-01"
     ],
     "description": "Fifth generation graviton beam systems"
@@ -1229,7 +1229,7 @@
     "name": "Heavy Photolytic XRASER",
     "category": "Energetic - XRASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-railgun",
       "excimer-uvaser-generator-01"
     ],
@@ -1239,7 +1239,7 @@
     "name": "Light Photolytic XRASER",
     "category": "Energetic - XRASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-photolytic-xraser"
     ],
     "description": "Light X-ray laser systems with kinetic enhancement"
@@ -1248,7 +1248,7 @@
     "name": "Advanced Photolytic XRASER",
     "category": "Energetic - Advanced XRASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-photolytic-xraser"
     ],
     "description": "Advanced X-ray laser systems"
@@ -1257,7 +1257,7 @@
     "name": "Heavy Z-Pinch GRASER",
     "category": "Energetic - GRASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-photolytic-xraser"
     ],
     "description": "Heavy gamma-ray laser systems"
@@ -1266,7 +1266,7 @@
     "name": "Light Z-Pinch GRASER",
     "category": "Energetic - GRASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-z-pinch-graser"
     ],
     "description": "Light gamma-ray laser systems"
@@ -1275,7 +1275,7 @@
     "name": "Advanced Z-Pinch GRASER",
     "category": "Energetic - Advanced GRASER",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-z-pinch-graser"
     ],
     "description": "Advanced gamma-ray laser systems"
@@ -1284,7 +1284,7 @@
     "name": "PULSAR Cannon",
     "category": "Energetic - Star Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-z-pinch-graser"
     ],
     "description": "Pulsar-inspired energy weapon systems"
@@ -1293,7 +1293,7 @@
     "name": "BLITZAR Cannon",
     "category": "Energetic - Star Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "pulsar-cannon"
     ],
     "description": "Blitzar-inspired energy weapon systems"
@@ -1302,7 +1302,7 @@
     "name": "QUASAR Cannon",
     "category": "Energetic - Star Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "blitzar-cannon"
     ],
     "description": "Quasar-inspired energy weapon systems"
@@ -1311,7 +1311,7 @@
     "name": "Heavy Plasma Cannon",
     "category": "Plasma - Plasma Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "nuclear-coilgun",
       "torac"
     ],
@@ -1321,7 +1321,7 @@
     "name": "Light Plasma Cannon",
     "category": "Plasma - Plasma Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-plasma-cannon"
     ],
     "description": "Light plasma acceleration systems"
@@ -1330,7 +1330,7 @@
     "name": "Spinal Plasma Cannon-01",
     "category": "Plasma - Plasma Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-plasma-cannon"
     ],
     "description": "First generation spinal plasma cannon"
@@ -1339,7 +1339,7 @@
     "name": "Spinal Plasma Cannon-02",
     "category": "Plasma - Plasma Cannon",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-plasma-cannon-01"
     ],
     "description": "Second generation spinal plasma cannon"
@@ -1348,7 +1348,7 @@
     "name": "Spinal Plasma Cannon-03",
     "category": "Plasma - Plasma Cannon",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-plasma-cannon-01"
     ],
     "description": "Third generation spinal plasma cannon"
@@ -1357,7 +1357,7 @@
     "name": "Spinal Plasma Cannon-04",
     "category": "Plasma - Plasma Cannon",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-plasma-cannon-01"
     ],
     "description": "Fourth generation spinal plasma cannon"
@@ -1366,7 +1366,7 @@
     "name": "Spinal Plasma Cannon-05",
     "category": "Plasma - Plasma Cannon",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-plasma-cannon-01"
     ],
     "description": "Fifth generation spinal plasma cannon"
@@ -1375,7 +1375,7 @@
     "name": "Plasma Bottle Warhead",
     "category": "Plasma - Plasma Cannon",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-plasma-cannon"
     ],
     "description": "Contained plasma warhead systems"
@@ -1384,7 +1384,7 @@
     "name": "Troop Plasma",
     "category": "Plasma - Miniature Plasma",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-plasma-cannon"
     ],
     "description": "Personal plasma weapons for troops"
@@ -1393,7 +1393,7 @@
     "name": "Magnetic Ring",
     "category": "Plasma - MARS",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-plasma-cannon"
     ],
     "description": "Magnetically accelerated ring projectile systems"
@@ -1402,7 +1402,7 @@
     "name": "PD Magnetic Ring",
     "category": "Plasma - MARS",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "magnetic-ring"
     ],
     "description": "Point defense magnetic ring systems"
@@ -1411,7 +1411,7 @@
     "name": "Spinal Corona Cannon-01",
     "category": "Plasma - MARS",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "magnetic-ring"
     ],
     "description": "First generation spinal corona cannon"
@@ -1420,7 +1420,7 @@
     "name": "Spinal Corona Cannon-02",
     "category": "Plasma - MARS",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-corona-cannon-01"
     ],
     "description": "Second generation spinal corona cannon"
@@ -1429,7 +1429,7 @@
     "name": "Spinal Corona Cannon-03",
     "category": "Plasma - MARS",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-corona-cannon-01"
     ],
     "description": "Third generation spinal corona cannon"
@@ -1438,7 +1438,7 @@
     "name": "Spinal Corona Cannon-04",
     "category": "Plasma - MARS",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-corona-cannon-01"
     ],
     "description": "Fourth generation spinal corona cannon"
@@ -1447,7 +1447,7 @@
     "name": "Spinal Corona Cannon-05",
     "category": "Plasma - MARS",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-corona-cannon-01"
     ],
     "description": "Fifth generation spinal corona cannon"
@@ -1456,7 +1456,7 @@
     "name": "LASER Coupled Particle Beam",
     "category": "Ionic - Coupled Beam",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "heavy-multiplex-aperture",
       "linac"
     ],
@@ -1466,7 +1466,7 @@
     "name": "LASER Coupled Particle PD",
     "category": "Ionic - Coupled Beam",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "laser-coupled-particle-beam"
     ],
     "description": "Point defense LASER-coupled particle systems"
@@ -1475,7 +1475,7 @@
     "name": "Relativistic Particle Beam",
     "category": "Ionic - Relativistic Beam",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "laser-coupled-particle-beam"
     ],
     "description": "Relativistic particle acceleration systems"
@@ -1484,7 +1484,7 @@
     "name": "PD Relativistic Particle Beam",
     "category": "Ionic - Relativistic Beam",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "relativistic-particle-beam"
     ],
     "description": "Point defense relativistic particle systems"
@@ -1493,7 +1493,7 @@
     "name": "Spinal False Vacuum Projector-01",
     "category": "Ionic - False Vacuum Projector",
     "cost": 0,
-    "prerequisites": [
+    "requiredTech": [
       "relativistic-particle-beam"
     ],
     "description": "First generation false vacuum projection system"
@@ -1502,7 +1502,7 @@
     "name": "Spinal False Vacuum Projector-02",
     "category": "Ionic - False Vacuum Projector",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-false-vacuum-projector-01"
     ],
     "description": "Second generation false vacuum projection system"
@@ -1511,7 +1511,7 @@
     "name": "Spinal False Vacuum Projector-03",
     "category": "Ionic - False Vacuum Projector",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-false-vacuum-projector-01"
     ],
     "description": "Third generation false vacuum projection system"
@@ -1520,7 +1520,7 @@
     "name": "Spinal False Vacuum Projector-04",
     "category": "Ionic - False Vacuum Projector",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-false-vacuum-projector-01"
     ],
     "description": "Fourth generation false vacuum projection system"
@@ -1529,7 +1529,7 @@
     "name": "Spinal False Vacuum Projector-05",
     "category": "Ionic - False Vacuum Projector",
     "cost": 6,
-    "prerequisites": [
+    "requiredTech": [
       "spinal-false-vacuum-projector-01"
     ],
     "description": "Fifth generation false vacuum projection system"

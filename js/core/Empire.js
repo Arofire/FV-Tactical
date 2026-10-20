@@ -39,11 +39,11 @@ class Empire {
         await this.initializeAvailableTech();
         console.log('Empire: Available tech initialized');
 
-        // Auto-unlock (research) any technologies that have zero cost and no prerequisites
+        // Auto-unlock (research) any technologies that have zero cost and no required tech
         // These represent baseline starting capabilities the player should always have.
         const allTech = await TechTree.getAllTech();
         for (const [techId, tech] of allTech) {
-            if (tech.cost === 0 && tech.prerequisites.length === 0 && !tech.specialRequirement) {
+            if (tech.cost === 0 && tech.requiredTech.length === 0 && !tech.requiredEmpireTier) {
                 // Add directly to researched if not already
                 if (!this.researchedTech.has(techId)) {
                     this.researchedTech.add(techId);
@@ -57,11 +57,11 @@ class Empire {
         await this.updateAvailableTech();
     }
     
-    // Initialize technologies that have no prerequisites
+    // Initialize technologies that have no required tech
     async initializeAvailableTech() {
         const allTech = await TechTree.getAllTech();
         for (const [techId, tech] of allTech) {
-            if (tech.prerequisites.length === 0 && !tech.specialRequirement) {
+            if (tech.requiredTech.length === 0 && !tech.requiredEmpireTier) {
                 this.availableTech.add(techId);
             }
         }
@@ -92,23 +92,10 @@ class Empire {
         const allTech = await TechTree.getAllTech();
         for (const [techId, tech] of allTech) {
             if (!this.researchedTech.has(techId) && !this.availableTech.has(techId)) {
-                // Check if prerequisites are met
-                const prereqsMet = tech.prerequisites.every(prereq => 
-                    this.researchedTech.has(prereq)
-                );
-                
-                // Check special requirements
-                let specialReqMet = true;
-                if (tech.specialRequirement) {
-                    if (tech.specialRequirement === 'Tier3') {
-                        // For now, assume empire is always high enough tier
-                        specialReqMet = true;
-                    } else {
-                        specialReqMet = this.researchedTech.has(tech.specialRequirement);
-                    }
-                }
-                
-                if (prereqsMet && specialReqMet) {
+                const requiredTechMet = tech.requiredTech.every(id => this.researchedTech.has(id));
+                // Empire tier is not tracked yet, so requiredEmpireTier is treated as met
+
+                if (requiredTechMet) {
                     this.availableTech.add(techId);
                 }
             }
@@ -207,7 +194,18 @@ class Empire {
             },
             items: { ...(data.campaignCostRules?.items || {}) }
         };
-        this.fleetShips = Array.isArray(data.fleetShips) ? data.fleetShips : [];
+        this.fleetShips = Array.isArray(data.fleetShips)
+            ? data.fleetShips
+                .filter(ship => ship && typeof ship === 'object')
+                .map(ship => ({
+                    id: ship.id,
+                    designWidgetId: ship.designWidgetId,
+                    name: ship.name ?? '',
+                    role: ship.role ?? '',
+                    berths: ship.berths ?? 0,
+                    loadout: ship.loadout ?? ''
+                }))
+            : [];
 
         this.designs = data.designs || {
             ships: [],
@@ -221,8 +219,8 @@ class Empire {
         }
     }
 
-    // Get tech requirements for all designs
-    getTechRequirements() {
+    // Get missing required tech for all designs
+    getRequiredTech() {
         const requirements = new Set();
         
         for (const [type, designs] of Object.entries(this.designs)) {
@@ -231,7 +229,7 @@ class Empire {
                     for (const component of design.components) {
                         if (component.requiredTech) {
                             for (const tech of component.requiredTech) {
-                                const hasIgnoreTech = design.ignoreTechRequirements || false;
+                                const hasIgnoreTech = design.ignoreRequiredTech || false;
                                 if (!hasIgnoreTech && !this.hasTech(tech)) {
                                     requirements.add({
                                         tech: tech,

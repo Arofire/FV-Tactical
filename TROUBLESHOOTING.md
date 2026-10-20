@@ -11,7 +11,7 @@ Short, searchable fixes for recurring issues. Each section lists the fastest dia
 - **Fix:** Resolve every lookup through the widget wrapper.
   ```javascript
   const find = (id) => this.element?.querySelector(`#${id}`);
-  const ignoreTechCheckbox = find(`${this.id}-ignore-tech`);
+  const ignoreRequiredTechCheckbox = find(`${this.id}-ignore-required-tech`);
   ```
 - **Apply To:** All element queries in widget lifecycle hooks (notably `setupEventListeners`).
 
@@ -22,20 +22,20 @@ Short, searchable fixes for recurring issues. Each section lists the fastest dia
 - **Symptom:** Ship checkbox updates do not alter connected outfit widgets.
 - **Checklist:**
   1. Parent emits: `this.notifyOutfitChildrenToRefresh()` after state change.
-  2. Child implements `handleParentTechRequirementChange(parent)` and refreshes its UI.
+  2. Child implements `handleParentRequiredTechChange(parent)` and refreshes its UI.
   3. `onParentLinked` seeds initial state via `applyParentInheritance`.
 - **Fix Snippet:**
   ```javascript
   // parent (ShipWidget)
-  const toggle = find(`${this.id}-ignore-tech`);
+  const toggle = find(`${this.id}-ignore-required-tech`);
   toggle?.addEventListener('change', (e) => {
-      this.shipData.ignoreTechRequirements = e.target.checked;
+      this.shipData.ignoreRequiredTech = e.target.checked;
       this.notifyOutfitChildrenToRefresh();
   });
 
   // child (OutfitWidget)
-  handleParentTechRequirementChange(parent) {
-      this.ignoreTechRequirements = parent.shipData?.ignoreTechRequirements ?? false;
+  handleParentRequiredTechChange(parent) {
+      this.ignoreRequiredTech = parent.shipData?.ignoreRequiredTech ?? false;
       this.refreshWeaponDropdowns();
   }
   ```

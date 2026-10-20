@@ -6,7 +6,7 @@ class TroopsWidget extends Widget {
             name: 'New Troop Unit',
             role: '',
             operational: false,
-            ignoreTechRequirements: false,
+            ignoreRequiredTech: false,
             training: 'basic',
             features: [],
             formations: ['line'],
@@ -118,7 +118,7 @@ class TroopsWidget extends Widget {
             <div class="ship-information-header">
                 <label class="ship-flag"><input id="${this.id}-operational" type="checkbox"> Operational</label>
             </div>
-            <div class="input-group"><label><input id="${this.id}-ignore-tech" type="checkbox"> Ignore Tech Requirements</label></div>
+            <div class="input-group"><label><input id="${this.id}-ignore-required-tech" type="checkbox"> Ignore Required Tech</label></div>
         `);
         sections.appendChild(info.section);
 
@@ -169,8 +169,8 @@ class TroopsWidget extends Widget {
             this.troopData.operational = event.target.checked;
             this.refreshSummary();
         });
-        root.querySelector(`#${this.id}-ignore-tech`).addEventListener('change', event => {
-            this.troopData.ignoreTechRequirements = event.target.checked;
+        root.querySelector(`#${this.id}-ignore-required-tech`).addEventListener('change', event => {
+            this.troopData.ignoreRequiredTech = event.target.checked;
             this.refreshSummary();
         });
         root.querySelector(`#${this.id}-training`).addEventListener('change', event => {
@@ -403,22 +403,20 @@ class TroopsWidget extends Widget {
     }
 
     loadSerializedData(data = {}) {
-        const source = data.troopData || data;
-        let equipment = Array.isArray(source.equipment) ? source.equipment : [];
-        equipment = equipment.map(item => {
-            const id = typeof item === 'string'
-                ? item
-                : item.id || item.equipmentId || this.getCatalogue('equipment').find(definition => definition.name === item.name)?.id;
-            return { id, quantity: Math.max(1, Number(item.quantity || 1)) };
-        }).filter(item => item.id);
+        const source = data;
+        const equipment = Array.isArray(source.equipment)
+            ? source.equipment
+                .filter(item => item && typeof item === 'object' && typeof item.id === 'string')
+                .map(item => ({ id: item.id, quantity: Math.max(1, Number(item.quantity || 1)) }))
+            : [];
         this.troopData = {
             name: source.name || 'New Troop Unit',
-            role: source.role ?? source.cosmeticRole ?? source.type ?? '',
-            operational: Boolean(source.operational ?? source.developed),
-            ignoreTechRequirements: Boolean(source.ignoreTechRequirements),
+            role: source.role ?? '',
+            operational: Boolean(source.operational),
+            ignoreRequiredTech: Boolean(source.ignoreRequiredTech),
             training: source.training || 'basic',
             features: Array.isArray(source.features) ? [...new Set(source.features)] : [],
-            formations: Array.isArray(source.formations) ? source.formations.slice(0, 2) : [source.formation || 'line'],
+            formations: Array.isArray(source.formations) ? source.formations.slice(0, 2) : ['line'],
             equipment,
             requiredTech: Array.isArray(source.requiredTech) ? source.requiredTech.slice() : []
         };
@@ -428,7 +426,7 @@ class TroopsWidget extends Widget {
             this.element.querySelector(`#${this.id}-name`).value = this.troopData.name;
             this.element.querySelector(`#${this.id}-role`).value = this.troopData.role;
             this.element.querySelector(`#${this.id}-operational`).checked = this.troopData.operational;
-            this.element.querySelector(`#${this.id}-ignore-tech`).checked = this.troopData.ignoreTechRequirements;
+            this.element.querySelector(`#${this.id}-ignore-required-tech`).checked = this.troopData.ignoreRequiredTech;
             this.trimEquipmentToCapacity();
             this.updateControls();
             this.updateStats();
@@ -456,7 +454,7 @@ class TroopsWidget extends Widget {
         const training = this.getCatalogue('training').find(item => item.id === this.troopData.training);
         if (training) badges.appendChild(this.createBadge(training.name, 'info'));
         if (this.troopData.operational) badges.appendChild(this.createBadge('Operational', 'success'));
-        if (this.troopData.ignoreTechRequirements) badges.appendChild(this.createBadge('Tech Unlocked', 'warning'));
+        if (this.troopData.ignoreRequiredTech) badges.appendChild(this.createBadge('Required Tech Ignored', 'warning'));
         container.appendChild(badges);
         const grid = document.createElement('div');
         grid.className = 'summary-grid';

@@ -6,7 +6,7 @@ class MissilesWidget extends Widget {
             warhead: null,
             guidance: null,
             propulsion: null,
-            ignoreTechRequirements: false
+            ignoreRequiredTech: false
         };
         this.layoutMode = 'three-column';
         this.init();
@@ -30,8 +30,8 @@ class MissilesWidget extends Widget {
             </div>
             <div class="input-group">
                 <label>
-                    <input type="checkbox" id="${this.id}-ignore-tech" ${this.missileData.ignoreTechRequirements ? 'checked' : ''}>
-                    Ignore Tech Requirements
+                    <input type="checkbox" id="${this.id}-ignore-required-tech" ${this.missileData.ignoreRequiredTech ? 'checked' : ''}>
+                    Ignore Required Tech
                 </label>
             </div>
         `);
@@ -78,7 +78,13 @@ class MissilesWidget extends Widget {
     }
 
     loadSerializedData(data) {
-        this.missileData = data;
+        this.missileData = {
+            name: data.name ?? 'New Missile',
+            warhead: data.warhead ?? null,
+            guidance: data.guidance ?? null,
+            propulsion: data.propulsion ?? null,
+            ignoreRequiredTech: Boolean(data.ignoreRequiredTech)
+        };
         this.updateTitle();
     }
 
@@ -98,8 +104,8 @@ class MissilesWidget extends Widget {
             badgesDiv.appendChild(this.createBadge(this.missileData.warhead, 'info'));
         }
         
-        if (this.missileData.ignoreTechRequirements) {
-            badgesDiv.appendChild(this.createBadge('Tech Unlocked', 'warning'));
+        if (this.missileData.ignoreRequiredTech) {
+            badgesDiv.appendChild(this.createBadge('Required Tech Ignored', 'warning'));
         }
 
         container.appendChild(badgesDiv);

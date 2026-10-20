@@ -13,19 +13,19 @@ A web-based node-driven design tool for tabletop wargaming spacecraft and milita
 - Hull Plan diagrams and structured JSON exports
 
 ### 🔬 **Technology Tree**
-- Visual tech tree with prerequisites and dependencies
+- Visual tech tree with required tech and dependencies
 - Research management with tech point system
-- Option to ignore tech requirements for creative mode
+- Option to ignore required tech for creative mode
 - Component availability based on researched technologies
 
 ### 🎮 **Interactive Widgets**
 - **Ships**: Design hull composition and allocate containment between Freight and Tankage with the Cargo/Remass slider
-- **Outfit**: Select an operational core widget, then configure Emplacements, Utilities, and Systems; Hardpoints are reserved for Fleet view, defensive weapons are listed under Utilities, and oversized emplacement weapons use the spinal slot. Multi-arc weapons use one additional resource per weapon; main weapons are restricted to a single Port or Starboard arc.
+- **Outfit**: Select an operational core widget, then configure Emplacements, Utilities, and Systems. Utilities include defensive weapons, selectable radiators, and defenses; Systems include general and entropy systems. Each utility or system device uses one corresponding resource, technology-gated options follow researched tech, and Utilities/Systems show section cost subtotals in CV or Materiel. Radiator and entropy-system radiance, plus radiator offsets to the six entropy bands, appear in the Hull Plan. Hardpoints are reserved for Fleet view and oversized emplacement weapons use the spinal slot. Multi-arc weapons use one additional resource per weapon; main weapons are restricted to a single Port or Starboard arc. Gear burn analysis shows entropy, Remass per burn, and the maximum burns supported by the connected ship's Remass.
 - **QSystems**: Consume System resources and replace the same number of System hulls with Quantum hulls in the Hull Plan
 - **Craft**: Create smaller fighters, bombers, and support vessels
 - **Troops**: Manage military units with equipment and specializations
 - **Missiles**: Design guided weapons with warheads and guidance systems
-- **Ship Core**: Configure power technology, efficiencies, and gearing
+- **Ship Core**: Pick reactor, engine, and manifold technologies from `data/ship-cores.json`, allocate pips between them, and configure up to four named gears with instability. Core cost is 5 per point of reactor threshold (rounded down), plus the engine's thrust demand (`T^(1/E) * H`, times 1/3 for engines flagged `reaction`), plus 1 per point of manifold entropy capacity. Cost needs a connected class for its hull count; the outfit adds its armour hulls.
 - **Hull Plan**: Visualize hull allocation, export JSON keyed to the build-sheet form fields, or download a filled PDF build sheet
 
 ### 💰 **Economy Modes**
@@ -41,7 +41,7 @@ A web-based node-driven design tool for tabletop wargaming spacecraft and milita
 
 ### ⚠️ **Preflight Validation**
 - Real-time error detection and warnings
-- Technology requirement checking
+- Required tech checking
 - Component compatibility validation
 - Power balance analysis
 - Missing component alerts
@@ -127,6 +127,8 @@ FV-Tactical/
 ├── data/
 │   ├── tech-tree.json      # Technology definitions
 │   ├── weapons.json        # Imported weapon catalogue
+│   ├── utilities.json      # Outfit radiators and defenses
+│   ├── systems.json        # Outfit general and entropy systems
 │   └── *.json              # Craft and troop catalogues
 ├── scripts/
 │   └── import_weapons.py   # Refresh the weapon catalogue from its published CSV
@@ -142,7 +144,7 @@ The bundled weapon catalogue is imported from the [published weapons CSV](https:
 - **Architecture**: Modular class-based design with event-driven updates
 - **Hull Plan PDF export**: Uses `data/Build Sheet Ship.pdf` and loads pinned `pdf-lib` 1.17.1 from jsDelivr only when PDF export is selected; an internet connection is required for that option.
 
-Hull Plan JSON exports use schema `fv-tactical.hull-plan/v2`. The `formFields` object is keyed by the PDF template's active field names, while `unavailableFormFields` lists values without a connected source and `formFieldMappingNotes` documents proposed mappings that may need adjustment. The filled PDF leaves unavailable text values blank and reports their count.
+Hull Plan JSON exports use schema `fv-tactical.hull-plan/v2`. The `formFields` object is keyed by the PDF template's active field names, while `unavailableFormFields` lists values without a connected source and `formFieldMappingNotes` describes their mappings. The `totals` object includes development points and the connected widgets' resource-cost totals. `CombatValue` is populated when the active economy mode provides CV; `CampaignValue` lists campaign resource units (IP, MP, and EP) when available. The filled PDF leaves unavailable text values blank and reports their count.
 
 The PDF/JSON emplacement-weapons list labels weapons as Tertiary (one emplacement), Secondary (two), or Primary (three or more), followed by the Turreted state when selected, available selected arcs, and the weapon name. Turreted arcs use initials; other selectable arcs use full names. The name itself identifies Main or Spinal weapons. Repeated identical entries are grouped with an `xN` quantity suffix.
 

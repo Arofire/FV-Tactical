@@ -8,10 +8,10 @@ class PreflightCheck {
         this.alerts = [];
         this.warnings = [];
         this.errors = [];
-        this.techRequirements = [];
+        this.requiredTechIssues = [];
         
         // Track issues by widget ID
-        this.widgetIssues = new Map(); // widgetId -> { alerts: [], warnings: [], errors: [], techRequirements: [] }
+        this.widgetIssues = new Map(); // widgetId -> { alerts: [], warnings: [], errors: [], requiredTechIssues: [] }
         this.checkedWidgetsThisRun = new Set(); // Track which widgets were checked this run
         
         // New floating overlay elements
@@ -54,7 +54,7 @@ class PreflightCheck {
     this.alerts = [];
     this.warnings = [];
         this.errors = [];
-        this.techRequirements = [];
+        this.requiredTechIssues = [];
         this.widgetIssues.clear();
         this.checkedWidgetsThisRun.clear();
         
@@ -105,12 +105,12 @@ class PreflightCheck {
                 this.checkShipHullsWidget(widget);
                 break;
         }
-        this.checkWidgetTechnologyRequirements(widget);
+        this.checkRequiredTech(widget);
     }
 
-    checkWidgetTechnologyRequirements(widget) {
+    checkRequiredTech(widget) {
         const data = widget.getSerializedData();
-        if (data.ignoreTechRequirements || data.shipData?.ignoreTechRequirements) return;
+        if (data.ignoreRequiredTech || data.shipData?.ignoreRequiredTech) return;
         const requirements = new Set();
         const visit = (value, key = '') => {
             if (Array.isArray(value)) {
@@ -121,14 +121,14 @@ class PreflightCheck {
                 Object.entries(value).forEach(([childKey, childValue]) => visit(childValue, childKey));
                 return;
             }
-            if (typeof value === 'string' && /required.?tech|tech.?requirement/i.test(key)) {
+            if (typeof value === 'string' && key === 'requiredTech') {
                 requirements.add(value);
             }
         };
         visit(data);
         requirements.forEach(tech => {
             if (!this.empire.hasTech(tech)) {
-                this.addTechRequirement(`${widget.title} requires ${tech}`, tech, widget.id);
+                this.addRequiredTechIssue(`${widget.title} requires ${tech}`, tech, widget.id);
             }
         });
     }
@@ -136,60 +136,11 @@ class PreflightCheck {
     checkShipWidget(widget) {
         const data = widget.getSerializedData();
         
-        // Handle new hull-based ship design
-        if (data.shipData) {
-            this.checkHullBasedShip(widget, data.shipData);
+        if (!data.shipData) {
+            this.addError(`Ship "${widget.title}" has no current ship design data`, widget.id);
             return;
         }
-        
-        // Legacy component-based system (keep for backward compatibility)
-        if (!data.components || data.components.length === 0) {
-            this.addWarning(`Ship "${widget.title}" has no components`, widget.id);
-            return;
-        }
-        
-        let hasHull = false;
-        let hasEngine = false;
-        let hasPower = false;
-        let totalMass = 0;
-        let totalPowerConsumption = 0;
-        let totalPowerGeneration = 0;
-        
-        // Analyze components
-        for (const component of data.components) {
-            // Component type checking
-            if (component.type === 'hull') hasHull = true;
-            if (component.type === 'engine') hasEngine = true;
-            if (component.type === 'reactor') hasPower = true;
-            
-            // Calculate totals
-            if (component.mass) totalMass += component.mass;
-            if (component.powerConsumption) totalPowerConsumption += component.powerConsumption;
-            if (component.powerOutput) totalPowerGeneration += component.powerOutput;
-        }
-        
-        // Essential component checks
-        if (!hasHull) {
-            this.addError(`Ship "${widget.title}" requires a hull component`, widget.id);
-        }
-        if (!hasEngine) {
-            this.addError(`Ship "${widget.title}" requires an engine component`, widget.id);
-        }
-        if (!hasPower && totalPowerConsumption > 0) {
-            this.addError(`Ship "${widget.title}" requires power generation for its components`, widget.id);
-        }
-        
-        // Power balance check
-        if (totalPowerConsumption > totalPowerGeneration) {
-            this.addError(`Ship "${widget.title}" has insufficient power: ${totalPowerGeneration} generated, ${totalPowerConsumption} required`, widget.id);
-        } else if (totalPowerConsumption < totalPowerGeneration * 0.5) {
-            this.addWarning(`Ship "${widget.title}" has excess power generation`, widget.id);
-        }
-        
-        // Mass warnings
-        if (totalMass > 1000) {
-            this.addWarning(`Ship "${widget.title}" is very heavy (${totalMass} mass units)`, widget.id);
-        }
+        this.checkHullBasedShip(widget, data.shipData);
     }
 
     checkHullBasedShip(widget, shipData) {
@@ -234,11 +185,12 @@ class PreflightCheck {
             }
         }
         
-        // Check foundations tech requirements if not ignored
-        if (!shipData.ignoreTechRequirements && shipData.foundations) {
+        // Check foundations' required tech if not ignored
+        if (!shipData.ignoreRequiredTech && shipData.foundations) {
+            // Foundation keys are camelCase flags; only keys that are real tech IDs can be checked
             Object.entries(shipData.foundations).forEach(([tech, enabled]) => {
-                if (enabled && !this.empire.hasTech(tech)) {
-                    this.addTechRequirement(
+                if (enabled && TechTree.techData?.[tech] && !this.empire.hasTech(tech)) {
+                    this.addRequiredTechIssue(
                         `Ship "${widget.title}" foundation "${tech}" requires technology`,
                         tech, widget.id
                     );
@@ -251,7 +203,7 @@ class PreflightCheck {
         if (!widget?.parents || widget.parents.size === 0 || !this.widgetManager) return null;
         for (const parentId of widget.parents) {
             const parentWidget = this.widgetManager.getWidget(parentId);
-            if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
+            if (parentWidget?.type === 'ship') {
                 return parentWidget;
             }
         }
@@ -373,7 +325,7 @@ class PreflightCheck {
                         if (component.requiredTech) {
                             for (const tech of component.requiredTech) {
                                 if (!this.empire.hasTech(tech)) {
-                                    this.addTechRequirement(
+                                    this.addRequiredTechIssue(
                                         `Saved ${type} design "${design.name}" uses unavailable technology ${tech}`,
                                         tech, design.id
                                     );
@@ -401,16 +353,16 @@ class PreflightCheck {
         this.addToWidgetIssues(sourceId, 'errors', { message, type: 'error' });
     }
 
-    addTechRequirement(message, tech, sourceId) {
-        this.techRequirements.push({ message, tech, sourceId, type: 'tech' });
-        this.addToWidgetIssues(sourceId, 'techRequirements', { message, tech, type: 'tech' });
+    addRequiredTechIssue(message, tech, sourceId) {
+        this.requiredTechIssues.push({ message, tech, sourceId, type: 'tech' });
+        this.addToWidgetIssues(sourceId, 'requiredTechIssues', { message, tech, type: 'tech' });
     }
 
     addToWidgetIssues(sourceId, category, issue) {
         if (!sourceId || sourceId === 'empire' || sourceId.startsWith('connection-')) return;
         
         if (!this.widgetIssues.has(sourceId)) {
-            this.widgetIssues.set(sourceId, { alerts: [], warnings: [], errors: [], techRequirements: [] });
+            this.widgetIssues.set(sourceId, { alerts: [], warnings: [], errors: [], requiredTechIssues: [] });
         }
         
         this.widgetIssues.get(sourceId)[category].push(issue);
@@ -435,11 +387,11 @@ class PreflightCheck {
                     ...issues.alerts,
                     ...issues.errors,
                     ...issues.warnings,
-                    ...issues.techRequirements
+                    ...issues.requiredTechIssues
                 ];
                 widget.updatePreflightIndicator(
                     issues.warnings.length,
-                    issues.errors.length + issues.techRequirements.length,
+                    issues.errors.length + issues.requiredTechIssues.length,
                     allIssues,
                     issues.alerts.length
                 );
@@ -570,7 +522,7 @@ class PreflightCheck {
         if (!this.badgeErrors || !this.badgeWarnings) return;
         
         const filteredWarnings = this.warnings;
-        const techErrors = this.techRequirements.length > 0 ? this.techRequirements : [];
+        const techErrors = this.requiredTechIssues.length > 0 ? this.requiredTechIssues : [];
         const totalErrors = this.errors.length + techErrors.length;
         
         // Only update if values actually changed
@@ -664,8 +616,8 @@ class PreflightCheck {
             });
         });
         
-        // Convert tech requirements to errors
-        this.techRequirements.forEach(req => {
+        // Convert required-tech issues to errors
+        this.requiredTechIssues.forEach(req => {
             const id = `tech_error_${req.message}_${req.sourceId}`;
             currentIssues.set(id, {
                 type: 'error',
@@ -752,7 +704,7 @@ class PreflightCheck {
         const summaryWarnings = document.getElementById('summaryWarnings');
         
         if (summaryErrors && summaryWarnings) {
-            const totalErrors = this.errors.length + this.techRequirements.length;
+            const totalErrors = this.errors.length + this.requiredTechIssues.length;
             const totalWarnings = this.warnings.length;
             const summaryAlerts = document.getElementById('summaryAlerts');
             
@@ -774,8 +726,8 @@ class PreflightCheck {
             alertCount: this.alerts.length,
             errorCount: this.errors.length,
             warningCount: this.warnings.length,
-            techRequirementCount: this.techRequirements.length,
-            hasIssues: this.errors.length > 0 || this.techRequirements.length > 0
+            requiredTechIssueCount: this.requiredTechIssues.length,
+            hasIssues: this.errors.length > 0 || this.requiredTechIssues.length > 0
         };
     }
 }

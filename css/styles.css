@@ -802,7 +802,7 @@ body {
     border-radius: 3px;
 }
 
-.tech-item-prereqs {
+.tech-item-required-tech {
     font-size: 11px;
     color: #999;
     margin-top: 4px;

@@ -422,15 +422,6 @@ class FVTacticalApp {
             });
 
             card.append(form, removeButton);
-            if (Array.isArray(fleetShip.legacyAssignments) && fleetShip.legacyAssignments.length > 0) {
-                const legacyDetails = document.createElement('details');
-                const summary = document.createElement('summary');
-                summary.textContent = `Imported berth/loadout data (${fleetShip.legacyAssignments.length})`;
-                const data = document.createElement('pre');
-                data.textContent = JSON.stringify(fleetShip.legacyAssignments, null, 2);
-                legacyDetails.append(summary, data);
-                card.appendChild(legacyDetails);
-            }
             list.appendChild(card);
         }
     }
@@ -610,7 +601,6 @@ class FVTacticalApp {
         try {
             switch (type) {
                 case 'ship':
-                case 'shipPrototype':
                     widget = new ShipWidget(x, y);
                     break;
                 case 'craft':
@@ -768,10 +758,10 @@ class FVTacticalApp {
                 mainRow.appendChild(costDiv);
                 techItem.appendChild(mainRow);
                 
-                // Create prerequisites row (initially hidden, shown when unmet)
-                const prereqRow = document.createElement('div');
-                prereqRow.className = 'tech-item-prereqs';
-                techItem.appendChild(prereqRow);
+                // Create required tech row (initially hidden, shown when unmet)
+                const requiredRow = document.createElement('div');
+                requiredRow.className = 'tech-item-required-tech';
+                techItem.appendChild(requiredRow);
                 
                 techItem.addEventListener('click', async () => {
                     if (await this.empire.canResearch(tech.id)) {
@@ -891,8 +881,8 @@ class FVTacticalApp {
         const highestResearched = new Set();
         if (this.hideResearchedTech) {
             for (const techId of researched) {
-                const prereqs = await TechTree.getTechPrerequisites(techId);
-                if ([...highestResearched].some(id => prereqs.includes(id))) continue;
+                const requiredIds = await TechTree.getTechRequiredTech(techId);
+                if ([...highestResearched].some(id => requiredIds.includes(id))) continue;
                 let current = techId;
                 while (true) {
                     const deps = (await TechTree.getTechDependents(current)).filter(d => researched.has(d));
@@ -905,7 +895,7 @@ class FVTacticalApp {
 
         techItems.forEach(item => {
             const titleElement = item.querySelector('.tech-item-title');
-            const prereqElement = item.querySelector('.tech-item-prereqs');
+            const requiredElement = item.querySelector('.tech-item-required-tech');
             if (!titleElement) return;
             const techName = titleElement.textContent;
             const techId = nameToId.get(techName);
@@ -916,20 +906,20 @@ class FVTacticalApp {
 
             if (researched.has(techId)) {
                 item.classList.add('researched');
-                prereqElement.style.display = 'none';
+                requiredElement.style.display = 'none';
                 if (this.hideResearchedTech && !highestResearched.has(techId)) item.style.display = 'none';
             } else if (this.empire.availableTech.has(techId)) {
                 item.classList.add('available');
-                prereqElement.style.display = 'none';
+                requiredElement.style.display = 'none';
             } else {
                 item.classList.add('locked');
                 if (this.hideUnavailableTech) item.style.display = 'none';
-                const unmetPrereqs = tech.prerequisites.filter(p => !researched.has(p));
-                if (unmetPrereqs.length) {
-                    prereqElement.textContent = 'Requires: ' + unmetPrereqs.map(p => techData[p]?.name || p).join(', ');
-                    prereqElement.style.display = 'block';
+                const unmetRequired = tech.requiredTech.filter(id => !researched.has(id));
+                if (unmetRequired.length) {
+                    requiredElement.textContent = 'Requires: ' + unmetRequired.map(id => techData[id]?.name || id).join(', ');
+                    requiredElement.style.display = 'block';
                 } else {
-                    prereqElement.style.display = 'none';
+                    requiredElement.style.display = 'none';
                 }
             }
         });
@@ -1019,38 +1009,22 @@ class FVTacticalApp {
         
         // Phase 1: Create all widgets and nodes
         const widgets = [];
-        const removedWidgetIds = new Set((data.widgets || [])
-            .filter(widgetData => ['loadouts', 'shipBerth', 'factories', 'shipyards'].includes(widgetData.type))
-            .map(widgetData => widgetData.id)
-            .filter(Boolean));
-        const legacyAssignmentWidgets = (data.widgets || [])
-            .filter(widgetData => ['loadouts', 'shipBerth'].includes(widgetData.type));
-        const referencesRemovedWidget = nodeId => {
-            for (const widgetId of removedWidgetIds) {
-                if (nodeId?.startsWith(`${widgetId}-`)) return true;
-            }
-            return false;
-        };
         for (const widgetData of data.widgets || []) {
-            if (['loadouts', 'shipBerth', 'factories', 'shipyards'].includes(widgetData.type)) continue;
             let widget;
             switch (widgetData.type) {
                 case 'ship':
-                case 'shipPrototype':
                     widget = new ShipWidget();
                     break;
                 case 'craft': widget = new CraftWidget(); break;
                 case 'troops': widget = new TroopsWidget(); break;
                 case 'missiles': widget = new MissilesWidget(); break;
                 case 'outfit': widget = new OutfitWidget(); break;
-                case 'systems':
-                    widget = new OutfitWidget();
-                    this.migrateLegacySystemsWidget(widgetData, widget);
-                    break;
                 case 'shipCore': widget = new ShipCoreWidget(); break;
                 case 'shipHulls': widget = new ShipHullsWidget(); break;
                 case 'statistics': widget = new StatisticsWidget(); break;
                 case 'reroute': widget = new RerouteWidget(); break;
+                default:
+                    console.warn(`Skipping unsupported saved widget type "${widgetData.type}"`);
             }
             
             if (widget) {
@@ -1084,17 +1058,20 @@ class FVTacticalApp {
         
         // Phase 2: Restore connections between nodes
         if (data.connections) {
-            const retainedConnections = data.connections.filter(connection => {
-                return !removedWidgetIds.has(connection.sourceWidgetId) &&
-                    !removedWidgetIds.has(connection.targetWidgetId) &&
-                    !referencesRemovedWidget(connection.sourceNodeId) &&
-                    !referencesRemovedWidget(connection.targetNodeId);
-            });
+            const widgetIds = new Set(widgets.map(({ widget }) => widget.id));
+            const connectionReferencesLoadedWidget = (connection, direction) => {
+                const widgetId = connection[`${direction}WidgetId`];
+                if (widgetId) return widgetIds.has(widgetId);
+                const nodeId = connection[`${direction}NodeId`];
+                return Array.from(widgetIds).some(id => nodeId?.startsWith(`${id}-`));
+            };
+            const retainedConnections = data.connections.filter(connection =>
+                connectionReferencesLoadedWidget(connection, 'source') &&
+                connectionReferencesLoadedWidget(connection, 'target')
+            );
             this.nodeSystem.fromJSON(retainedConnections);
         }
 
-        this.migrateLegacyFleetAssignments(legacyAssignmentWidgets, data.connections || [], data.widgets || []);
-        
         // Phase 3: Re-sync connection-dependent data now that connections exist
         for (const { widget } of widgets) {
             if (typeof widget.syncConnectedData === 'function') {
@@ -1116,112 +1093,6 @@ class FVTacticalApp {
         this.preflightCheck.runCheck();
         
 
-    }
-
-    migrateLegacyFleetAssignments(legacyWidgets, connections, savedWidgets) {
-        if (legacyWidgets.length === 0) return;
-        const widgetById = new Map(savedWidgets.filter(widget => widget.id).map(widget => [widget.id, widget]));
-        const adjacency = new Map();
-        const getConnectionWidgetId = (connection, direction) => {
-            const explicitId = connection[`${direction}WidgetId`];
-            if (explicitId) return explicitId;
-            const nodeId = connection[`${direction}NodeId`];
-            return Array.from(widgetById.keys()).find(widgetId => nodeId?.startsWith(`${widgetId}-`));
-        };
-        for (const connection of connections) {
-            const sourceId = getConnectionWidgetId(connection, 'source');
-            const targetId = getConnectionWidgetId(connection, 'target');
-            if (!sourceId || !targetId) continue;
-            if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
-            if (!adjacency.has(targetId)) adjacency.set(targetId, new Set());
-            adjacency.get(sourceId).add(targetId);
-            adjacency.get(targetId).add(sourceId);
-        }
-
-        for (const legacyWidget of legacyWidgets) {
-            const visited = new Set([legacyWidget.id]);
-            const queue = [legacyWidget.id];
-            const shipDesignIds = new Set();
-            while (queue.length > 0) {
-                const currentId = queue.shift();
-                for (const neighborId of adjacency.get(currentId) || []) {
-                    if (visited.has(neighborId)) continue;
-                    visited.add(neighborId);
-                    queue.push(neighborId);
-                    const connectedWidget = widgetById.get(neighborId);
-                    if (connectedWidget && ['ship', 'shipPrototype'].includes(connectedWidget.type)) {
-                        shipDesignIds.add(neighborId);
-                    }
-                }
-            }
-
-            for (const designWidgetId of shipDesignIds) {
-                const design = widgetById.get(designWidgetId);
-                let fleetShip = this.empire.fleetShips.find(ship => ship.designWidgetId === designWidgetId);
-                if (!fleetShip) {
-                    const designName = design?.data?.shipData?.name || design?.title || 'Imported Ship';
-                    fleetShip = {
-                        id: `fleet-ship-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                        designWidgetId,
-                        name: designName,
-                        role: design?.data?.shipData?.role || '',
-                        berths: 0,
-                        loadout: '',
-                        legacyAssignments: []
-                    };
-                    this.empire.fleetShips.push(fleetShip);
-                }
-                if (!Array.isArray(fleetShip.legacyAssignments)) fleetShip.legacyAssignments = [];
-                fleetShip.legacyAssignments.push({
-                    type: legacyWidget.type,
-                    title: legacyWidget.title,
-                    data: legacyWidget.data || {}
-                });
-            }
-        }
-    }
-
-    migrateLegacySystemsWidget(widgetData, widgetInstance) {
-        if (!widgetData || !widgetInstance) return;
-
-        widgetData.type = 'outfit';
-        widgetData.data = widgetData.data || {};
-
-        const defaults = JSON.parse(JSON.stringify(widgetInstance.outfitData || {}));
-        const existingOutfitData = widgetData.data.outfitData || {};
-        const legacySystems = widgetData.data.systemsData || {};
-        const { heatManagement: legacyHeat = {}, ...legacyRest } = legacySystems;
-
-        const defaultSystems = defaults.systemsData || {};
-        const existingSystems = existingOutfitData.systemsData || {};
-
-        const mergedSystemsData = {
-            ...defaultSystems,
-            ...existingSystems,
-            ...legacyRest,
-            heatManagement: {
-                ...(defaultSystems.heatManagement || {}),
-                ...(existingSystems.heatManagement || {}),
-                ...legacyHeat
-            }
-        };
-
-        const mergedOutfitData = {
-            ...defaults,
-            ...existingOutfitData,
-            systemsData: mergedSystemsData
-        };
-
-        if (!mergedOutfitData.name && widgetData.title) {
-            mergedOutfitData.name = widgetData.title;
-        }
-
-        if (widgetData.title && /system/i.test(widgetData.title)) {
-            widgetData.title = widgetData.title.replace(/Systems?/i, 'Outfit').trim();
-        }
-
-        widgetData.data.outfitData = mergedOutfitData;
-        delete widgetData.data.systemsData;
     }
 
     showNotification(message, type = 'info') {

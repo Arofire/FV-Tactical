@@ -58,7 +58,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 11,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 3,
           "isMain": false
         },
@@ -108,7 +108,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 31,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 4,
           "isMain": false
         },
@@ -168,7 +168,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 48,
-          "techRequirement": "nuclear-cannon",
+          "requiredTech": ["nuclear-cannon"],
           "sourceRow": 5,
           "isMain": false
         },
@@ -221,7 +221,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 4,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 6,
           "isMain": false
         },
@@ -271,7 +271,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 3,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 7,
           "isMain": false
         }
@@ -331,7 +331,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 47,
-          "techRequirement": "light-chemical-laser",
+          "requiredTech": ["light-chemical-laser"],
           "sourceRow": 9,
           "isMain": false
         },
@@ -382,7 +382,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 66,
-          "techRequirement": "heavy-chemical-laser",
+          "requiredTech": ["heavy-chemical-laser"],
           "sourceRow": 10,
           "isMain": false
         },
@@ -439,7 +439,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 29,
-          "techRequirement": "pd-chemical-laser",
+          "requiredTech": ["pd-chemical-laser"],
           "sourceRow": 11,
           "isMain": false
         },
@@ -486,7 +486,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 30,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 12,
           "isMain": false
         },
@@ -533,7 +533,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 46,
-          "techRequirement": "light-chemical-laser",
+          "requiredTech": ["light-chemical-laser"],
           "sourceRow": 13,
           "isMain": false
         },
@@ -580,7 +580,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 38,
-          "techRequirement": "heavy-chemical-laser",
+          "requiredTech": ["heavy-chemical-laser"],
           "sourceRow": 14,
           "isMain": false
         },
@@ -624,7 +624,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 6,
-          "techRequirement": "pd-chemical-laser",
+          "requiredTech": ["pd-chemical-laser"],
           "sourceRow": 15,
           "isMain": false
         },
@@ -674,7 +674,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 15,
-          "techRequirement": "light-optical-aperture",
+          "requiredTech": ["light-optical-aperture"],
           "sourceRow": 16,
           "isMain": false
         },
@@ -724,7 +724,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 46,
-          "techRequirement": "heavy-optical-aperture",
+          "requiredTech": ["heavy-optical-aperture"],
           "sourceRow": 17,
           "isMain": false
         },
@@ -777,7 +777,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 10,
-          "techRequirement": "pd-optical-aperture",
+          "requiredTech": ["pd-optical-aperture"],
           "sourceRow": 18,
           "isMain": false
         },
@@ -830,7 +830,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 54,
-          "techRequirement": "light-multiplex-aperture",
+          "requiredTech": ["light-multiplex-aperture"],
           "sourceRow": 19,
           "isMain": false
         },
@@ -880,7 +880,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 110,
-          "techRequirement": "heavy-multiplex-aperture",
+          "requiredTech": ["heavy-multiplex-aperture"],
           "sourceRow": 20,
           "isMain": false
         },
@@ -936,7 +936,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 12,
-          "techRequirement": "pd-multiplex-aperture",
+          "requiredTech": ["pd-multiplex-aperture"],
           "sourceRow": 21,
           "isMain": false
         },
@@ -990,7 +990,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 147,
-          "techRequirement": "light-array-aperture",
+          "requiredTech": ["light-array-aperture"],
           "sourceRow": 22,
           "isMain": false
         },
@@ -1038,7 +1038,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 229,
-          "techRequirement": "heavy-array-aperture",
+          "requiredTech": ["heavy-array-aperture"],
           "sourceRow": 23,
           "isMain": false
         },
@@ -1092,7 +1092,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 37,
-          "techRequirement": "pd-array-aperture",
+          "requiredTech": ["pd-array-aperture"],
           "sourceRow": 24,
           "isMain": false
         },
@@ -1142,7 +1142,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 431,
-          "techRequirement": "light-ub-aperture",
+          "requiredTech": ["light-ub-aperture"],
           "sourceRow": 25,
           "isMain": false
         },
@@ -1195,7 +1195,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 696,
-          "techRequirement": "heavy-ub-aperture",
+          "requiredTech": ["heavy-ub-aperture"],
           "sourceRow": 26,
           "isMain": true
         },
@@ -1248,7 +1248,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 983,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 27,
           "isMain": false
         },
@@ -1301,7 +1301,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1270,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 28,
           "isMain": false
         },
@@ -1354,7 +1354,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1558,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 29,
           "isMain": false
         },
@@ -1407,7 +1407,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1845,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 30,
           "isMain": false
         },
@@ -1460,7 +1460,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 21,
-          "techRequirement": "pd-ub-aperture",
+          "requiredTech": ["pd-ub-aperture"],
           "sourceRow": 31,
           "isMain": false
         },
@@ -1504,7 +1504,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 1,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 32,
           "isMain": false
         },
@@ -1548,7 +1548,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 1.07,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 33,
           "isMain": false
         },
@@ -1592,7 +1592,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 1.31,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 34,
           "isMain": false
         },
@@ -1636,7 +1636,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 1.84,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 35,
           "isMain": false
         },
@@ -1686,7 +1686,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 15,
-          "techRequirement": "light-optical-aperture",
+          "requiredTech": ["light-optical-aperture"],
           "sourceRow": 36,
           "isMain": false
         },
@@ -1736,7 +1736,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 46,
-          "techRequirement": "heavy-optical-aperture",
+          "requiredTech": ["heavy-optical-aperture"],
           "sourceRow": 37,
           "isMain": false
         },
@@ -1789,7 +1789,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 10,
-          "techRequirement": "pd-optical-aperture",
+          "requiredTech": ["pd-optical-aperture"],
           "sourceRow": 38,
           "isMain": false
         },
@@ -1842,7 +1842,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 54,
-          "techRequirement": "light-multiplex-aperture",
+          "requiredTech": ["light-multiplex-aperture"],
           "sourceRow": 39,
           "isMain": false
         },
@@ -1892,7 +1892,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 106,
-          "techRequirement": "heavy-multiplex-aperture",
+          "requiredTech": ["heavy-multiplex-aperture"],
           "sourceRow": 40,
           "isMain": false
         },
@@ -1948,7 +1948,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 12,
-          "techRequirement": "pd-multiplex-aperture",
+          "requiredTech": ["pd-multiplex-aperture"],
           "sourceRow": 41,
           "isMain": false
         },
@@ -2002,7 +2002,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 147,
-          "techRequirement": "light-array-aperture",
+          "requiredTech": ["light-array-aperture"],
           "sourceRow": 42,
           "isMain": false
         },
@@ -2050,7 +2050,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 229,
-          "techRequirement": "heavy-array-aperture",
+          "requiredTech": ["heavy-array-aperture"],
           "sourceRow": 43,
           "isMain": false
         },
@@ -2104,7 +2104,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 37,
-          "techRequirement": "pd-array-aperture",
+          "requiredTech": ["pd-array-aperture"],
           "sourceRow": 44,
           "isMain": false
         },
@@ -2154,7 +2154,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 431,
-          "techRequirement": "light-ub-aperture",
+          "requiredTech": ["light-ub-aperture"],
           "sourceRow": 45,
           "isMain": false
         },
@@ -2207,7 +2207,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 691,
-          "techRequirement": "heavy-ub-aperture",
+          "requiredTech": ["heavy-ub-aperture"],
           "sourceRow": 46,
           "isMain": true
         },
@@ -2260,7 +2260,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 977,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 47,
           "isMain": false
         },
@@ -2313,7 +2313,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1262,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 48,
           "isMain": false
         },
@@ -2366,7 +2366,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1548,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 49,
           "isMain": false
         },
@@ -2419,7 +2419,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1834,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 50,
           "isMain": false
         },
@@ -2472,7 +2472,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 21,
-          "techRequirement": "pd-ub-aperture",
+          "requiredTech": ["pd-ub-aperture"],
           "sourceRow": 51,
           "isMain": false
         },
@@ -2522,7 +2522,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 45,
-          "techRequirement": "light-optical-aperture",
+          "requiredTech": ["light-optical-aperture"],
           "sourceRow": 52,
           "isMain": false
         },
@@ -2572,7 +2572,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 88,
-          "techRequirement": "heavy-optical-aperture",
+          "requiredTech": ["heavy-optical-aperture"],
           "sourceRow": 53,
           "isMain": false
         },
@@ -2625,7 +2625,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 30,
-          "techRequirement": "pd-optical-aperture",
+          "requiredTech": ["pd-optical-aperture"],
           "sourceRow": 54,
           "isMain": false
         },
@@ -2678,7 +2678,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 108,
-          "techRequirement": "light-multiplex-aperture",
+          "requiredTech": ["light-multiplex-aperture"],
           "sourceRow": 55,
           "isMain": false
         },
@@ -2728,7 +2728,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 150,
-          "techRequirement": "heavy-multiplex-aperture",
+          "requiredTech": ["heavy-multiplex-aperture"],
           "sourceRow": 56,
           "isMain": false
         },
@@ -2784,7 +2784,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 36,
-          "techRequirement": "pd-multiplex-aperture",
+          "requiredTech": ["pd-multiplex-aperture"],
           "sourceRow": 57,
           "isMain": false
         },
@@ -2838,7 +2838,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 258,
-          "techRequirement": "light-array-aperture",
+          "requiredTech": ["light-array-aperture"],
           "sourceRow": 58,
           "isMain": false
         },
@@ -2886,7 +2886,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 346,
-          "techRequirement": "heavy-array-aperture",
+          "requiredTech": ["heavy-array-aperture"],
           "sourceRow": 59,
           "isMain": false
         },
@@ -2940,7 +2940,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 109,
-          "techRequirement": "pd-array-aperture",
+          "requiredTech": ["pd-array-aperture"],
           "sourceRow": 60,
           "isMain": false
         },
@@ -2990,7 +2990,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 504,
-          "techRequirement": "light-ub-aperture",
+          "requiredTech": ["light-ub-aperture"],
           "sourceRow": 61,
           "isMain": false
         },
@@ -3043,7 +3043,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 782,
-          "techRequirement": "heavy-ub-aperture",
+          "requiredTech": ["heavy-ub-aperture"],
           "sourceRow": 62,
           "isMain": true
         },
@@ -3096,7 +3096,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1068,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 63,
           "isMain": false
         },
@@ -3149,7 +3149,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1353,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 64,
           "isMain": false
         },
@@ -3202,7 +3202,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1639,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 65,
           "isMain": false
         },
@@ -3255,7 +3255,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1924,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 66,
           "isMain": false
         },
@@ -3308,7 +3308,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 63,
-          "techRequirement": "pd-ub-aperture",
+          "requiredTech": ["pd-ub-aperture"],
           "sourceRow": 67,
           "isMain": false
         },
@@ -3358,7 +3358,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 74,
-          "techRequirement": "light-optical-aperture",
+          "requiredTech": ["light-optical-aperture"],
           "sourceRow": 68,
           "isMain": false
         },
@@ -3408,7 +3408,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 137,
-          "techRequirement": "heavy-optical-aperture",
+          "requiredTech": ["heavy-optical-aperture"],
           "sourceRow": 69,
           "isMain": false
         },
@@ -3461,7 +3461,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 49,
-          "techRequirement": "pd-optical-aperture",
+          "requiredTech": ["pd-optical-aperture"],
           "sourceRow": 70,
           "isMain": false
         },
@@ -3514,7 +3514,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 162,
-          "techRequirement": "light-multiplex-aperture",
+          "requiredTech": ["light-multiplex-aperture"],
           "sourceRow": 71,
           "isMain": false
         },
@@ -3564,7 +3564,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 207,
-          "techRequirement": "heavy-multiplex-aperture",
+          "requiredTech": ["heavy-multiplex-aperture"],
           "sourceRow": 72,
           "isMain": false
         },
@@ -3620,7 +3620,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 59,
-          "techRequirement": "pd-multiplex-aperture",
+          "requiredTech": ["pd-multiplex-aperture"],
           "sourceRow": 73,
           "isMain": false
         },
@@ -3674,7 +3674,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 369,
-          "techRequirement": "light-array-aperture",
+          "requiredTech": ["light-array-aperture"],
           "sourceRow": 74,
           "isMain": false
         },
@@ -3722,7 +3722,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 501,
-          "techRequirement": "heavy-array-aperture",
+          "requiredTech": ["heavy-array-aperture"],
           "sourceRow": 75,
           "isMain": false
         },
@@ -3776,7 +3776,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 182,
-          "techRequirement": "pd-array-aperture",
+          "requiredTech": ["pd-array-aperture"],
           "sourceRow": 76,
           "isMain": false
         },
@@ -3826,7 +3826,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 593,
-          "techRequirement": "light-ub-aperture",
+          "requiredTech": ["light-ub-aperture"],
           "sourceRow": 77,
           "isMain": false
         },
@@ -3879,7 +3879,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 907,
-          "techRequirement": "heavy-ub-aperture",
+          "requiredTech": ["heavy-ub-aperture"],
           "sourceRow": 78,
           "isMain": true
         },
@@ -3932,7 +3932,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1206,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 79,
           "isMain": false
         },
@@ -3985,7 +3985,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1505,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 80,
           "isMain": false
         },
@@ -4038,7 +4038,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1804,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 81,
           "isMain": false
         },
@@ -4091,7 +4091,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 2103,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 82,
           "isMain": false
         },
@@ -4144,7 +4144,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 105,
-          "techRequirement": "pd-ub-aperture",
+          "requiredTech": ["pd-ub-aperture"],
           "sourceRow": 83,
           "isMain": false
         },
@@ -4194,7 +4194,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 159,
-          "techRequirement": "light-optical-aperture",
+          "requiredTech": ["light-optical-aperture"],
           "sourceRow": 84,
           "isMain": false
         },
@@ -4244,7 +4244,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 269,
-          "techRequirement": "heavy-optical-aperture",
+          "requiredTech": ["heavy-optical-aperture"],
           "sourceRow": 85,
           "isMain": false
         },
@@ -4297,7 +4297,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 108,
-          "techRequirement": "pd-optical-aperture",
+          "requiredTech": ["pd-optical-aperture"],
           "sourceRow": 86,
           "isMain": false
         },
@@ -4350,7 +4350,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 320,
-          "techRequirement": "light-multiplex-aperture",
+          "requiredTech": ["light-multiplex-aperture"],
           "sourceRow": 87,
           "isMain": false
         },
@@ -4400,7 +4400,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 355,
-          "techRequirement": "heavy-multiplex-aperture",
+          "requiredTech": ["heavy-multiplex-aperture"],
           "sourceRow": 88,
           "isMain": false
         },
@@ -4456,7 +4456,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 129,
-          "techRequirement": "pd-multiplex-aperture",
+          "requiredTech": ["pd-multiplex-aperture"],
           "sourceRow": 89,
           "isMain": false
         },
@@ -4510,7 +4510,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 636,
-          "techRequirement": "light-array-aperture",
+          "requiredTech": ["light-array-aperture"],
           "sourceRow": 90,
           "isMain": false
         },
@@ -4558,7 +4558,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 829,
-          "techRequirement": "heavy-array-aperture",
+          "requiredTech": ["heavy-array-aperture"],
           "sourceRow": 91,
           "isMain": false
         },
@@ -4612,7 +4612,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 354,
-          "techRequirement": "pd-array-aperture",
+          "requiredTech": ["pd-array-aperture"],
           "sourceRow": 92,
           "isMain": false
         },
@@ -4662,7 +4662,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 903,
-          "techRequirement": "light-ub-aperture",
+          "requiredTech": ["light-ub-aperture"],
           "sourceRow": 93,
           "isMain": false
         },
@@ -4715,7 +4715,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 1302,
-          "techRequirement": "heavy-ub-aperture",
+          "requiredTech": ["heavy-ub-aperture"],
           "sourceRow": 94,
           "isMain": true
         },
@@ -4768,7 +4768,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1654,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 95,
           "isMain": false
         },
@@ -4821,7 +4821,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 2007,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 96,
           "isMain": false
         },
@@ -4874,7 +4874,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 2359,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 97,
           "isMain": false
         },
@@ -4927,7 +4927,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 2712,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 98,
           "isMain": false
         },
@@ -4980,7 +4980,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 234,
-          "techRequirement": "pd-ub-aperture",
+          "requiredTech": ["pd-ub-aperture"],
           "sourceRow": 99,
           "isMain": false
         }
@@ -5036,7 +5036,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 143,
-          "techRequirement": "light-photolytic-xraser",
+          "requiredTech": ["light-photolytic-xraser"],
           "sourceRow": 101,
           "isMain": false
         },
@@ -5090,7 +5090,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 274,
-          "techRequirement": "heavy-photolytic-xraser",
+          "requiredTech": ["heavy-photolytic-xraser"],
           "sourceRow": 102,
           "isMain": false
         },
@@ -5144,7 +5144,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 449,
-          "techRequirement": "heavy-photolytic-xraser",
+          "requiredTech": ["heavy-photolytic-xraser"],
           "sourceRow": 103,
           "isMain": true
         },
@@ -5194,7 +5194,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 270,
-          "techRequirement": "light-z-pinch-graser",
+          "requiredTech": ["light-z-pinch-graser"],
           "sourceRow": 104,
           "isMain": false
         },
@@ -5248,7 +5248,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 501,
-          "techRequirement": "heavy-z-pinch-graser",
+          "requiredTech": ["heavy-z-pinch-graser"],
           "sourceRow": 105,
           "isMain": false
         },
@@ -5305,7 +5305,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 890,
-          "techRequirement": "heavy-z-pinch-graser",
+          "requiredTech": ["heavy-z-pinch-graser"],
           "sourceRow": 106,
           "isMain": true
         },
@@ -5345,7 +5345,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 107,
           "isMain": true
         },
@@ -5385,7 +5385,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 108,
           "isMain": false
         },
@@ -5425,7 +5425,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 109,
           "isMain": false
         }
@@ -5471,7 +5471,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 68,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 111,
           "isMain": false
         },
@@ -5511,7 +5511,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 103,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 112,
           "isMain": false
         },
@@ -5562,7 +5562,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 27,
-          "techRequirement": "light-chemrail",
+          "requiredTech": ["light-chemrail"],
           "sourceRow": 113,
           "isMain": false
         },
@@ -5610,7 +5610,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 60,
-          "techRequirement": "heavy-chemrail",
+          "requiredTech": ["heavy-chemrail"],
           "sourceRow": 114,
           "isMain": false
         },
@@ -5668,7 +5668,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 103,
-          "techRequirement": "nuclear-chemrail",
+          "requiredTech": ["nuclear-chemrail"],
           "sourceRow": 115,
           "isMain": false
         },
@@ -5718,7 +5718,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 4,
-          "techRequirement": "pd-chemrail",
+          "requiredTech": ["pd-chemrail"],
           "sourceRow": 116,
           "isMain": false
         },
@@ -5772,7 +5772,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 48,
-          "techRequirement": "light-railgun",
+          "requiredTech": ["light-railgun"],
           "sourceRow": 117,
           "isMain": false
         },
@@ -5827,7 +5827,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 89,
-          "techRequirement": "heavy-railgun",
+          "requiredTech": ["heavy-railgun"],
           "sourceRow": 118,
           "isMain": false
         },
@@ -5886,7 +5886,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 211,
-          "techRequirement": "medium-railgun",
+          "requiredTech": ["medium-railgun"],
           "sourceRow": 119,
           "isMain": false
         },
@@ -5939,7 +5939,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 7,
-          "techRequirement": "pd-railgun",
+          "requiredTech": ["pd-railgun"],
           "sourceRow": 120,
           "isMain": false
         },
@@ -5989,7 +5989,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 14,
-          "techRequirement": "light-coilgun",
+          "requiredTech": ["light-coilgun"],
           "sourceRow": 121,
           "isMain": false
         },
@@ -6037,7 +6037,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 46,
-          "techRequirement": "heavy-coilgun",
+          "requiredTech": ["heavy-coilgun"],
           "sourceRow": 122,
           "isMain": false
         },
@@ -6099,7 +6099,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 244,
-          "techRequirement": "nuclear-coilgun",
+          "requiredTech": ["nuclear-coilgun"],
           "sourceRow": 123,
           "isMain": false
         },
@@ -6149,7 +6149,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 5,
-          "techRequirement": "pd-coilgun",
+          "requiredTech": ["pd-coilgun"],
           "sourceRow": 124,
           "isMain": false
         },
@@ -6201,7 +6201,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 301,
-          "techRequirement": "spinal-coilgun-01",
+          "requiredTech": ["spinal-coilgun-01"],
           "sourceRow": 125,
           "isMain": true
         },
@@ -6253,7 +6253,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 340,
-          "techRequirement": "spinal-coilgun-02",
+          "requiredTech": ["spinal-coilgun-02"],
           "sourceRow": 126,
           "isMain": false
         },
@@ -6305,7 +6305,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 403,
-          "techRequirement": "spinal-coilgun-03",
+          "requiredTech": ["spinal-coilgun-03"],
           "sourceRow": 127,
           "isMain": false
         },
@@ -6357,7 +6357,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 441,
-          "techRequirement": "spinal-coilgun-04",
+          "requiredTech": ["spinal-coilgun-04"],
           "sourceRow": 128,
           "isMain": false
         },
@@ -6409,7 +6409,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 504,
-          "techRequirement": "spinal-coilgun-05",
+          "requiredTech": ["spinal-coilgun-05"],
           "sourceRow": 129,
           "isMain": false
         },
@@ -6463,7 +6463,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 92,
-          "techRequirement": "light-helical-driver",
+          "requiredTech": ["light-helical-driver"],
           "sourceRow": 130,
           "isMain": false
         },
@@ -6518,7 +6518,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 196,
-          "techRequirement": "heavy-helical-driver",
+          "requiredTech": ["heavy-helical-driver"],
           "sourceRow": 131,
           "isMain": false
         },
@@ -6577,7 +6577,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 742,
-          "techRequirement": "nuclear-helical-driver",
+          "requiredTech": ["nuclear-helical-driver"],
           "sourceRow": 132,
           "isMain": false
         },
@@ -6634,7 +6634,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 29,
-          "techRequirement": "pd-helical-driver",
+          "requiredTech": ["pd-helical-driver"],
           "sourceRow": 133,
           "isMain": false
         },
@@ -6693,7 +6693,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 542,
-          "techRequirement": "spinal-helical-driver-01",
+          "requiredTech": ["spinal-helical-driver-01"],
           "sourceRow": 134,
           "isMain": true
         },
@@ -6752,7 +6752,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 591,
-          "techRequirement": "spinal-helical-driver-02",
+          "requiredTech": ["spinal-helical-driver-02"],
           "sourceRow": 135,
           "isMain": false
         },
@@ -6811,7 +6811,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 623,
-          "techRequirement": "spinal-helical-driver-03",
+          "requiredTech": ["spinal-helical-driver-03"],
           "sourceRow": 136,
           "isMain": false
         },
@@ -6870,7 +6870,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 682,
-          "techRequirement": "spinal-helical-driver-04",
+          "requiredTech": ["spinal-helical-driver-04"],
           "sourceRow": 137,
           "isMain": false
         },
@@ -6929,7 +6929,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 714,
-          "techRequirement": "spinal-helical-driver-05",
+          "requiredTech": ["spinal-helical-driver-05"],
           "sourceRow": 138,
           "isMain": false
         },
@@ -6984,7 +6984,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 143,
-          "techRequirement": "light-macron-gun",
+          "requiredTech": ["light-macron-gun"],
           "sourceRow": 139,
           "isMain": false
         },
@@ -7033,7 +7033,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 209,
-          "techRequirement": "heavy-macron-gun",
+          "requiredTech": ["heavy-macron-gun"],
           "sourceRow": 140,
           "isMain": false
         },
@@ -7093,7 +7093,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 409,
-          "techRequirement": "spinal-thermonuclear-torch-01",
+          "requiredTech": ["spinal-thermonuclear-torch-01"],
           "sourceRow": 141,
           "isMain": true
         },
@@ -7157,7 +7157,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 611,
-          "techRequirement": "spinal-thermonuclear-torch-02",
+          "requiredTech": ["spinal-thermonuclear-torch-02"],
           "sourceRow": 142,
           "isMain": false
         },
@@ -7221,7 +7221,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 812,
-          "techRequirement": "spinal-thermonuclear-torch-03",
+          "requiredTech": ["spinal-thermonuclear-torch-03"],
           "sourceRow": 143,
           "isMain": false
         },
@@ -7285,7 +7285,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1014,
-          "techRequirement": "spinal-thermonuclear-torch-04",
+          "requiredTech": ["spinal-thermonuclear-torch-04"],
           "sourceRow": 144,
           "isMain": false
         },
@@ -7349,7 +7349,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1216,
-          "techRequirement": "spinal-thermonuclear-torch-05",
+          "requiredTech": ["spinal-thermonuclear-torch-05"],
           "sourceRow": 145,
           "isMain": false
         },
@@ -7405,7 +7405,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 486,
-          "techRequirement": "disruptor",
+          "requiredTech": ["disruptor"],
           "sourceRow": 146,
           "isMain": false
         },
@@ -7459,7 +7459,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 225,
-          "techRequirement": "light-field-effect-gun",
+          "requiredTech": ["light-field-effect-gun"],
           "sourceRow": 147,
           "isMain": false
         },
@@ -7514,7 +7514,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 637,
-          "techRequirement": "heavy-field-effect-gun",
+          "requiredTech": ["heavy-field-effect-gun"],
           "sourceRow": 148,
           "isMain": false
         },
@@ -7554,7 +7554,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-wave-motion-cannon-01",
+          "requiredTech": ["spinal-wave-motion-cannon-01"],
           "sourceRow": 149,
           "isMain": true
         },
@@ -7594,7 +7594,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-wave-motion-cannon-02",
+          "requiredTech": ["spinal-wave-motion-cannon-02"],
           "sourceRow": 150,
           "isMain": false
         },
@@ -7634,7 +7634,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-wave-motion-cannon-03",
+          "requiredTech": ["spinal-wave-motion-cannon-03"],
           "sourceRow": 151,
           "isMain": false
         },
@@ -7674,7 +7674,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-wave-motion-cannon-04",
+          "requiredTech": ["spinal-wave-motion-cannon-04"],
           "sourceRow": 152,
           "isMain": false
         },
@@ -7714,7 +7714,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-wave-motion-cannon-05",
+          "requiredTech": ["spinal-wave-motion-cannon-05"],
           "sourceRow": 153,
           "isMain": false
         },
@@ -7754,7 +7754,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "heavy-vortex-cannon",
+          "requiredTech": ["heavy-vortex-cannon"],
           "sourceRow": 154,
           "isMain": true
         },
@@ -7794,7 +7794,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 155,
           "isMain": false
         },
@@ -7834,7 +7834,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 156,
           "isMain": false
         }
@@ -7895,7 +7895,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 256,
-          "techRequirement": "light-plasma-cannon",
+          "requiredTech": ["light-plasma-cannon"],
           "sourceRow": 158,
           "isMain": false
         },
@@ -7950,7 +7950,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 314,
-          "techRequirement": "heavy-plasma-cannon",
+          "requiredTech": ["heavy-plasma-cannon"],
           "sourceRow": 159,
           "isMain": false
         },
@@ -8012,7 +8012,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 518,
-          "techRequirement": "spinal-plasma-cannon-01",
+          "requiredTech": ["spinal-plasma-cannon-01"],
           "sourceRow": 160,
           "isMain": true
         },
@@ -8078,7 +8078,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 599,
-          "techRequirement": "spinal-plasma-cannon-02",
+          "requiredTech": ["spinal-plasma-cannon-02"],
           "sourceRow": 161,
           "isMain": false
         },
@@ -8147,7 +8147,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 679,
-          "techRequirement": "spinal-plasma-cannon-03",
+          "requiredTech": ["spinal-plasma-cannon-03"],
           "sourceRow": 162,
           "isMain": false
         },
@@ -8213,7 +8213,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 787,
-          "techRequirement": "spinal-plasma-cannon-04",
+          "requiredTech": ["spinal-plasma-cannon-04"],
           "sourceRow": 163,
           "isMain": false
         },
@@ -8283,7 +8283,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 867,
-          "techRequirement": "spinal-plasma-cannon-05",
+          "requiredTech": ["spinal-plasma-cannon-05"],
           "sourceRow": 164,
           "isMain": false
         },
@@ -8335,7 +8335,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 186,
-          "techRequirement": "magnetic-ring",
+          "requiredTech": ["magnetic-ring"],
           "sourceRow": 165,
           "isMain": false
         },
@@ -8386,7 +8386,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 12,
-          "techRequirement": "pd-magnetic-ring",
+          "requiredTech": ["pd-magnetic-ring"],
           "sourceRow": 166,
           "isMain": false
         },
@@ -8426,7 +8426,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "spinal-corona-cannon-01",
+          "requiredTech": ["spinal-corona-cannon-01"],
           "sourceRow": 167,
           "isMain": false
         },
@@ -8466,7 +8466,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "spinal-corona-cannon-02",
+          "requiredTech": ["spinal-corona-cannon-02"],
           "sourceRow": 168,
           "isMain": false
         },
@@ -8506,7 +8506,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "spinal-corona-cannon-03",
+          "requiredTech": ["spinal-corona-cannon-03"],
           "sourceRow": 169,
           "isMain": false
         },
@@ -8546,7 +8546,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "spinal-corona-cannon-04",
+          "requiredTech": ["spinal-corona-cannon-04"],
           "sourceRow": 170,
           "isMain": false
         },
@@ -8586,7 +8586,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "spinal-corona-cannon-05",
+          "requiredTech": ["spinal-corona-cannon-05"],
           "sourceRow": 171,
           "isMain": false
         }
@@ -8636,7 +8636,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 76,
-          "techRequirement": "electron-gun",
+          "requiredTech": ["electron-gun"],
           "sourceRow": 173,
           "isMain": false
         },
@@ -8676,7 +8676,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 82,
-          "techRequirement": "electron-repeater",
+          "requiredTech": ["electron-repeater"],
           "sourceRow": 174,
           "isMain": false
         },
@@ -8720,7 +8720,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 122,
-          "techRequirement": "torac",
+          "requiredTech": ["torac"],
           "sourceRow": 175,
           "isMain": false
         },
@@ -8774,7 +8774,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 144,
-          "techRequirement": "linac",
+          "requiredTech": ["linac"],
           "sourceRow": 176,
           "isMain": false
         }
@@ -8832,7 +8832,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 18,
-          "techRequirement": "pd-torac",
+          "requiredTech": ["pd-torac"],
           "sourceRow": 179,
           "isMain": false
         },
@@ -8889,7 +8889,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 264,
-          "techRequirement": "neutron-beam",
+          "requiredTech": ["neutron-beam"],
           "sourceRow": 180,
           "isMain": false
         },
@@ -8950,7 +8950,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 523,
-          "techRequirement": "h-torac",
+          "requiredTech": ["h-torac"],
           "sourceRow": 181,
           "isMain": false
         },
@@ -9004,7 +9004,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 307,
-          "techRequirement": "spinal-tur-linac-01",
+          "requiredTech": ["spinal-tur-linac-01"],
           "sourceRow": 182,
           "isMain": true
         }
@@ -9060,7 +9060,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 72,
-          "techRequirement": "linac",
+          "requiredTech": ["linac"],
           "sourceRow": 184,
           "isMain": false
         },
@@ -9104,7 +9104,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 6,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 185,
           "isMain": false
         },
@@ -9161,7 +9161,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 493,
-          "techRequirement": "muon-projector",
+          "requiredTech": ["muon-projector"],
           "sourceRow": 186,
           "isMain": false
         },
@@ -9218,7 +9218,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 754,
-          "techRequirement": "linac",
+          "requiredTech": ["linac"],
           "sourceRow": 187,
           "isMain": false
         },
@@ -9272,7 +9272,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 343,
-          "techRequirement": "hadron-cannon",
+          "requiredTech": ["hadron-cannon"],
           "sourceRow": 188,
           "isMain": true
         },
@@ -9330,7 +9330,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 566,
-          "techRequirement": "hadron-cannon",
+          "requiredTech": ["hadron-cannon"],
           "sourceRow": 189,
           "isMain": false
         },
@@ -9388,7 +9388,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 788,
-          "techRequirement": "hadron-cannon",
+          "requiredTech": ["hadron-cannon"],
           "sourceRow": 190,
           "isMain": false
         },
@@ -9446,7 +9446,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1011,
-          "techRequirement": "hadron-cannon",
+          "requiredTech": ["hadron-cannon"],
           "sourceRow": 191,
           "isMain": false
         },
@@ -9504,7 +9504,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1234,
-          "techRequirement": "hadron-cannon",
+          "requiredTech": ["hadron-cannon"],
           "sourceRow": 192,
           "isMain": false
         },
@@ -9548,7 +9548,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-graviton-beam-01",
+          "requiredTech": ["spinal-graviton-beam-01"],
           "sourceRow": 193,
           "isMain": false
         },
@@ -9592,7 +9592,7 @@
           "isSpinal": true,
           "isPointDefense": true,
           "cost": 0,
-          "techRequirement": "spinal-graviton-beam-01",
+          "requiredTech": ["spinal-graviton-beam-01"],
           "sourceRow": 194,
           "isMain": false
         },
@@ -9632,7 +9632,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-graviton-beam-01",
+          "requiredTech": ["spinal-graviton-beam-01"],
           "sourceRow": 195,
           "isMain": false
         },
@@ -9672,7 +9672,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-graviton-beam-02",
+          "requiredTech": ["spinal-graviton-beam-02"],
           "sourceRow": 196,
           "isMain": false
         },
@@ -9712,7 +9712,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-graviton-beam-03",
+          "requiredTech": ["spinal-graviton-beam-03"],
           "sourceRow": 197,
           "isMain": false
         },
@@ -9752,7 +9752,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-graviton-beam-04",
+          "requiredTech": ["spinal-graviton-beam-04"],
           "sourceRow": 198,
           "isMain": false
         },
@@ -9792,7 +9792,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-graviton-beam-05",
+          "requiredTech": ["spinal-graviton-beam-05"],
           "sourceRow": 199,
           "isMain": false
         }
@@ -9861,7 +9861,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 230,
-          "techRequirement": "laser-coupled-particle-beam",
+          "requiredTech": ["laser-coupled-particle-beam"],
           "sourceRow": 201,
           "isMain": false
         },
@@ -9914,7 +9914,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 38,
-          "techRequirement": "laser-coupled-particle-pd",
+          "requiredTech": ["laser-coupled-particle-pd"],
           "sourceRow": 202,
           "isMain": false
         },
@@ -9981,7 +9981,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 960,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 203,
           "isMain": false
         },
@@ -10052,7 +10052,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1182,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 204,
           "isMain": false
         },
@@ -10123,7 +10123,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1403,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 205,
           "isMain": false
         },
@@ -10194,7 +10194,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1625,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 206,
           "isMain": false
         },
@@ -10247,7 +10247,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 72,
-          "techRequirement": "relativistic-particle-beam",
+          "requiredTech": ["relativistic-particle-beam"],
           "sourceRow": 207,
           "isMain": false
         },
@@ -10310,7 +10310,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 222,
-          "techRequirement": "laser-coupled-particle-beam",
+          "requiredTech": ["laser-coupled-particle-beam"],
           "sourceRow": 208,
           "isMain": false
         },
@@ -10363,7 +10363,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 38,
-          "techRequirement": "laser-coupled-particle-pd",
+          "requiredTech": ["laser-coupled-particle-pd"],
           "sourceRow": 209,
           "isMain": false
         },
@@ -10430,7 +10430,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 835,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 210,
           "isMain": false
         },
@@ -10501,7 +10501,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1023,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 211,
           "isMain": false
         },
@@ -10572,7 +10572,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1212,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 212,
           "isMain": false
         },
@@ -10643,7 +10643,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1400,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 213,
           "isMain": false
         },
@@ -10696,7 +10696,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 72,
-          "techRequirement": "relativistic-particle-beam",
+          "requiredTech": ["relativistic-particle-beam"],
           "sourceRow": 214,
           "isMain": false
         },
@@ -10759,7 +10759,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 276,
-          "techRequirement": "laser-coupled-particle-beam",
+          "requiredTech": ["laser-coupled-particle-beam"],
           "sourceRow": 215,
           "isMain": false
         },
@@ -10812,7 +10812,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 64,
-          "techRequirement": "laser-coupled-particle-pd",
+          "requiredTech": ["laser-coupled-particle-pd"],
           "sourceRow": 216,
           "isMain": false
         },
@@ -10879,7 +10879,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 976,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 217,
           "isMain": false
         },
@@ -10950,7 +10950,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1198,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 218,
           "isMain": false
         },
@@ -11021,7 +11021,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1421,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 219,
           "isMain": false
         },
@@ -11092,7 +11092,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1643,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 220,
           "isMain": false
         },
@@ -11145,7 +11145,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 91,
-          "techRequirement": "relativistic-particle-beam",
+          "requiredTech": ["relativistic-particle-beam"],
           "sourceRow": 221,
           "isMain": false
         },
@@ -11208,7 +11208,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 358,
-          "techRequirement": "laser-coupled-particle-beam",
+          "requiredTech": ["laser-coupled-particle-beam"],
           "sourceRow": 222,
           "isMain": false
         },
@@ -11261,7 +11261,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 89,
-          "techRequirement": "laser-coupled-particle-pd",
+          "requiredTech": ["laser-coupled-particle-pd"],
           "sourceRow": 223,
           "isMain": false
         },
@@ -11328,7 +11328,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1230,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 224,
           "isMain": false
         },
@@ -11399,7 +11399,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1505,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 225,
           "isMain": false
         },
@@ -11470,7 +11470,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1781,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 226,
           "isMain": false
         },
@@ -11541,7 +11541,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 2057,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 227,
           "isMain": false
         },
@@ -11594,7 +11594,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 141,
-          "techRequirement": "relativistic-particle-beam",
+          "requiredTech": ["relativistic-particle-beam"],
           "sourceRow": 228,
           "isMain": false
         },
@@ -11657,7 +11657,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 551,
-          "techRequirement": "laser-coupled-particle-beam",
+          "requiredTech": ["laser-coupled-particle-beam"],
           "sourceRow": 229,
           "isMain": false
         },
@@ -11710,7 +11710,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 178,
-          "techRequirement": "laser-coupled-particle-pd",
+          "requiredTech": ["laser-coupled-particle-pd"],
           "sourceRow": 230,
           "isMain": false
         },
@@ -11777,7 +11777,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 1698,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 231,
           "isMain": false
         },
@@ -11848,7 +11848,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 2058,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 232,
           "isMain": false
         },
@@ -11919,7 +11919,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 2417,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 233,
           "isMain": false
         },
@@ -11990,7 +11990,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 2777,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 234,
           "isMain": false
         },
@@ -12043,7 +12043,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 239,
-          "techRequirement": "relativistic-particle-beam",
+          "requiredTech": ["relativistic-particle-beam"],
           "sourceRow": 235,
           "isMain": false
         },
@@ -12083,7 +12083,7 @@
           "isSpinal": true,
           "isPointDefense": false,
           "cost": 0,
-          "techRequirement": "spinal-false-vacuum-projector-01",
+          "requiredTech": ["spinal-false-vacuum-projector-01"],
           "sourceRow": 236,
           "isMain": false
         }
@@ -12137,7 +12137,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "troop-light-weapons",
+          "requiredTech": ["troop-light-weapons"],
           "sourceRow": 238,
           "isMain": false
         },
@@ -12188,7 +12188,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "troop-heavy-weapons",
+          "requiredTech": ["troop-heavy-weapons"],
           "sourceRow": 239,
           "isMain": false
         },
@@ -12245,7 +12245,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 240,
           "isMain": false
         },
@@ -12312,7 +12312,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "troop-nuclear-weapons",
+          "requiredTech": ["troop-nuclear-weapons"],
           "sourceRow": 241,
           "isMain": false
         },
@@ -12360,7 +12360,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 242,
           "isMain": false
         },
@@ -12421,7 +12421,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 243,
           "isMain": false
         },
@@ -12472,7 +12472,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "troop-torac",
+          "requiredTech": ["troop-torac"],
           "sourceRow": 244,
           "isMain": false
         },
@@ -12527,7 +12527,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "troop-laser-weapons",
+          "requiredTech": ["troop-laser-weapons"],
           "sourceRow": 245,
           "isMain": false
         },
@@ -12587,7 +12587,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": "troop-plasma",
+          "requiredTech": ["troop-plasma"],
           "sourceRow": 246,
           "isMain": false
         }
@@ -12646,7 +12646,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 3,
-          "techRequirement": "heavy-cannon",
+          "requiredTech": ["heavy-cannon"],
           "sourceRow": 248,
           "isMain": false
         },
@@ -12693,7 +12693,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 30,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 249,
           "isMain": false
         },
@@ -12747,7 +12747,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 58,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 250,
           "isMain": false
         },
@@ -12801,7 +12801,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 6,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 251,
           "isMain": false
         },
@@ -12856,7 +12856,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 43,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 252,
           "isMain": false
         },
@@ -12915,7 +12915,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 30,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 253,
           "isMain": false
         },
@@ -12962,7 +12962,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 37,
-          "techRequirement": "torac",
+          "requiredTech": ["torac"],
           "sourceRow": 254,
           "isMain": false
         }
@@ -13022,7 +13022,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 5,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 256,
           "isMain": false
         },
@@ -13076,7 +13076,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 5,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 257,
           "isMain": false
         },
@@ -13136,7 +13136,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 1,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 258,
           "isMain": false
         },
@@ -13199,7 +13199,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 3,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 259,
           "isMain": false
         },
@@ -13255,7 +13255,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 20,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 260,
           "isMain": false
         },
@@ -13315,7 +13315,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 2,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 261,
           "isMain": false
         },
@@ -13362,7 +13362,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 30,
-          "techRequirement": "chemlaser-warhead",
+          "requiredTech": ["chemlaser-warhead"],
           "sourceRow": 262,
           "isMain": false
         },
@@ -13418,7 +13418,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 16,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 263,
           "isMain": false
         },
@@ -13468,7 +13468,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 35,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 264,
           "isMain": false
         },
@@ -13521,7 +13521,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 39,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 265,
           "isMain": false
         },
@@ -13571,7 +13571,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 117,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 266,
           "isMain": false
         },
@@ -13624,7 +13624,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 240,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 267,
           "isMain": false
         },
@@ -13674,7 +13674,7 @@
           "isSpinal": false,
           "isPointDefense": true,
           "cost": 192,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 268,
           "isMain": false
         },
@@ -13731,7 +13731,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 66,
-          "techRequirement": "plasma-bottle-warhead",
+          "requiredTech": ["plasma-bottle-warhead"],
           "sourceRow": 269,
           "isMain": false
         },
@@ -13781,7 +13781,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 106,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 270,
           "isMain": false
         },
@@ -13831,7 +13831,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 188,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 271,
           "isMain": false
         },
@@ -13887,7 +13887,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 281,
-          "techRequirement": "neutron-beam-warhead",
+          "requiredTech": ["neutron-beam-warhead"],
           "sourceRow": 273,
           "isMain": false
         },
@@ -13938,7 +13938,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 104,
-          "techRequirement": "disruptor-warhead",
+          "requiredTech": ["disruptor-warhead"],
           "sourceRow": 274,
           "isMain": false
         },
@@ -13991,7 +13991,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 232,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 276,
           "isMain": false
         },
@@ -14044,7 +14044,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": 473,
-          "techRequirement": "hyperon-warhead",
+          "requiredTech": ["hyperon-warhead"],
           "sourceRow": 277,
           "isMain": false
         }
@@ -14105,7 +14105,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 288,
           "isMain": false
         },
@@ -14152,7 +14152,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 289,
           "isMain": false
         },
@@ -14210,7 +14210,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 290,
           "isMain": false
         },
@@ -14267,7 +14267,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 291,
           "isMain": false
         },
@@ -14324,7 +14324,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 292,
           "isMain": false
         },
@@ -14384,7 +14384,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 293,
           "isMain": false
         },
@@ -14442,7 +14442,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 294,
           "isMain": false
         },
@@ -14503,7 +14503,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 295,
           "isMain": false
         },
@@ -14561,7 +14561,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 296,
           "isMain": false
         },
@@ -14619,7 +14619,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 297,
           "isMain": false
         },
@@ -14677,7 +14677,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 298,
           "isMain": false
         },
@@ -14734,7 +14734,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 299,
           "isMain": false
         },
@@ -14791,7 +14791,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 300,
           "isMain": false
         },
@@ -14849,7 +14849,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 301,
           "isMain": false
         },
@@ -14907,7 +14907,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 302,
           "isMain": false
         },
@@ -14965,7 +14965,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 303,
           "isMain": false
         },
@@ -15023,7 +15023,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 304,
           "isMain": false
         },
@@ -15084,7 +15084,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 305,
           "isMain": false
         },
@@ -15141,7 +15141,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 306,
           "isMain": false
         },
@@ -15198,7 +15198,7 @@
           "isSpinal": false,
           "isPointDefense": false,
           "cost": null,
-          "techRequirement": null,
+          "requiredTech": [],
           "sourceRow": 307,
           "isMain": false
         }

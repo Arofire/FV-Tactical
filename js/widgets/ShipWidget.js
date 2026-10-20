@@ -18,6 +18,7 @@ class ShipWidget extends Widget {
             appearance: '',
             text2imgPrompt: '',
             developmentCost: null,
+            armorEfficiency: 3,
             hullComposition: {
                 magazine: 0,
                 hangar: 0,
@@ -28,7 +29,7 @@ class ShipWidget extends Widget {
                 tankage: 0
             },
             containmentHulls: 0,
-            // Ten foundational tech requirement flags
+            // Ten foundational flags that may require tech
             foundations: {
                 magazineDensity: false,
                 hangarDensity: false,
@@ -53,7 +54,7 @@ class ShipWidget extends Widget {
                 thresholds: { warning: 0, critical: 0, maximum: 0 },
                 dissipation: 0
             },
-            ignoreTechRequirements: false,
+            ignoreRequiredTech: false,
             resources: {
                 cargo: 0,
                 remass: 0
@@ -207,7 +208,7 @@ class ShipWidget extends Widget {
         if (!window.widgetManager) return null;
         for (const parentId of this.parents) {
             const parentWidget = window.widgetManager.getWidget(parentId);
-            if (parentWidget && (parentWidget.type === 'ship' || parentWidget.type === 'shipPrototype')) {
+            if (parentWidget?.type === 'ship') {
                 return parentWidget;
             }
         }
@@ -274,7 +275,7 @@ class ShipWidget extends Widget {
         if (this.children && this.children.size > 0 && window.widgetManager) {
             this.children.forEach(childId => {
                 const childWidget = window.widgetManager.getWidget(childId);
-                if (childWidget && (childWidget.type === 'ship' || childWidget.type === 'shipPrototype') && typeof childWidget.updateSubclassState === 'function') {
+                if (childWidget?.type === 'ship' && typeof childWidget.updateSubclassState === 'function') {
                     childWidget.updateSubclassState();
                 }
             });
@@ -282,7 +283,7 @@ class ShipWidget extends Widget {
         this.queuePreflightCheck();
     }
     
-    notifyOutfitChildrenToRefresh(methodName = 'handleParentTechRequirementChange') {
+    notifyOutfitChildrenToRefresh(methodName = 'handleParentRequiredTechChange') {
         if (!this.children || this.children.size === 0 || !window.widgetManager) return;
         this.children.forEach(childId => {
             const childWidget = window.widgetManager.getWidget(childId);
@@ -318,8 +319,50 @@ class ShipWidget extends Widget {
     }
 
     notifyShipDataChanged() {
+        this.updateClassCostDisplay();
         console.log(`[ShipWidget ${this.id}] Data changed, notifying all children...`);
         this.notifyChildrenOfChange();
+    }
+
+    getClassCost() {
+        const hullCosts = {
+            core: 5,
+            emplacement: 3,
+            freight: 1,
+            hangar: 3,
+            magazine: 3,
+            tankage: 1,
+            system: 5
+        };
+        const composition = this.shipData.hullComposition || {};
+        const hullCost = Object.entries(hullCosts).reduce((total, [hullType, unitCost]) => {
+            const count = Math.max(0, Number(composition[hullType]) || 0);
+            return total + count * unitCost;
+        }, 0);
+        const remassCapacity = Math.max(0, Number(this.shipData.resources?.remass) || 0);
+        const total = Math.round(hullCost + remassCapacity * 0.3189);
+
+        return {
+            combatValue: total,
+            industryCost: total
+        };
+    }
+
+    getCostTotals() {
+        const classCost = this.getClassCost();
+        return window.empire?.economyMode === 'campaign'
+            ? { IP: classCost.industryCost }
+            : { CV: classCost.combatValue };
+    }
+
+    updateClassCostDisplay() {
+        const classCost = this.getClassCost();
+        this.shipData.classCost = classCost;
+
+        this.setHeaderMetric('cost', '', this.formatCostTotals(this.getCostTotals()));
+        this.refreshDevelopmentMetric();
+
+        return classCost;
     }
 
     getTotalHulls() {
@@ -369,18 +412,14 @@ class ShipWidget extends Widget {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         
         // Create Information section (merged meta and role)
-        const informationSection = this.createSection('information', 'Information');
+        const informationSection = this.createSection('information', '');
         const roleOptions = this.generateRoleOptionsHTML(this.shipData.role);
         const roleInputValue = this.getRoleInputValue();
         
         this.setSectionContent(informationSection, `
             <div class="ship-information-header" id="${this.id}-information-header">
                 <label class="ship-flag"><input type="checkbox" id="${this.id}-operational" ${this.shipData.operational ? 'checked' : ''}> Operational</label>
-                <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-tech" ${this.shipData.ignoreTechRequirements ? 'checked' : ''}> Ignore Tech</label>
-                <div class="ship-dvp">
-                    <label for="${this.id}-dvp-cost">DvP Cost</label>
-                    <input type="number" min="0" step="1" id="${this.id}-dvp-cost" value="${this.shipData.developmentCost ?? ''}" placeholder="0">
-                </div>
+                <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-required-tech" ${this.shipData.ignoreRequiredTech ? 'checked' : ''}> Ignore Required Tech</label>
             </div>
             <div class="input-group information-group" id="${this.id}-role-group">
                 <label>Role</label>
@@ -518,9 +557,8 @@ class ShipWidget extends Widget {
         // This is more reliable than document.getElementById
         const getElement = (id) => this.element?.querySelector(`#${id}`);
         
-        const ignoreTechCheckbox = getElement(`${this.id}-ignore-tech`);
+        const ignoreRequiredTechCheckbox = getElement(`${this.id}-ignore-required-tech`);
         const operationalCheckbox = getElement(`${this.id}-operational`);
-        const dvpInput = getElement(`${this.id}-dvp-cost`);
     const roleSelect = getElement(`${this.id}-role-select`);
     const customRoleInput = getElement(`${this.id}-role-custom`);
     const roleToggleBtn = getElement(`${this.id}-role-toggle`);
@@ -528,9 +566,9 @@ class ShipWidget extends Widget {
     this.roleCustomInput = customRoleInput;
     this.roleToggleButton = roleToggleBtn;
 
-        if (ignoreTechCheckbox) {
-            ignoreTechCheckbox.addEventListener('change', (e) => {
-                this.shipData.ignoreTechRequirements = e.target.checked;
+        if (ignoreRequiredTechCheckbox) {
+            ignoreRequiredTechCheckbox.addEventListener('change', (e) => {
+                this.shipData.ignoreRequiredTech = e.target.checked;
                 this.queuePreflightCheck();
                 this.notifyShipDataChanged();
             });
@@ -538,24 +576,6 @@ class ShipWidget extends Widget {
         if (operationalCheckbox) {
             operationalCheckbox.addEventListener('change', (e) => {
                 this.shipData.operational = e.target.checked;
-                this.queuePreflightCheck();
-            });
-        }
-        if (dvpInput) {
-            dvpInput.addEventListener('input', (e) => {
-                const raw = e.target.value;
-                if (raw === '' || raw === null) {
-                    this.shipData.developmentCost = null;
-                    return;
-                }
-                const value = parseInt(raw, 10);
-                this.shipData.developmentCost = Number.isFinite(value) && value >= 0 ? value : null;
-                if (this.shipData.developmentCost === null) {
-                    e.target.value = '';
-                }
-                if (this.shipData.developmentCost !== null) {
-                    e.target.value = this.shipData.developmentCost;
-                }
                 this.queuePreflightCheck();
             });
         }
@@ -823,14 +843,14 @@ class ShipWidget extends Widget {
     updateStats() {
         this.updateCargoRemassUI();
         this.updateHullDisplay();
+        this.updateClassCostDisplay();
         this.queuePreflightCheck();
     }
 
     syncFormFromData() {
         const simpleFields = {
-            'ignoreTechRequirements': { id: 'ignore-tech', type: 'checkbox' },
-            'operational': { id: 'operational', type: 'checkbox' },
-            'developmentCost': { id: 'dvp-cost', type: 'number' }
+            'ignoreRequiredTech': { id: 'ignore-required-tech', type: 'checkbox' },
+            'operational': { id: 'operational', type: 'checkbox' }
         };
         this.syncDataToFields(this.shipData, simpleFields);
         this.updateTitle(this.shipData.name);
@@ -869,9 +889,8 @@ class ShipWidget extends Widget {
         // Use base class helper for simple fields
         const simpleFields = {
             'name': { id: 'name', type: 'text' },
-            'ignoreTechRequirements': { id: 'ignore-tech', type: 'checkbox' },
-            'operational': { id: 'operational', type: 'checkbox' },
-            'developmentCost': { id: 'dvp-cost', type: 'number' }
+            'ignoreRequiredTech': { id: 'ignore-required-tech', type: 'checkbox' },
+            'operational': { id: 'operational', type: 'checkbox' }
         };
         this.syncFieldsToData(this.shipData, simpleFields);
 
@@ -1020,8 +1039,8 @@ class ShipWidget extends Widget {
         if (data.operational) {
             badges.appendChild(this.createBadge('Operational', 'caution'));
         }
-        if (data.ignoreTechRequirements) {
-            badges.appendChild(this.createBadge('Ignores Tech', 'warning'));
+        if (data.ignoreRequiredTech) {
+            badges.appendChild(this.createBadge('Ignores Required Tech', 'warning'));
         }
 
         const summaryGrid = document.createElement('div');
@@ -1030,10 +1049,18 @@ class ShipWidget extends Widget {
         const roleLabel = this.formatRoleLabel(this.getRoleInputValue()) || '—';
         const hullSummary = this.formatHullSummary();
         const foundationSummary = this.formatFoundations();
+        const classCost = this.getClassCost();
+        const isCampaign = window.empire?.economyMode === 'campaign';
+        const classCostValue = isCampaign ? classCost.industryCost : classCost.combatValue;
+        const classCostUnit = isCampaign ? 'IP' : 'CV';
 
         const fields = [
             { label: 'Role', value: roleLabel },
             { label: 'DvP Cost', value: this.formatOptionalNumber(data.developmentCost) },
+            {
+                label: 'Class Cost',
+                value: `${classCostValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${classCostUnit}`
+            },
             { label: 'Hull Sections', value: hullSummary },
             { label: 'Cargo', value: this.formatOptionalNumber(resources.cargo, ' t') },
             { label: 'Remass', value: this.formatOptionalNumber(resources.remass, ' t') },
@@ -1165,6 +1192,7 @@ class ShipWidget extends Widget {
 
     getSerializedData() {
         this.syncDataFromForm();
+        this.updateClassCostDisplay();
         return {
             ...super.getSerializedData(),
             shipData: this.shipData
@@ -1180,76 +1208,64 @@ class ShipWidget extends Widget {
 
     loadSerializedData(data) {
         super.loadSerializedData(data);
-        if (data.shipData) {
-            this.shipData = { ...this.shipData, ...data.shipData };
-            
-            // Deep merge nested objects from the incoming data
-            const incomingHulls = { ...(data.shipData.hullComposition || {}) };
-            const legacyQuantumHulls = Math.max(0, Number(incomingHulls.quantum) || 0);
-            delete incomingHulls.quantum;
-            this.shipData.hullComposition = {
-                magazine: 0,
-                hangar: 0,
-                system: 0,
-                emplacement: 0,
-                core: 0,
-                freight: 0,
-                tankage: 0,
-                ...incomingHulls,
-                system: Math.max(0, Number(incomingHulls.system) || 0) + legacyQuantumHulls
-            };
-            const legacyHulls = { ...(data.shipData.hullComposition || {}) };
-            this.shipData.containmentHulls = Number.isFinite(data.shipData.containmentHulls)
-                ? data.shipData.containmentHulls
-                : (Number(legacyHulls.freight) || 0) + (Number(legacyHulls.tankage) || 0) +
-                    (Number(legacyHulls.containment) || 0) + (Number(legacyHulls.remass) || 0);
-            delete legacyHulls.containment;
-            delete legacyHulls.remass;
-            delete legacyHulls.bunker;
-            delete legacyHulls.powerplant;
-            this.shipData.hullComposition = {
+        const incoming = data.shipData;
+        if (!incoming || typeof incoming !== 'object') return;
+
+        const pickFields = (source, fields) => Object.fromEntries(
+            fields.filter(key => Object.prototype.hasOwnProperty.call(source || {}, key))
+                .map(key => [key, source[key]])
+        );
+        const currentFields = [
+            'name', 'role', 'customRole', 'description', 'designNotes', 'appearance',
+            'text2imgPrompt', 'developmentCost', 'armorEfficiency', 'containmentHulls',
+            'operational', 'ignoreRequiredTech'
+        ];
+        this.shipData = {
+            ...this.shipData,
+            ...pickFields(incoming, currentFields),
+            hullComposition: {
                 ...this.shipData.hullComposition,
-                ...legacyHulls
-            };
-            delete this.shipData.hullComposition.containment;
-            delete this.shipData.hullComposition.remass;
-            delete this.shipData.hullComposition.quantum;
-            delete this.shipData.hullComposition.bunker;
-            delete this.shipData.hullComposition.powerplant;
-            delete this.shipData.hardpoints;
-            this.shipData.foundations = {
-                structural: false,
-                propulsion: false,
-                power: false,
-                heat: false,
-                lifeSupport: false,
-                navigation: false,
-                sensors: false,
-                weapons: false,
-                defense: false,
-                logistics: false,
-                ...(data.shipData.foundations || {})
-            };
-            this.shipData.resources = {
-                cargo: 0,
-                remass: 0,
-                ...(data.shipData.resources || {})
-            };
-            
-            if (!data.shipData.resources) {
-                this.shipData.resources.cargo = (data.shipData.hullComposition?.containment ||
-                    data.shipData.hullComposition?.freight || 0) * 50;
-                this.shipData.resources.remass = (data.shipData.hullComposition?.remass ||
-                    data.shipData.hullComposition?.tankage || 0) * 50;
+                ...pickFields(incoming.hullComposition, this.hullTypes)
+            },
+            foundations: {
+                ...this.shipData.foundations,
+                ...pickFields(incoming.foundations, this.foundationKeys)
+            },
+            powerAndPropulsion: {
+                ...this.shipData.powerAndPropulsion,
+                ...pickFields(incoming.powerAndPropulsion, [
+                    'thrust', 'burnRating', 'heatEfficiency', 'supplyRating'
+                ])
+            },
+            heatManagement: {
+                ...this.shipData.heatManagement,
+                ...pickFields(incoming.heatManagement, ['capacity', 'dissipation']),
+                thresholds: {
+                    ...this.shipData.heatManagement.thresholds,
+                    ...pickFields(incoming.heatManagement?.thresholds, [
+                        'warning', 'critical', 'maximum'
+                    ])
+                }
+            },
+            resources: {
+                ...this.shipData.resources,
+                ...pickFields(incoming.resources, ['cargo', 'remass'])
+            },
+            statistics: {
+                ...pickFields(incoming.statistics, [
+                    'endurance', 'developmentPoints', 'shipyardMonths', 'thrustRatio',
+                    'burns', 'cargo', 'remass', 'hFuel', 'hangarBays', 'quantumRating',
+                    'qcm', 'troopCapacity'
+                ])
             }
-            this.ensureRoleAvailable(this.shipData.role);
-            this.roleMode = this.shipData.customRole ? 'custom' : 'dropdown';
-            
-            this.syncFormFromData();
-            this.createNodes();
-            this.updateStats();
-            this.updateSubclassState();
-            this.notifyShipChildrenToRefresh();
-        }
+        };
+        this.ensureRoleAvailable(this.shipData.role);
+        this.roleMode = this.shipData.customRole ? 'custom' : 'dropdown';
+
+        this.syncFormFromData();
+        this.createNodes();
+        this.updateStats();
+        this.updateSubclassState();
+        this.notifyShipChildrenToRefresh();
     }
 }

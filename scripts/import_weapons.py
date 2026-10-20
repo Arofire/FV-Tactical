@@ -141,10 +141,10 @@ def load_previous_requirements():
     except (OSError, json.JSONDecodeError):
         return {}
     return {
-        normalize(weapon["name"]): weapon["techRequirement"]
+        normalize(weapon["name"]): weapon["requiredTech"][0]
         for category in previous.get("categories", [])
         for weapon in category.get("weapons", [])
-        if weapon.get("name") and weapon.get("techRequirement")
+        if weapon.get("name") and weapon.get("requiredTech")
     }
 
 
@@ -215,7 +215,7 @@ def build_catalogue(rows):
                 or name.casefold().startswith("pd ")
             ),
             "cost": parse_value(row[17]),
-            "techRequirement": tech_requirement,
+            "requiredTech": [tech_requirement] if tech_requirement else [],
             "sourceRow": csv_row_number,
         }
         current_category["weapons"].append(weapon)

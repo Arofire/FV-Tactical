@@ -118,16 +118,16 @@ class TechTree {
         return groups;
     }
 
-    static async getTechPrerequisites(techId) {
+    static async getTechRequiredTech(techId) {
         const tech = await this.getTech(techId);
-        return tech ? [...(tech.prerequisites || [])] : [];
+        return tech ? [...(tech.requiredTech || [])] : [];
     }
 
     static async getTechDependents(techId) {
         const data = await this.ensureLoaded();
         const dependents = [];
         for (const [id, tech] of Object.entries(data)) {
-            if ((tech.prerequisites || []).includes(techId)) {
+            if ((tech.requiredTech || []).includes(techId)) {
                 dependents.push(id);
             }
         }
@@ -145,43 +145,18 @@ class TechTree {
                 continue;
             }
 
-            for (const prereq of tech.prerequisites || []) {
-                if (!researched.has(prereq)) {
+            for (const requiredId of tech.requiredTech || []) {
+                if (!researched.has(requiredId)) {
                     errors.push({
                         tech: techId,
-                        missingPrereq: prereq,
-                        message: `${tech.name} requires ${data[prereq]?.name || prereq}`
-                    });
-                }
-            }
-
-            if (tech.specialRequirement) {
-                if (!researched.has(tech.specialRequirement)) {
-                    const reqTech = data[tech.specialRequirement];
-                    errors.push({
-                        tech: techId,
-                        missingPrereq: tech.specialRequirement,
-                        message: `${tech.name} requires empire technology: ${reqTech?.name || tech.specialRequirement}`
+                        missingRequiredTech: requiredId,
+                        message: `${tech.name} requires ${data[requiredId]?.name || requiredId}`
                     });
                 }
             }
         }
 
         return errors;
-    }
-
-    static async getEffectivePrerequisites(techId) {
-        const tech = await this.getTech(techId);
-        if (!tech) {
-            return [];
-        }
-
-        const prerequisites = [...(tech.prerequisites || [])];
-        if (tech.specialRequirement && tech.specialRequirement !== 'Tier3') {
-            prerequisites.push(tech.specialRequirement);
-        }
-
-        return prerequisites;
     }
 
     static async canResearch(techId, researchedTech, empireLevel = 1) {
@@ -192,20 +167,14 @@ class TechTree {
 
         const researched = new Set(researchedTech);
 
-        for (const prereq of tech.prerequisites || []) {
-            if (!researched.has(prereq)) {
+        for (const requiredId of tech.requiredTech || []) {
+            if (!researched.has(requiredId)) {
                 return false;
             }
         }
 
-        if (tech.specialRequirement) {
-            if (tech.specialRequirement === 'Tier3') {
-                if (empireLevel < 3) {
-                    return false;
-                }
-            } else if (!researched.has(tech.specialRequirement)) {
-                return false;
-            }
+        if (tech.requiredEmpireTier && empireLevel < tech.requiredEmpireTier) {
+            return false;
         }
 
         return true;
@@ -232,7 +201,7 @@ class TechTree {
 
         const researched = new Set(currentTech);
         const path = [];
-        const queue = [...(target.prerequisites || [])];
+        const queue = [...(target.requiredTech || [])];
 
         while (queue.length > 0) {
             const techId = queue.shift();
@@ -242,14 +211,14 @@ class TechTree {
 
             const tech = data[techId];
             if (tech) {
-                const prereqs = tech.prerequisites || [];
-                for (const prereq of prereqs) {
-                    if (!researched.has(prereq) && !path.includes(prereq)) {
-                        queue.unshift(prereq);
+                const required = tech.requiredTech || [];
+                for (const requiredId of required) {
+                    if (!researched.has(requiredId) && !path.includes(requiredId)) {
+                        queue.unshift(requiredId);
                     }
                 }
 
-                if (prereqs.every(p => researched.has(p) || path.includes(p))) {
+                if (required.every(id => researched.has(id) || path.includes(id))) {
                     path.push(techId);
                 }
             }

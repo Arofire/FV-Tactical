@@ -165,10 +165,19 @@ class BasicInfoWidget extends Widget {
 
     loadSerializedData(data) {
         super.loadSerializedData(data);
-        if (data.basicData) {
-            this.basicData = { ...this.basicData, ...data.basicData };
-            this.syncFormFromData();
-        }
+        const incoming = data.basicData;
+        if (!incoming || typeof incoming !== 'object') return;
+
+        this.basicData = {
+            name: incoming.name ?? this.basicData.name,
+            role: incoming.role ?? this.basicData.role,
+            customRole: incoming.customRole ?? this.basicData.customRole,
+            description: incoming.description ?? this.basicData.description,
+            designNotes: incoming.designNotes ?? this.basicData.designNotes,
+            appearance: incoming.appearance ?? this.basicData.appearance,
+            text2imgPrompt: incoming.text2imgPrompt ?? this.basicData.text2imgPrompt
+        };
+        this.syncFormFromData();
     }
 
     renderSummary(container) {
