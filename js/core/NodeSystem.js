@@ -847,7 +847,6 @@ class NodeSystem {
             outfit: 'Ship Outfit',
             shipCore: 'Ship Core',
             shipHulls: 'Hull Plan',
-            statistics: 'Statistics Hub',
             reroute: 'Reroute Node'
         };
 
@@ -998,11 +997,11 @@ class NodeSystem {
         const widgetNodeConfig = {
             'ship': {
                 inputs: ['Class'],
-                outputs: ['Class', 'Statistics']
+                outputs: ['Class']
             },
             'outfit': {
                 inputs: ['Core','Class'],
-                outputs: ['Outfit', 'Statistics']
+                outputs: ['Outfit']
             },
             'craft': {
                 inputs: ['Core'],
@@ -1021,11 +1020,7 @@ class NodeSystem {
                 outputs: ['Core']
             },
             'shipHulls': {
-                inputs: ['Class', 'Core', 'Outfit'],
-                outputs: ['Statistics']
-            },
-            'statistics': {
-                inputs: ['Statistics'],
+                inputs: ['Outfit'],
                 outputs: []
             },
             'reroute': {

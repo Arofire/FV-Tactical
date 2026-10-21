@@ -150,8 +150,8 @@ class ShipCoreWidget extends Widget {
             value = Math.round(value * 10000) / 10000;
             this.coreData[def.statField] = value;
             const inputId = def.statField.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
-            const input = document.getElementById(`${this.id}-${inputId}`);
-            if (input) input.value = value;
+            const valueElement = document.getElementById(`${this.id}-${inputId}`);
+            if (valueElement) valueElement.textContent = value;
         });
         this.refreshCostDisplay();
     }
@@ -271,17 +271,38 @@ class ShipCoreWidget extends Widget {
             <div class="core-triangle-container">
                 <div class="core-triangle" id="${this.id}-triangle-widget"></div>
                 <div class="triangle-values">
-                    <div class="triangle-value">
-                        <span>Reactor:</span>
-                        <span id="${this.id}-reactor-value">${this.coreData.reactorValue}</span>
+                    <div class="triangle-component">
+                        <div class="triangle-component-title">Manifold</div>
+                        <div class="triangle-value">
+                            <span>Pips:</span>
+                            <span id="${this.id}-manifold-value">${this.coreData.manifoldValue}</span>
+                        </div>
+                        <div class="triangle-value">
+                            <span>Multiplier:</span>
+                            <span id="${this.id}-manifold-efficiency">${this.coreData.manifoldEfficiency}</span>
+                        </div>
                     </div>
-                    <div class="triangle-value">
-                        <span>Engine:</span>
-                        <span id="${this.id}-engine-value">${this.coreData.engineValue}</span>
+                    <div class="triangle-component">
+                        <div class="triangle-component-title">Reactor</div>
+                        <div class="triangle-value">
+                            <span>Pips:</span>
+                            <span id="${this.id}-reactor-value">${this.coreData.reactorValue}</span>
+                        </div>
+                        <div class="triangle-value">
+                            <span>Threshold:</span>
+                            <span id="${this.id}-reactor-stability">${this.coreData.reactorStability}</span>
+                        </div>
                     </div>
-                    <div class="triangle-value">
-                        <span>Manifold:</span>
-                        <span id="${this.id}-manifold-value">${this.coreData.manifoldValue}</span>
+                    <div class="triangle-component">
+                        <div class="triangle-component-title">Engine</div>
+                        <div class="triangle-value">
+                            <span>Pips:</span>
+                            <span id="${this.id}-engine-value">${this.coreData.engineValue}</span>
+                        </div>
+                        <div class="triangle-value">
+                            <span>Exponent:</span>
+                            <span id="${this.id}-engine-efficiency">${this.coreData.engineEfficiency}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -289,31 +310,28 @@ class ShipCoreWidget extends Widget {
         triangleSection.contentContainer.innerHTML = triangleContent;
         sections.appendChild(triangleSection.section);
 
-        // Stats section
-        const statsSection = this.createSection('stats', 'Statistics');
-        statsSection.contentContainer.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
-                <div class="input-group">
-                    <label for="${this.id}-reactor-stability">Reactor Threshold</label>
-                    <input type="number" step="any" id="${this.id}-reactor-stability" value="${this.coreData.reactorStability}" class="stat-spinbox" readonly>
-                </div>
-                <div class="input-group">
-                    <label for="${this.id}-engine-efficiency">Engine Exponent</label>
-                    <input type="number" step="any" id="${this.id}-engine-efficiency" value="${this.coreData.engineEfficiency}" class="stat-spinbox" readonly>
-                </div>
-                <div class="input-group">
-                    <label for="${this.id}-manifold-efficiency">Manifold Multiplier</label>
-                    <input type="number" step="any" id="${this.id}-manifold-efficiency" value="${this.coreData.manifoldEfficiency}" class="stat-spinbox" readonly>
-                </div>
+        const gearingSection = this.createSection('gearing', 'Gears');
+        gearingSection.section.classList.add('outfit-category-section', 'core-gears-section');
+        gearingSection.titleElement.classList.add('outfit-category-title');
+        gearingSection.titleElement.replaceChildren();
+        const gearsToggle = document.createElement('button');
+        gearsToggle.type = 'button';
+        gearsToggle.className = 'outfit-category-toggle';
+        gearsToggle.setAttribute('aria-expanded', 'true');
+        gearsToggle.setAttribute('aria-controls', `${this.id}-gears-content`);
+        gearsToggle.textContent = 'Gears';
+        gearsToggle.addEventListener('click', () => {
+            const expanded = gearsToggle.getAttribute('aria-expanded') !== 'true';
+            gearingSection.section.classList.toggle('is-collapsed', !expanded);
+            gearsToggle.setAttribute('aria-expanded', String(expanded));
+        });
+        gearingSection.titleElement.appendChild(gearsToggle);
+        this.setSectionContent(gearingSection, `
+            <div id="${this.id}-gears-content" class="outfit-category-content">
+                <div id="${this.id}-gears" class="core-gears"></div>
+                <button type="button" id="${this.id}-add-gear" class="core-add-gear">Add gear</button>
             </div>
-        `;
-        sections.appendChild(statsSection.section);
-
-        const gearingSection = this.createSection('gearing', 'Gearing');
-        gearingSection.contentContainer.innerHTML = `
-            <div id="${this.id}-gears" class="core-gears"></div>
-            <button type="button" id="${this.id}-add-gear" class="core-add-gear">Add gear</button>
-        `;
+        `);
         sections.appendChild(gearingSection.section);
 
         this.renderGears();
@@ -415,13 +433,14 @@ class ShipCoreWidget extends Widget {
         this.coreData.gears.forEach((gear, index) => {
             gear.name = names[index];
             const row = document.createElement('div');
-            row.className = 'core-gear-row';
+            row.className = 'composition-item core-gear-row';
+            const instabilityInputId = `${this.id}-gear-instability-${index}`;
             row.innerHTML = `
-                <span class="core-gear-name">${gear.name}</span>
-                <label>Instability
-                    <input type="number" min="1" step="1" data-gear-instability="${index}">
-                </label>
-                <button type="button" data-remove-gear="${index}" aria-label="Remove gear ${index + 1}">×</button>
+                <label class="core-gear-name" for="${instabilityInputId}">${gear.name}</label>
+                <div class="hull-controls">
+                    <input id="${instabilityInputId}" type="number" class="hull-spin" min="1" step="1" data-gear-instability="${index}" aria-label="${gear.name} instability">
+                    <button type="button" class="hull-btn" data-remove-gear="${index}" aria-label="Remove gear ${index + 1}">×</button>
+                </div>
             `;
             const instabilityInput = row.querySelector(`[data-gear-instability="${index}"]`);
             gear.instability = Math.max(1, Number.parseInt(gear.instability, 10) || 1);
@@ -471,26 +490,31 @@ class ShipCoreWidget extends Widget {
             return;
         }
 
-        const size = 300;
+        const width = 300;
+        const height = 250;
         const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        canvas.style.border = '1px solid #555';
+        canvas.width = width;
+        canvas.height = height;
         canvas.style.cursor = 'crosshair';
+        canvas.setAttribute('aria-label', 'Adjust reactor, engine, and manifold distribution');
 
         const ctx = canvas.getContext('2d');
-        this.drawTriangle(ctx, size);
+        this.drawTriangle(ctx, width, height);
 
         container.innerHTML = '';
         container.appendChild(canvas);
 
         // Store triangle parameters for drag handling
+        const margin = 34;
+        const bottomY = height - 26;
+        const triangleHeight = (width - 2 * margin) * Math.sqrt(3) / 2;
         const triangleParams = {
-            size,
-            margin: 40,
-            top: [size / 2, 40],
-            bottomLeft: [40, size - 40],
-            bottomRight: [size - 40, size - 40]
+            width,
+            height,
+            margin,
+            top: [width / 2, bottomY - triangleHeight],
+            bottomLeft: [margin, bottomY],
+            bottomRight: [width - margin, bottomY]
         };
 
         // Add mouse interaction - both click and drag
@@ -517,25 +541,33 @@ class ShipCoreWidget extends Widget {
         });
     }
 
-    redrawTriangleCanvas(canvas, size) {
+    redrawTriangleCanvas(canvas, width, height) {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        this.drawTriangle(ctx, size);
+        this.drawTriangle(ctx, width, height);
     }
 
-    drawTriangle(ctx, size) {
-        const margin = 40;
-        const h = size - 2 * margin;
-        const w = size - 2 * margin;
+    drawTriangle(ctx, width, height) {
+        const margin = 34;
+        const bottomY = height - 18;
+        const triangleHeight = (width - 2 * margin) * Math.sqrt(3) / 2;
 
         // Triangle vertices
-        const top = [size / 2, margin];
-        const bottomLeft = [margin, size - margin];
-        const bottomRight = [size - margin, size - margin];
+        const top = [width / 2, bottomY - triangleHeight];
+        const bottomLeft = [margin, bottomY];
+        const bottomRight = [width - margin, bottomY];
 
-        // Draw triangle
-        ctx.strokeStyle = '#4a90e2';
+        ctx.beginPath();
+        ctx.moveTo(top[0], top[1]);
+        ctx.lineTo(bottomLeft[0], bottomLeft[1]);
+        ctx.lineTo(bottomRight[0], bottomRight[1]);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(74, 144, 226, 0.08)';
+        ctx.fill();
+
+        ctx.strokeStyle = '#5b9ee8';
         ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
         ctx.beginPath();
         ctx.moveTo(top[0], top[1]);
         ctx.lineTo(bottomLeft[0], bottomLeft[1]);
@@ -543,27 +575,46 @@ class ShipCoreWidget extends Widget {
         ctx.closePath();
         ctx.stroke();
 
-        // Draw grid lines for the 12 allocatable points between each vertex.
-        ctx.strokeStyle = '#333';
+        // Draw the three directions of the 12-step allocation grid.
+        ctx.strokeStyle = 'rgba(190, 205, 225, 0.2)';
         ctx.lineWidth = 1;
         for (let i = 1; i < 12; i++) {
             const t = i / 12;
-            // Horizontal lines
-            const p1 = this.lerpPoint(top, bottomLeft, t);
-            const p2 = this.lerpPoint(top, bottomRight, t);
-            ctx.beginPath();
-            ctx.moveTo(p1[0], p1[1]);
-            ctx.lineTo(p2[0], p2[1]);
-            ctx.stroke();
+            [
+                [this.lerpPoint(top, bottomLeft, t), this.lerpPoint(top, bottomRight, t)],
+                [this.lerpPoint(top, bottomRight, t), this.lerpPoint(bottomLeft, bottomRight, t)],
+                [this.lerpPoint(top, bottomLeft, t), this.lerpPoint(bottomRight, bottomLeft, t)]
+            ].forEach(([start, end]) => {
+                ctx.beginPath();
+                ctx.moveTo(start[0], start[1]);
+                ctx.lineTo(end[0], end[1]);
+                ctx.stroke();
+            });
         }
 
-        // Draw labels
-        ctx.fillStyle = '#c0c0c0';
-        ctx.font = 'bold 12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Reactor', top[0], top[1] - 20);
-        ctx.fillText('Manifold', bottomLeft[0] - 30, bottomLeft[1] + 20);
-        ctx.fillText('Engine', bottomRight[0] + 30, bottomRight[1] + 20);
+        const drawVertexLabel = (text, point, angle, baseline = 'middle') => {
+            ctx.save();
+            ctx.translate(point[0], point[1]);
+            ctx.rotate(angle);
+            ctx.fillStyle = '#d2dae5';
+            ctx.font = '600 12px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = baseline;
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
+        };
+        const outwardOffset = 12;
+        const manifoldLabelPoint = this.lerpPoint(bottomLeft, top, 0.16);
+        const engineLabelPoint = this.lerpPoint(bottomRight, top, 0.16);
+        drawVertexLabel('Reactor', top, 0, 'bottom');
+        drawVertexLabel('Manifold', [
+            manifoldLabelPoint[0] - Math.sqrt(3) / 2 * outwardOffset,
+            manifoldLabelPoint[1] - 0.5 * outwardOffset
+        ], -Math.PI / 3);
+        drawVertexLabel('Engine', [
+            engineLabelPoint[0] + Math.sqrt(3) / 2 * outwardOffset,
+            engineLabelPoint[1] - 0.5 * outwardOffset
+        ], Math.PI / 3);
 
         // Draw indicator at current position
         this.drawTriangleIndicator(ctx, top, bottomLeft, bottomRight);
@@ -587,27 +638,11 @@ class ShipCoreWidget extends Widget {
 
     updateTriangleIndicator(e, canvas, triangleParams) {
         const rect = canvas.getBoundingClientRect();
-        
-        // Account for any CSS scale transforms on the canvas or its parents
-        let element = canvas;
-        let scale = 1;
-        while (element && element !== document.body) {
-            const transform = window.getComputedStyle(element).transform;
-            if (transform && transform !== 'none') {
-                const matrix = transform.match(/matrix.*\((.+)\)/);
-                if (matrix) {
-                    const transformScale = parseFloat(matrix[1].split(',')[0]);
-                    scale *= transformScale;
-                }
-            }
-            element = element.parentElement;
-        }
-        
-        // Calculate coordinates relative to canvas, accounting for scale
-        let x = (e.clientX - rect.left) / scale;
-        let y = (e.clientY - rect.top) / scale;
 
-        const { top, bottomLeft, bottomRight, size } = triangleParams;
+        let x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        let y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+        const { top, bottomLeft, bottomRight, width, height } = triangleParams;
 
         // Clamp coordinates to triangle bounds
         const clampedCoords = this.clampPointToTriangle(x, y, top, bottomLeft, bottomRight);
@@ -623,7 +658,7 @@ class ShipCoreWidget extends Widget {
         document.getElementById(`${this.id}-manifold-value`).textContent = this.coreData.manifoldValue;
 
         // Redraw the canvas to show updated indicator position
-        this.redrawTriangleCanvas(canvas, size);
+        this.redrawTriangleCanvas(canvas, width, height);
 
         this.scheduleCoreUpdate();
     }
@@ -831,6 +866,7 @@ class ShipCoreWidget extends Widget {
         return {
             ...this.coreData,
             gears,
+            shipData: this.getConnectedClassData(),
             reactorName: this.coreOptions?.reactor?.options?.[this.coreData.reactor]?.name || '',
             engineName: this.coreOptions?.engine?.options?.[this.coreData.engine]?.name || '',
             manifoldName: this.coreOptions?.manifold?.options?.[this.coreData.manifold]?.name || '',
@@ -938,13 +974,13 @@ class ShipCoreWidget extends Widget {
         if (manifoldValueEl) manifoldValueEl.textContent = this.coreData.manifoldValue;
 
         const reactorStabilityEl = document.getElementById(`${this.id}-reactor-stability`);
-        if (reactorStabilityEl) reactorStabilityEl.value = this.coreData.reactorStability;
+        if (reactorStabilityEl) reactorStabilityEl.textContent = this.coreData.reactorStability;
 
         const engineEfficiencyEl = document.getElementById(`${this.id}-engine-efficiency`);
-        if (engineEfficiencyEl) engineEfficiencyEl.value = this.coreData.engineEfficiency;
+        if (engineEfficiencyEl) engineEfficiencyEl.textContent = this.coreData.engineEfficiency;
 
         const manifoldEfficiencyEl = document.getElementById(`${this.id}-manifold-efficiency`);
-        if (manifoldEfficiencyEl) manifoldEfficiencyEl.value = this.coreData.manifoldEfficiency;
+        if (manifoldEfficiencyEl) manifoldEfficiencyEl.textContent = this.coreData.manifoldEfficiency;
 
         this.renderGears();
         this.renderTriangleWidget();

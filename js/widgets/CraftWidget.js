@@ -10,7 +10,7 @@ class CraftWidget extends Widget {
             ignoreRequiredTech: false,
             profile: 'medium',
             roles: [],
-            power: 'standard',
+            power: 'battery-1',
             requiredTech: [],
             loadout: { features: [], hardpoints: [], utilities: [], equipment: [] }
         };
@@ -46,10 +46,13 @@ class CraftWidget extends Widget {
                 id, name, traits, actions, profile, exclusive, tags, capacities, steps: [`${name} operation`],
                 stats: { thrust: 0, defense: 0, power: capacities.power }
             })),
-            powers: [
-                { id: 'standard', name: 'Standard', power: 2 },
-                { id: 'efficient', name: 'Efficient', power: 1 },
-                { id: 'high-output', name: 'High Output', power: 3 }
+            power: [
+                { id: 'battery-1', name: 'Battery 1', power: 10 },
+                { id: 'battery-2', name: 'Battery 2', power: 11 },
+                { id: 'battery-3', name: 'Battery 3', power: 12 },
+                { id: 'battery-4', name: 'Battery 4', power: 13 },
+                { id: 'battery-5', name: 'Battery 5', power: 14 },
+                { id: 'battery-6', name: 'Battery 6', power: 15 }
             ],
             features: [
                 { id: 'reinforced-hull', name: 'Reinforced Hull', hardpoints: 0, utilities: 0, equipment: 0, combatValue: 1 },
@@ -72,33 +75,23 @@ class CraftWidget extends Widget {
     }
 
     async loadCatalogues() {
-        const files = {
-            profiles: 'data/craft-profiles.json',
-            roles: 'data/craft-roles.json',
-            powers: 'data/craft-powers.json',
-            features: 'data/craft-features.json',
-            hardpoints: 'data/craft-hardpoints.json',
-            utilities: 'data/craft-utilities.json',
-            equipment: 'data/craft-equipment.json'
-        };
-        const failures = [];
-        await Promise.all(Object.entries(files).map(async ([key, path]) => {
-            try {
-                const response = await fetch(path);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                this.catalogues[key] = await response.json();
-            } catch (error) {
-                console.error(`Failed to load Craft catalogue "${key}" (${path}):`, error);
-                failures.push(key);
+        const path = 'data/Craft.json';
+        try {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const catalogues = await response.json();
+            if (!catalogues || typeof catalogues !== 'object' || Array.isArray(catalogues)) {
+                throw new Error('Invalid catalogue data');
             }
-        }));
-        this.updateControls();
-        if (failures.length > 0) {
+            this.catalogues = catalogues;
+        } catch (error) {
+            console.error(`Failed to load Craft catalogues (${path}):`, error);
             window.app?.showNotification(
-                `Craft catalogues failed to load (${failures.join(', ')}); built-in data is being used.`,
+                'Craft catalogues failed to load; built-in data is being used.',
                 'error'
             );
         }
+        this.updateControls();
     }
 
     getCatalogue(key) {
@@ -163,7 +156,7 @@ class CraftWidget extends Widget {
         sections.appendChild(roles.section);
 
         const power = this.createSection('power', 'Power');
-        this.setSectionContent(power, `<div class="input-group"><label for="${this.id}-power-select">Power Plant</label><select id="${this.id}-power-select"></select></div><div id="${this.id}-power-stats" class="widget-stats"></div>`);
+        this.setSectionContent(power, `<div class="input-group"><label for="${this.id}-power-select">Power</label><select id="${this.id}-power-select"></select></div><div id="${this.id}-power-stats" class="widget-stats"></div>`);
         sections.appendChild(power.section);
 
         const loadout = this.createSection('loadout', 'Loadout');
@@ -245,7 +238,7 @@ class CraftWidget extends Widget {
         const selected = [
             this.getProfile(),
             ...this.getCatalogue('roles').filter(item => (this.craftData.roles || []).includes(item.id)),
-            this.getCatalogue('powers').find(item => item.id === this.craftData.power),
+            this.getCatalogue('power').find(item => item.id === this.craftData.power),
             ...['features', 'hardpoints', 'utilities', 'equipment'].flatMap(category =>
                 this.getCatalogue(category).filter(item => (this.craftData.loadout?.[category] || []).includes(item.id)))
         ];
@@ -271,7 +264,7 @@ class CraftWidget extends Widget {
             `<option value="${this.escape(item.id)}" ${item.id === selected ? 'selected' : ''}>${this.escape(this.formatOptionLabel(item, category))}</option>`
         ).join('');
         profileSelect.innerHTML = options(this.getCatalogue('profiles'), this.craftData.profile);
-        powerSelect.innerHTML = options(this.getCatalogue('powers'), this.craftData.power);
+        powerSelect.innerHTML = options(this.getCatalogue('power'), this.craftData.power);
 
         const profile = this.getProfile() || {};
         const selectedRoles = new Set(this.craftData.roles || []);
@@ -355,7 +348,7 @@ class CraftWidget extends Widget {
     calculateStats() {
         const profile = this.getProfile() || {};
         const roles = this.getCatalogue('roles').filter(item => (this.craftData.roles || []).includes(item.id));
-        const power = this.getCatalogue('powers').find(item => item.id === this.craftData.power) || { power: 0 };
+        const power = this.getCatalogue('power').find(item => item.id === this.craftData.power) || { power: 0 };
         const output = { ...profile };
         ['thrust', 'defense', 'power'].forEach(key => {
             output[key] = roles.reduce((sum, role) => sum + Number(role.stats?.[key] || 0), 0);
@@ -383,10 +376,11 @@ class CraftWidget extends Widget {
     updateStats() {
         if (!this.element) return;
         this.craftData.requiredTech = this.getSelectedRequiredTech();
+        const stats = this.calculateStats();
+        this.setHeaderMetric('cost', '', this.formatOptionCost(stats.combatValue, 'general', this.getProfile()?.id || ''));
         const statsContainer = this.element.querySelector(`#${this.id}-combined-stats`);
         const powerContainer = this.element.querySelector(`#${this.id}-power-stats`);
         if (!statsContainer || !powerContainer) return;
-        const stats = this.calculateStats();
         statsContainer.replaceChildren();
         this.renderStatRows(statsContainer, stats, ['cohesion', 'hardpoints', 'utilities', 'equipment', 'burns', 'externalQualities', 'combatValue', 'baysRequired', 'roleCount', 'facing', 'thrust', 'defense', 'power']);
         powerContainer.replaceChildren();
@@ -422,7 +416,9 @@ class CraftWidget extends Widget {
             ignoreRequiredTech: Boolean(source.ignoreRequiredTech),
             profile: source.profile || 'medium',
             roles: Array.isArray(source.roles) ? source.roles.slice() : [],
-            power: source.power || 'standard',
+            power: this.getCatalogue('power').some(item => item.id === source.power)
+                ? source.power
+                : 'battery-1',
             requiredTech: Array.isArray(source.requiredTech) ? source.requiredTech.slice() : [],
             loadout: {
                 features: Array.isArray(source.loadout?.features) ? source.loadout.features.slice() : [],

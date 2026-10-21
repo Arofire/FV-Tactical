@@ -1,0 +1,28 @@
+{
+  "equipment": [
+    { "id": "troop-light-conventional", "name": "Light weapons", "combatValue": 1 },
+    { "id": "troop-heavy-conventional", "name": "Heavy weapons", "combatValue": 1 },
+    { "id": "troop-nuclear", "name": "Nuclear weapons", "combatValue": 2 }
+  ],
+  "features": [
+    { "id": "protected", "name": "Protected", "effect": "Improves cohesion.", "combatValue": 1, "cohesion": 1 },
+    { "id": "reinforced", "name": "Reinforced", "effect": "Improves resilience under fire.", "combatValue": 1, "equipment": 1 },
+    { "id": "plasma-field", "name": "Plasma Field", "effect": "Adds a replenishable defensive plasma field.", "combatValue": 2, "equipment": 1 },
+    { "id": "enhanced", "name": "Enhanced", "effect": "Increased resillience and lethality.", "combatValue": 2, "equipment": 1 },
+    { "id": "multi-domain", "name": "Multi-Domain", "effect": "Allows a second formation to be selected.", "combatValue": 1, "equipment": 1 },
+    { "id": "shock", "name": "Shock", "effect": "Specialized shock-immune troops.", "combatValue": 2, "equipment": 1 }
+  ],
+  "formations": [
+    { "id": "line", "name": "Line", "effect": "Balanced unit deployment.", "combatValue": 0, "equipment": 1 },
+    { "id": "column", "name": "Column", "effect": "Rapid movement and deployment.", "combatValue": 0, "equipment": 1 },
+    { "id": "wedge", "name": "Wedge", "effect": "Concentrated forward assault.", "combatValue": 1, "equipment": 1 },
+    { "id": "dispersed", "name": "Dispersed", "effect": "Widely distributed deployment.", "combatValue": 0, "equipment": 1 }
+  ],
+  "training": [
+    { "id": "green", "name": "Green", "combatValue": 5, "cohesion": 1, "action": 1, "equipment": 1, "description": "Green troops are less survivable in defence and much less effective when attacking. Green troops cannot use the Support action. Irregular, militia or just plain undrained." },
+    { "id": "trained", "name": "Trained", "combatValue": 12, "cohesion": 1, "action": 1, "equipment": 1 },
+    { "id": "professional", "name": "Professional", "combatValue": 20, "cohesion": 1, "action": 2, "equipment": 1 },
+    { "id": "veteran", "name": "Veteran", "combatValue": 28, "cohesion": 2, "action": 2, "equipment": 1 },
+    { "id": "elite", "name": "Elite", "combatValue": 42, "cohesion": 2, "action": 2, "equipment": 1, "description": "Elite troops are more effective with any equipment, and improve the TN of any roll by 1." }
+  ]
+}

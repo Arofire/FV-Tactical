@@ -513,12 +513,12 @@ class ShipWidget extends Widget {
             <div class="cargo-remass-control" id="${this.id}-cargo-remass-control">
                 <div class="cargo-endurance">
                     <span class="label">Cargo</span>
-                    <span class="value" id="${this.id}-cargo-value">${cargoValue}</span>
+                    <input type="number" class="value cargo-remass-value" id="${this.id}-cargo-value" min="0" step="1" value="${cargoValue}" aria-label="Cargo allocation">
                 </div>
                 <input type="range" class="cargo-remass-slider" id="${this.id}-cargo-remass-slider" min="0" max="0" value="${cargoValue}" step="1" aria-label="Cargo and Remass allocation">
                 <div class="remass-burns">
                     <span class="label">Remass</span>
-                    <span class="value" id="${this.id}-remass-value">${remassValue}</span>
+                    <input type="number" class="value cargo-remass-value" id="${this.id}-remass-value" min="0" step="1" value="${remassValue}" aria-label="Remass allocation">
                 </div>
             </div>
         `);
@@ -723,6 +723,33 @@ class ShipWidget extends Widget {
                     this.updateHullDisplay();
                 }
             };
+            const handleValueInput = (value, allocation) => {
+                const parsedValue = parseInt(value, 10);
+                if (!Number.isFinite(parsedValue) || parsedValue < 0) return;
+
+                const capacity = this.getCivilHullSlots() * 50;
+                const clampedValue = Math.min(parsedValue, capacity);
+                const cargo = allocation === 'cargo' ? clampedValue : capacity - clampedValue;
+                const previousFreight = this.shipData.hullComposition.freight;
+                const previousTankage = this.shipData.hullComposition.tankage;
+                this.updateCargoRemassAllocation(cargo);
+                cargoRemassSlider.value = this.shipData.resources.cargo;
+
+                const editedInput = document.getElementById(`${this.id}-${allocation}-value`);
+                if (editedInput && clampedValue !== parsedValue) {
+                    editedInput.value = clampedValue;
+                }
+                const counterpartAllocation = allocation === 'cargo' ? 'remass' : 'cargo';
+                const counterpartInput = document.getElementById(`${this.id}-${counterpartAllocation}-value`);
+                if (counterpartInput) {
+                    counterpartInput.value = this.shipData.resources[counterpartAllocation];
+                }
+
+                if (this.shipData.hullComposition.freight !== previousFreight ||
+                    this.shipData.hullComposition.tankage !== previousTankage) {
+                    this.updateHullDisplay();
+                }
+            };
             const handleSliderChange = (value) => {
                 this.updateCargoRemassAllocation(getCargoValue(value));
                 this.reflowNodes();
@@ -732,6 +759,20 @@ class ShipWidget extends Widget {
             };
             cargoRemassSlider.addEventListener('input', (e) => handleSliderInput(e.target.value));
             cargoRemassSlider.addEventListener('change', (e) => handleSliderChange(e.target.value));
+
+            ['cargo', 'remass'].forEach((allocation) => {
+                const input = document.getElementById(`${this.id}-${allocation}-value`);
+                if (!input) return;
+
+                input.addEventListener('input', () => handleValueInput(input.value, allocation));
+                input.addEventListener('change', () => {
+                    handleValueInput(input.value, allocation);
+                    this.reflowNodes();
+                    this.updateStats();
+                    this.notifyShipChildrenToRefresh();
+                    this.notifyShipDataChanged();
+                });
+            });
         }
     }
     
@@ -808,6 +849,8 @@ class ShipWidget extends Widget {
         }
 
         const slider = document.getElementById(`${this.id}-cargo-remass-slider`);
+        const cargoInput = document.getElementById(`${this.id}-cargo-value`);
+        const remassInput = document.getElementById(`${this.id}-remass-value`);
         const totalSlots = this.getCivilHullSlots();
         const capacity = totalSlots * 50;
         const currentCargo = this.shipData.resources.cargo ?? 0;
@@ -820,6 +863,12 @@ class ShipWidget extends Widget {
             slider.disabled = capacity === 0;
         }
 
+        [cargoInput, remassInput].forEach((input) => {
+            if (!input) return;
+            input.max = capacity;
+            input.disabled = capacity === 0;
+        });
+
         this.updateCargoRemassReadouts();
     }
 
@@ -830,11 +879,11 @@ class ShipWidget extends Widget {
         const remass = this.shipData.resources?.remass ?? 0;
 
         if (cargoValueElement) {
-            cargoValueElement.textContent = cargo;
+            cargoValueElement.value = cargo;
         }
 
         if (remassValueElement) {
-            remassValueElement.textContent = remass;
+            remassValueElement.value = remass;
         }
     }
 
@@ -981,8 +1030,7 @@ class ShipWidget extends Widget {
 
         const nodeIds = {
             classInput: `${this.id}-node-input-class`,
-            classOutput: `${this.id}-node-output-class`,
-            statsOutput: `${this.id}-node-output-statistics`
+            classOutput: `${this.id}-node-output-class`
         };
 
         ensureNode('input', 'Class', 'Class', 0, 0.25, {
@@ -990,14 +1038,6 @@ class ShipWidget extends Widget {
             anchorId: 'ship-information',
             sectionId: 'information',
             minSpacing: 36
-        });
-
-        ensureNode('output', 'Statistics', 'Statistics', 1, 0.4, {
-            nodeId: nodeIds.statsOutput,
-            anchorId: 'ship-information',
-            sectionId: 'information',
-            anchorOffset: 40,
-            minSpacing: 32
         });
 
         ensureNode('output', 'Class', 'Class', 1, 0.25, {
@@ -1250,13 +1290,6 @@ class ShipWidget extends Widget {
             resources: {
                 ...this.shipData.resources,
                 ...pickFields(incoming.resources, ['cargo', 'remass'])
-            },
-            statistics: {
-                ...pickFields(incoming.statistics, [
-                    'endurance', 'developmentPoints', 'shipyardMonths', 'thrustRatio',
-                    'burns', 'cargo', 'remass', 'hFuel', 'hangarBays', 'quantumRating',
-                    'qcm', 'troopCapacity'
-                ])
             }
         };
         this.ensureRoleAvailable(this.shipData.role);

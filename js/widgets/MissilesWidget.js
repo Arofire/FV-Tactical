@@ -44,6 +44,7 @@ class MissilesWidget extends Widget {
         sectionsContainer.appendChild(statsSection.section);
 
         this.setupMissileListeners();
+        this.refreshCostDisplay();
     }
 
     setupMissileListeners() {
@@ -75,6 +76,10 @@ class MissilesWidget extends Widget {
 
     getSerializedData() {
         return this.missileData;
+    }
+
+    refreshCostDisplay() {
+        this.setHeaderMetric('cost', '', '0 CV');
     }
 
     loadSerializedData(data) {

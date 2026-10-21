@@ -53,20 +53,22 @@ class TroopsWidget extends Widget {
     }
 
     async loadCatalogues() {
-        const files = {
-            training: 'data/troop-training.json',
-            features: 'data/troop-features.json',
-            formations: 'data/troop-formations.json',
-            equipment: 'data/troop-equipment.json'
-        };
-        await Promise.all(Object.entries(files).map(async ([key, path]) => {
-            try {
-                const response = await fetch(path);
-                if (response.ok) this.catalogues[key] = await response.json();
-            } catch (error) {
-                // Keep the bundled conservative defaults when assets are unavailable.
+        const path = 'data/troop.json';
+        try {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const catalogues = await response.json();
+            if (!catalogues || typeof catalogues !== 'object' || Array.isArray(catalogues)) {
+                throw new Error('Invalid catalogue data');
             }
-        }));
+            this.catalogues = catalogues;
+        } catch (error) {
+            console.error(`Failed to load troop catalogues (${path}):`, error);
+            window.app?.showNotification(
+                'Troop catalogues failed to load; built-in data is being used.',
+                'error'
+            );
+        }
         this.updateControls();
     }
 
@@ -359,10 +361,11 @@ class TroopsWidget extends Widget {
     }
 
     updateStats() {
+        const stats = this.calculateStats();
+        this.setHeaderMetric('cost', '', this.formatOptionCost(stats.combatValue, 'general'));
         const container = this.element?.querySelector(`#${this.id}-stats`);
         if (!container) return;
         this.troopData.requiredTech = this.getSelectedRequiredTech();
-        const stats = this.calculateStats();
         container.replaceChildren();
         [['Combat Value', stats.combatValue], ['Equipment Capacity', `${stats.equipmentUsed}/${stats.equipmentCapacity}`],
             ['Training', this.getCatalogue('training').find(item => item.id === this.troopData.training)?.name || '—'],

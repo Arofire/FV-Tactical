@@ -1,6 +1,0 @@
-[
-  { "id": "heavy", "name": "Heavy", "cohesion": 12, "hardpoints": 2, "utilities": 2, "equipment": 0, "burns": 15, "combatValue": 54, "baysRequired": 8, "roleCount": 2, "facing": "Forward", "actions": ["Attack(craft)", "Dock", "Thrust"] },
-  { "id": "medium", "name": "Medium", "cohesion": 5, "hardpoints": 1, "utilities": 1, "equipment": 1, "burns": 16, "combatValue": 25, "baysRequired": 4, "roleCount": 2, "facing": "Variable", "actions": ["Attack(craft)", "Dock", "Thrust"] },
-  { "id": "light", "name": "Light", "cohesion": 3, "hardpoints": 0, "utilities": 0, "equipment": 2, "burns": 16, "combatValue": 11, "baysRequired": 2, "roleCount": 1, "facing": "Variable", "actions": ["Attack(craft)", "Dock", "Thrust"] },
-  { "id": "special", "name": "Special", "cohesion": 5, "hardpoints": 3, "utilities": 3, "equipment": 1, "burns": 15, "combatValue": 5, "baysRequired": 1, "roleCount": 1, "facing": "Variable", "actions": ["Attack(craft)", "Dock", "Thrust"] }
-]

@@ -271,6 +271,9 @@ class Widget {
         if (!metric) {
             metric = document.createElement('span');
             metric.className = 'widget-metric';
+            if (['cost', 'core', 'outfit'].includes(key)) {
+                metric.classList.add('widget-metric-subtotal');
+            }
             metric.dataset.metric = key;
             const labelElement = document.createElement('span');
             labelElement.className = 'widget-metric-label';
@@ -281,10 +284,16 @@ class Widget {
             else this.metricsElement.appendChild(metric);
         }
         metric.querySelector('.widget-metric-label').textContent = label || '';
-        metric.querySelector('.widget-metric-value').textContent = text;
+        const valueText = ['cost', 'core', 'outfit'].includes(key)
+            ? String(text)
+                .replace(/\bIndustry\b/g, 'IP')
+                .replace(/\bMaterial\b|\bMateriel\b/g, 'MP')
+                .replace(/\bEnergy\b/g, 'EP')
+            : text;
+        metric.querySelector('.widget-metric-value').textContent = valueText;
     }
 
-    // Skirmish shows CV; campaign shows the non-zero IP/MP/EP amounts.
+    // Skirmish shows CV; campaign shows the non-zero resource amounts.
     formatCostTotals(totals) {
         const units = window.empire?.economyMode === 'campaign' ? ['IP', 'MP', 'EP'] : ['CV'];
         const parts = units

@@ -22,12 +22,12 @@
     "formula": "base + perPip * pips",
     "defaultStat": 0,
     "options": {
-      "automation": { "name": "Automation", "requiredTech": ["automation"], "base": 4, "perPip": -0.18, "reaction": true },
-      "microgravity-engineering": { "name": "Microgravity Engineering", "requiredTech": ["microgravity-engineering"], "base": 2.71, "perPip": -0.09, "reaction": true },
-      "atomic-manufacturing": { "name": "Atomic Manufacturing", "requiredTech": ["atomic-manufacturing"], "base": 1.93, "perPip": -0.07, "reaction": true },
-      "metamaterials": { "name": "Metamaterials", "requiredTech": ["metamaterials"], "base": 1.6, "perPip": -0.05, "reaction": true },
-      "chronal-condensates": { "name": "Chronal Condensates", "requiredTech": ["chronal-condensates"], "base": 1.42, "perPip": -0.03, "reaction": true },
-      "boson-mastery": { "name": "Boson Mastery", "requiredTech": ["boson-mastery"], "reaction": true }
+      "automation": { "name": "Mechanized Rocket", "requiredTech": ["mechanized-rocket"], "base": 4, "perPip": -0.18, "reaction": true },
+      "microgravity-engineering": { "name": "Fission Plasma Rocket", "requiredTech": ["fission-plasma-rocket"], "base": 2.71, "perPip": -0.09, "reaction": true },
+      "atomic-manufacturing": { "name": "Engine 2", "requiredTech": ["engine-2"], "base": 1.93, "perPip": -0.07, "reaction": true },
+      "metamaterials": { "name": "Phased Array Repulsion", "requiredTech": ["phased-array-repulsion-engine"], "base": 1.6, "perPip": -0.05, "reaction": true },
+      "chronal-condensates": { "name": "Engine 4", "requiredTech": ["engine-4"], "base": 1.42, "perPip": -0.03, "reaction": true },
+      "boson-mastery": { "name": "Reactionless", "requiredTech": ["reactionless"], "base": 1, "perPip": 0, "reaction": false }
     }
   },
   "manifold": {

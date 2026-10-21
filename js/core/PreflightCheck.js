@@ -281,10 +281,9 @@ class PreflightCheck {
     }
 
     checkShipHullsWidget(widget) {
-        const classLinks = this.countNodeConnections(widget, 'Class', 'input');
         const outfitLinks = this.countNodeConnections(widget, 'Outfit', 'input');
-        if (classLinks === 0 && outfitLinks === 0) {
-            this.addError(`Hull plan "${widget.title}" requires a Ship Class or Outfit connection`, widget.id);
+        if (outfitLinks === 0) {
+            this.addError(`Hull plan "${widget.title}" requires a Ship Outfit connection`, widget.id);
         }
     }
 

@@ -1,6 +1,0 @@
-[
-  { "id": "line", "name": "Line", "effect": "Balanced unit deployment.", "combatValue": 0, "equipment": 1 },
-  { "id": "column", "name": "Column", "effect": "Rapid movement and deployment.", "combatValue": 0, "equipment": 1 },
-  { "id": "wedge", "name": "Wedge", "effect": "Concentrated forward assault.", "combatValue": 1, "equipment": 1 },
-  { "id": "dispersed", "name": "Dispersed", "effect": "Widely distributed deployment.", "combatValue": 0, "equipment": 1 }
-]

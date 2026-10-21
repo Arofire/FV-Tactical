@@ -9,10 +9,10 @@ class OutfitWidget extends Widget {
             return null;
         }
 
-        const exponentDenominator = 1 + 0.8 * Math.log(hulls / 28);
-        if (!Number.isFinite(exponentDenominator) || exponentDenominator === 0) return null;
-        const engineExponent = 1 + (baseExponent - 1) / exponentDenominator;
-        const thrustPenalty = 1 + (hulls - 28) / 56;
+        const engineExponent = hulls < 28
+            ? baseExponent
+            : 1 + (baseExponent - 1) / (1 + 0.8 * Math.log(hulls / 28));
+        const thrustPenalty = hulls < 28 ? 1 : 1 + (hulls - 28) / 56;
         if (!Number.isFinite(engineExponent) || engineExponent === 0 ||
             !Number.isFinite(thrustPenalty) || thrustPenalty <= 0) {
             return null;
@@ -67,6 +67,7 @@ class OutfitWidget extends Widget {
             systems: {
                 general: {
                     berthing: 0,
+                    berthingCargo: 0,
                     craftLauncher: 0,
                     laserGenerator: { techId: '', count: 0 },
                     tending: 0
@@ -94,6 +95,7 @@ class OutfitWidget extends Widget {
         this.systemsData = { general: [], entropy: [] };
         this.systemsDataLoaded = false;
         this.laserGeneratorTechs = [];
+        this.userToggledCategoryIds = new Set();
         this.layoutMode = 'three-column';
         this.titleEditHandler = name => {
             this.outfitData.name = name;
@@ -319,23 +321,33 @@ class OutfitWidget extends Widget {
         sections.appendChild(identity.section);
 
         const armor = this.createSection('category-armor', 'Armor');
+        this.addCategoryDisclosure(armor, 'category-armor', 'Armor');
+        this.addSectionSubtotal(armor.titleElement, 'armor-cost');
         this.setSectionContent(armor, this.renderArmorSection());
+        this.wrapCategoryContent(armor);
         sections.appendChild(armor.section);
 
         const core = this.createSection('category-core', 'Core');
+        this.addCategoryDisclosure(core, 'category-core', 'Core');
+        this.addSectionSubtotal(core.titleElement, 'core-cost');
         this.addResourceCounter(core.titleElement, 'core');
         this.setSectionContent(core, `
             <div class="input-group outfit-core-source" id="${this.id}-core-source">
                 <select id="${this.id}-core-select" aria-label="Select operational core"></select>
             </div>
             <div class="outfit-core-properties" id="${this.id}-core-properties" aria-live="polite"></div>
-            <div id="${this.id}-core-cost" class="outfit-section-subtotal" aria-live="polite"></div>
         `);
+        this.wrapCategoryContent(core);
         sections.appendChild(core.section);
 
         for (const category of ['emplacements', 'utilities']) {
             const title = category[0].toUpperCase() + category.slice(1);
             const section = this.createSection(`category-${category}`, title);
+            this.addCategoryDisclosure(section, `category-${category}`, title);
+            this.addSectionSubtotal(
+                section.titleElement,
+                category === 'emplacements' ? 'emplacement-cost' : 'utility-cost'
+            );
             this.addResourceCounter(section.titleElement, category);
             const weapons = category === 'emplacements'
                 ? this.renderEmplacementWeaponsSection()
@@ -343,20 +355,77 @@ class OutfitWidget extends Widget {
                     ${this.renderUtilityDefensesSection()}
                     ${this.renderWeaponCategory('defensive', 'Defensive Weapons')}`;
             const categoryContent = `${weapons}<div class="outfit-resource-note" id="${this.id}-resource-${category}-note"></div>`;
-            this.setSectionContent(section, category === 'utilities'
-                ? `${categoryContent}<div id="${this.id}-utility-cost" class="outfit-section-subtotal" aria-live="polite"></div>`
-                : `${categoryContent}<div id="${this.id}-emplacement-cost" class="outfit-section-subtotal" aria-live="polite"></div>`);
+            this.setSectionContent(section, categoryContent);
+            this.wrapCategoryContent(section);
             sections.appendChild(section.section);
         }
 
         const systems = this.createSection('category-systems', 'Systems');
+        this.addCategoryDisclosure(systems, 'category-systems', 'Systems');
+        this.addSectionSubtotal(systems.titleElement, 'system-cost');
         this.addResourceCounter(systems.titleElement, 'systems');
         this.setSectionContent(systems, this.renderSystemsSection());
+        this.wrapCategoryContent(systems);
         sections.appendChild(systems.section);
 
         this.refreshCoreOptions();
         this.refreshResourceDisplay();
+        this.refreshSubsectionAvailability();
         this.registerLayoutAnchors();
+    }
+
+    addCategoryDisclosure(sectionRef, categoryId, label) {
+        const title = sectionRef?.titleElement;
+        if (!title) return;
+        title.classList.add('outfit-category-title');
+        title.replaceChildren();
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'outfit-category-toggle';
+        button.dataset.categoryToggle = categoryId;
+        button.setAttribute('aria-expanded', 'false');
+        button.setAttribute('aria-controls', `${this.id}-${categoryId}-content`);
+        button.textContent = label;
+        title.appendChild(button);
+        sectionRef.section.classList.add('outfit-category-section', 'is-collapsed');
+    }
+
+    wrapCategoryContent(sectionRef) {
+        const title = sectionRef?.titleElement;
+        if (!title?.parentElement) return;
+        const content = document.createElement('div');
+        content.className = 'outfit-category-content';
+        content.id = `${this.id}-${sectionRef.section.id.replace(`${this.id}-`, '')}-content`;
+        let sibling = title.nextSibling;
+        while (sibling) {
+            const next = sibling.nextSibling;
+            content.appendChild(sibling);
+            sibling = next;
+        }
+        title.parentElement.appendChild(content);
+    }
+
+    setCategoryExpanded(section, expanded) {
+        if (!section) return;
+        section.classList.toggle('is-collapsed', !expanded);
+        const toggle = section.querySelector('[data-category-toggle]');
+        if (toggle) toggle.setAttribute('aria-expanded', String(expanded));
+    }
+
+    refreshInitialCategoryExpansion() {
+        const resources = this.getResourceSources();
+        const capacities = {
+            'category-armor': resources.hardpoints,
+            'category-core': resources.core,
+            'category-emplacements': resources.emplacements,
+            'category-utilities': resources.utilities,
+            'category-systems': resources.systems
+        };
+        for (const [categoryId, capacity] of Object.entries(capacities)) {
+            if (this.userToggledCategoryIds.has(categoryId)) continue;
+            const section = this.element?.querySelector(`#${this.id}-${categoryId}`);
+            this.setCategoryExpanded(section, capacity !== null && capacity > 0);
+        }
     }
 
     registerLayoutAnchors() {
@@ -365,6 +434,11 @@ class OutfitWidget extends Widget {
         for (const sectionId of ['meta', 'category-armor', 'category-core', 'category-emplacements', 'category-utilities', 'category-systems']) {
             const element = this.element.querySelector(`#${this.id}-${sectionId}`);
             if (element) this.addLayoutAnchor(`outfit-${sectionId}`, element, { selector: `#${this.id}-${sectionId}` });
+        }
+        for (const categoryId of ['category-armor', 'category-core']) {
+            const selector = `#${this.id}-${categoryId} .section-title`;
+            const heading = this.element.querySelector(selector);
+            if (heading) this.addLayoutAnchor(`outfit-${categoryId}-heading`, heading, { selector });
         }
     }
 
@@ -391,12 +465,14 @@ class OutfitWidget extends Widget {
             } else if (target.dataset.weaponField === 'count') {
                 this.updateWeaponField(target, 'count', this.parseCount(target.value));
                 target.value = this.parseCount(target.value);
-                const weapon = this.outfitData.weapons?.[target.dataset.category]?.[Number(target.dataset.index)];
-                const definition = this.getAllWeapons().find(item => item.id === weapon?.weaponId);
-                const costCell = target.closest('tr')?.querySelector('.cost-cell');
-                if (costCell) costCell.textContent = this.getWeaponCostDisplay(definition, this.parseCount(target.value));
             } else if (target.dataset.utilityDeviceCount) {
                 this.updateUtilityDeviceCount(target);
+            } else if (target.dataset.berthingCargo !== undefined) {
+                this.updateBerthingFromCargo(target.value, true);
+            } else if (target.dataset.berthingCount !== undefined) {
+                this.updateBerthingFromBerths(target.value, true);
+            } else if (target.dataset.berthingSlider !== undefined) {
+                this.updateBerthingFromCargo(target.value);
             } else if (target.dataset.systemCount) {
                 this.updateSystemCount(target);
             }
@@ -428,6 +504,11 @@ class OutfitWidget extends Widget {
                 this.outfitData.weapons.spinal = target.value;
             } else if (target.dataset.utilityDeviceSelect) {
                 this.updateUtilityDeviceSelection(target);
+            } else if (target.dataset.berthingCount !== undefined) {
+                this.updateBerthingFromBerths(target.value);
+            } else if (target.dataset.berthingCargo !== undefined ||
+                target.dataset.berthingSlider !== undefined) {
+                this.updateBerthingFromCargo(target.value);
             } else if (target.dataset.laserGeneratorTech !== undefined) {
                 this.outfitData.systems.general.laserGenerator.techId = target.value;
                 this.refreshSystemsControls();
@@ -445,6 +526,15 @@ class OutfitWidget extends Widget {
         });
 
         this.element.addEventListener('click', event => {
+            const categoryToggle = event.target.closest('[data-category-toggle]');
+            if (categoryToggle) {
+                const categoryId = categoryToggle.dataset.categoryToggle;
+                const section = categoryToggle.closest('.outfit-category-section');
+                const expanded = categoryToggle.getAttribute('aria-expanded') !== 'true';
+                if (categoryId) this.userToggledCategoryIds.add(categoryId);
+                this.setCategoryExpanded(section, expanded);
+                return;
+            }
             const utilityButton = event.target.closest('[data-utility-action]');
             if (utilityButton) {
                 const collection = utilityButton.dataset.collection;
@@ -574,8 +664,18 @@ class OutfitWidget extends Widget {
     }
 
     getConnectedClassData() {
-        const linked = this.getConnectedDataByNodeType('Class')[0]?.data;
-        return linked?.shipData || null;
+        const hasClassConnection = Array.from(this.nodes.values()).some(node =>
+            node.type === 'input' && node.nodeType === 'Class' && node.connections?.size
+        );
+        const linkedClass = hasClassConnection
+            ? this.getConnectedDataByNodeType('Class')[0]?.data?.shipData
+            : null;
+        if (linkedClass) return linkedClass;
+
+        const hasCoreConnection = Array.from(this.nodes.values()).some(node =>
+            node.type === 'input' && node.nodeType === 'Core' && node.connections?.size
+        );
+        return hasCoreConnection ? this.getConnectedCoreData()?.shipData || null : null;
     }
 
     getResourceSources() {
@@ -717,10 +817,24 @@ class OutfitWidget extends Widget {
         titleElement.appendChild(counter);
     }
 
+    addSectionSubtotal(titleElement, name) {
+        if (!titleElement) return;
+        const subtotal = document.createElement('span');
+        subtotal.className = 'outfit-section-subtotal outfit-section-subtotal-inline';
+        subtotal.id = `${this.id}-${name}`;
+        subtotal.setAttribute('aria-live', 'polite');
+        titleElement.appendChild(subtotal);
+    }
+
     numericOrNull(value) {
         if (value === null || value === undefined || value === '') return null;
         const number = Number(value);
         return Number.isFinite(number) ? number : null;
+    }
+
+    getCoreThreshold(core) {
+        const threshold = this.numericOrNull(core?.reactorStability);
+        return threshold === null ? null : Math.floor(threshold);
     }
 
     getOperationalCores() {
@@ -749,6 +863,8 @@ class OutfitWidget extends Widget {
         if (!this.element) return;
         const resources = this.getResourceSources();
         this.refreshResourceCounters(resources);
+        this.refreshBerthingAllocationUI();
+        this.refreshInitialCategoryExpansion();
         this.refreshArmorDisplay(resources);
         const core = this.getCoreData();
         this.outfitData.selectedCore = core ? this.serializeCore(core) : null;
@@ -859,16 +975,23 @@ class OutfitWidget extends Widget {
 
     refreshSectionCostLabels() {
         if (!this.element) return;
-        const formatSubtotal = value =>
-            `Subtotal: ${this.formatOptionCost(value, 'weapons') || '0 CV'}`;
+        const formatSubtotal = value => {
+            return this.formatOptionCost(value, 'weapons') || '0 CV';
+        };
+        const formatResourceSubtotal = totals => this.formatCostTotals(totals)
+            .replace(/\bIP\b/g, 'Industry')
+            .replace(/\bMP\b/g, 'Material')
+            .replace(/\bEP\b/g, 'Energy');
         const utilities = this.element.querySelector(`#${this.id}-utility-cost`);
-        if (utilities) utilities.textContent = `Utilities ${formatSubtotal(this.getUtilityCostSubtotal())}`;
+        if (utilities) utilities.textContent = formatSubtotal(this.getUtilityCostSubtotal());
         const emplacements = this.element.querySelector(`#${this.id}-emplacement-cost`);
-        if (emplacements) emplacements.textContent = `Emplacements ${formatSubtotal(this.getEmplacementCostSubtotal())}`;
+        if (emplacements) emplacements.textContent = formatSubtotal(this.getEmplacementCostSubtotal());
         const systems = this.element.querySelector(`#${this.id}-system-cost`);
-        if (systems) systems.textContent = `Systems ${formatSubtotal(this.getSystemsCost())}`;
+        if (systems) systems.textContent = formatSubtotal(this.getSystemsCost());
+        const armor = this.element.querySelector(`#${this.id}-armor-cost`);
+        if (armor) armor.textContent = formatResourceSubtotal(this.getArmorCostTotals());
         const core = this.element.querySelector(`#${this.id}-core-cost`);
-        if (core) core.textContent = `Core Subtotal: ${this.formatCostTotals(this.getCoreCostTotals())}`;
+        if (core) core.textContent = formatResourceSubtotal(this.getCoreCostTotals());
     }
 
     // Core and outfit are labelled separately only while the core is node-connected.
@@ -877,7 +1000,7 @@ class OutfitWidget extends Widget {
         if (this.getConnectedCoreData()) {
             this.setHeaderMetric('cost', '', null);
             this.setHeaderMetric('core', '', null);
-            this.setHeaderMetric('outfit', 'Outfit', this.formatCostTotals(this.getConfigurationCostTotals()));
+            this.setHeaderMetric('outfit', '', this.formatCostTotals(this.getConfigurationCostTotals()));
         } else {
             this.setHeaderMetric('core', '', null);
             this.setHeaderMetric('outfit', '', null);
@@ -900,7 +1023,7 @@ class OutfitWidget extends Widget {
             ['Reactor', `${display(core.reactorName || core.reactor)} · ${display(core.reactorValue)}`],
             ['Engine', `${display(core.engineName || core.engine)} · ${display(core.engineValue)}`],
             ['Manifold', `${display(core.manifoldName || core.manifold)} · ${display(core.manifoldValue)}`],
-            ['Threshold', display(core.reactorStability)],
+            ['Threshold', display(this.getCoreThreshold(core))],
             ['Entropy', display(burnAnalysis?.totalEntropy)]
         ];
         const grid = document.createElement('dl');
@@ -990,7 +1113,7 @@ class OutfitWidget extends Widget {
             reactorName: core.reactorName || '',
             engineName: core.engineName || '',
             manifoldName: core.manifoldName || '',
-            reactorStability: this.numericOrNull(core.reactorStability),
+            reactorStability: this.getCoreThreshold(core),
             engineEfficiency: this.numericOrNull(core.engineEfficiency),
             manifoldEfficiency: this.numericOrNull(core.manifoldEfficiency),
             gears: Array.isArray(core.gears) ? core.gears.map(gear => {
@@ -1014,12 +1137,13 @@ class OutfitWidget extends Widget {
 
     renderEmplacementWeaponsSection() {
         return `
-            <div class="spinal-weapon-group">
+            <div class="spinal-weapon-group outfit-availability-container" data-availability-key="spinal">
                 <h5>Spinal Mount</h5>
                 <select id="${this.id}-spinal-weapon" class="weapon-select">
                     <option value="">None</option>
                     ${this.renderWeaponOptions(this.getSpinalWeapons(), this.outfitData.weapons.spinal)}
                 </select>
+                <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
             </div>
             ${this.renderWeaponCategory('offensive', 'Offensive Weapons')}
         `;
@@ -1036,38 +1160,43 @@ class OutfitWidget extends Widget {
     }
 
     renderRadiatorsSection() {
-        return `<div class="outfit-device-section">
+        return `<section class="outfit-device-section outfit-availability-container" data-availability-key="radiators">
             <div class="outfit-subsection-heading">
                 <h5>Radiance</h5>
-                <button type="button" data-utility-action="add" data-collection="radiators">Add Radiator</button>
+                <button type="button" class="add-weapon-btn" data-utility-action="add" data-collection="radiators">Add Radiator</button>
             </div>
             <div id="${this.id}-radiator-rows">${this.renderUtilityDeviceRows('radiators')}</div>
-        </div>`;
+            <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
+        </section>`;
     }
 
     renderUtilityDefensesSection() {
-        return `<div class="outfit-device-section">
+        return `<section class="outfit-device-section outfit-availability-container" data-availability-key="utility-defenses">
             <div class="outfit-subsection-heading">
                 <h5>Defenses</h5>
-                <button type="button" data-utility-action="add" data-collection="defenses">Add Defense</button>
+                <button type="button" class="add-weapon-btn" data-utility-action="add" data-collection="defenses">Add Defense</button>
             </div>
             <div id="${this.id}-utility-defense-rows">${this.renderUtilityDeviceRows('defenses')}</div>
-        </div>`;
+            <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
+        </section>`;
     }
 
     renderUtilityDeviceRows(collection) {
         const rows = this.outfitData.utilityDevices?.[collection] || [];
         if (!rows.length) {
-            return `<div class="outfit-resource-note">No ${collection} selected.</div>`;
+            return `<div class="outfit-table-empty">No ${collection} selected.</div>`;
         }
-        return rows.map((selection, index) =>
-            this.renderUtilityDeviceRow(collection, selection, index)
-        ).join('');
+        const isRadiator = collection === 'radiators';
+        return `<table class="weapons-table outfit-utility-table">
+            <thead><tr><th>${isRadiator ? 'Radiator' : 'Defense'}</th><th>Quantity</th><th></th></tr></thead>
+            <tbody>${rows.map((selection, index) =>
+                this.renderUtilityDeviceRow(collection, selection, index)
+            ).join('')}</tbody>
+        </table>`;
     }
 
     renderUtilityDeviceRow(collection, selection, index) {
         const items = this.filterByRequiredTech(this.utilitiesData[collection] || []);
-        const selected = items.find(item => item.id === selection.id);
         const groupedItems = new Map();
         for (const item of items) {
             const group = item.type || 'Other';
@@ -1079,84 +1208,85 @@ class OutfitWidget extends Widget {
                 `<option value="${OutfitWidget.escapeHTML(item.id)}" ${item.id === selection.id ? 'selected' : ''}>${OutfitWidget.escapeHTML(item.name)}</option>`
             ).join('')}</optgroup>`
         ).join('');
-        return `<div class="outfit-device-row">
-            <select aria-label="Select ${collection === 'radiators' ? 'radiator' : 'defense'}" data-utility-device-select="${collection}" data-index="${index}">
+        return `<tr>
+            <td><select aria-label="Select ${collection === 'radiators' ? 'radiator' : 'defense'}" data-utility-device-select="${collection}" data-index="${index}">
                 <option value="">Select type...</option>${options}
-            </select>
-            <label class="outfit-device-quantity">Qty
-                <input class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(selection.count)}" data-utility-device-count="${collection}" data-index="${index}">
-            </label>
-            <span class="outfit-device-stats">${this.renderDeviceStats(selected)}</span>
-            <button type="button" data-utility-action="remove" data-collection="${collection}" data-index="${index}" aria-label="Remove ${collection === 'radiators' ? 'radiator' : 'defense'}">×</button>
-        </div>`;
-    }
-
-    renderDeviceStats(item) {
-        if (!item) return '';
-        const labels = {
-            radiance: 'Radiance',
-            offset: 'Offset',
-            efficiency: 'Efficiency',
-            capacity: 'Capacity',
-            limit: 'Limit',
-            deployed: 'Deployed',
-            reserved: 'Reserved',
-            regeneration: 'Regeneration'
-        };
-        return Object.entries(labels)
-            .filter(([key]) => Number.isFinite(item[key]))
-            .map(([key, label]) => `${label}: ${item[key]}`)
-            .join(' · ');
+            </select></td>
+            <td><input type="number" min="0" step="1" value="${this.parseCount(selection.count)}" data-utility-device-count="${collection}" data-index="${index}" aria-label="${collection === 'radiators' ? 'Radiator' : 'Defense'} quantity"></td>
+            <td><button type="button" class="remove-weapon-btn" data-utility-action="remove" data-collection="${collection}" data-index="${index}" aria-label="Remove ${collection === 'radiators' ? 'radiator' : 'defense'}">×</button></td>
+        </tr>`;
     }
 
     renderSystemsSection() {
-        return `<div class="outfit-device-section">
+        return `<section class="outfit-device-section outfit-availability-container" data-availability-key="general-systems">
             <h5>General Systems</h5>
             <div id="${this.id}-general-system-rows">${this.renderGeneralSystems()}</div>
-        </div>
-        <div class="outfit-device-section">
+            <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
+        </section>
+        <section class="outfit-device-section outfit-availability-container" data-availability-key="entropy-systems">
             <h5>Entropy Systems</h5>
             <div id="${this.id}-entropy-system-rows">${this.renderEntropySystems()}</div>
-        </div>
-        <div id="${this.id}-system-cost" class="outfit-section-subtotal" aria-live="polite"></div>`;
+            <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
+        </section>`;
     }
 
     renderGeneralSystems() {
-        return this.systemsData.general.map(item => {
+        return `<div class="composition-grid outfit-systems-grid">${this.systemsData.general.map(item => {
             if (item.id === 'laser-generator') {
                 const laser = this.outfitData.systems.general.laserGenerator;
                 const available = this.getAvailableLaserGeneratorTechs();
-                return `<div class="outfit-system-row">
+                return `<div class="composition-item outfit-system-item outfit-laser-generator">
                     <label for="${this.id}-laser-generator-tech">${OutfitWidget.escapeHTML(item.name)}</label>
-                    <select id="${this.id}-laser-generator-tech" data-laser-generator-tech aria-label="Laser generator technology">
-                        <option value="">Select researched technology...</option>
-                        ${available.map(tech =>
-                            `<option value="${OutfitWidget.escapeHTML(tech.id)}" ${tech.id === laser.techId ? 'selected' : ''}>${OutfitWidget.escapeHTML(tech.name)}</option>`
-                        ).join('')}
-                    </select>
-                    <input class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(laser.count)}" data-system-count="laserGenerator" aria-label="Laser generator quantity" ${laser.techId ? '' : 'disabled'}>
+                    <div class="outfit-system-item-controls">
+                        <select id="${this.id}-laser-generator-tech" data-laser-generator-tech aria-label="Laser generator technology">
+                            <option value="">Select researched technology...</option>
+                            ${available.map(tech =>
+                                `<option value="${OutfitWidget.escapeHTML(tech.id)}" ${tech.id === laser.techId ? 'selected' : ''}>${OutfitWidget.escapeHTML(tech.name)}</option>`
+                            ).join('')}
+                        </select>
+                        <input class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(laser.count)}" data-system-count="laserGenerator" aria-label="Laser generator quantity" ${laser.techId ? '' : 'disabled'}>
+                    </div>
                 </div>`;
             }
             const field = this.getGeneralSystemField(item.id);
             const count = this.parseCount(this.outfitData.systems.general[field]);
             const unavailable = !this.isCatalogItemAvailable(item);
-            return `<div class="outfit-system-row">
+            if (item.id === 'berthing') {
+                const cargo = this.parseCount(this.outfitData.systems.general.berthingCargo);
+                const berths = Math.max(0, count * 5 - cargo / 10);
+                return `<div class="composition-item outfit-system-item outfit-berthing-system">
+                    <label for="${this.id}-system-berthing">Berthing</label>
+                    <input id="${this.id}-system-berthing" class="hull-spin" type="number" min="0" step="1" value="${count}" data-system-count="berthing" aria-label="Berthing quantity" ${unavailable ? 'disabled' : ''}>
+                </div>
+                <div class="cargo-remass-control berthing-allocation-control">
+                    <div class="cargo-endurance">
+                        <label class="label" for="${this.id}-berthing-cargo">Cargo</label>
+                        <input type="number" class="value" id="${this.id}-berthing-cargo" min="0" step="10" value="${cargo}" data-berthing-cargo aria-label="Cargo allocated to berthing" ${unavailable ? 'disabled' : ''}>
+                    </div>
+                    <input type="range" class="cargo-remass-slider" id="${this.id}-berthing-slider" min="0" max="0" value="${cargo}" step="10" data-berthing-slider aria-label="Cargo to berthing allocation" ${unavailable ? 'disabled' : ''}>
+                    <div class="remass-burns">
+                        <label class="label" for="${this.id}-berthing-value">Berths</label>
+                        <input type="number" class="value" id="${this.id}-berthing-value" min="0" step="1" value="${berths}" data-berthing-count aria-label="Available berths" ${unavailable ? 'disabled' : ''}>
+                    </div>
+                </div>`;
+            }
+            return `<div class="composition-item outfit-system-item">
                 <label for="${this.id}-system-${OutfitWidget.escapeHTML(field)}">${OutfitWidget.escapeHTML(item.name)}</label>
                 <input id="${this.id}-system-${OutfitWidget.escapeHTML(field)}" class="hull-spin" type="number" min="0" step="1" value="${count}" data-system-count="${OutfitWidget.escapeHTML(field)}" aria-label="${OutfitWidget.escapeHTML(item.name)} quantity" ${unavailable ? 'disabled' : ''}>
             </div>`;
-        }).join('');
+        }).join('')}</div>`;
     }
 
     renderEntropySystems() {
-        return this.systemsData.entropy.map(item => {
+        return `<div class="composition-grid outfit-systems-grid">${this.systemsData.entropy.map(item => {
             const selection = this.outfitData.systems.entropy[item.id] || { count: 0 };
             const unavailable = !this.isCatalogItemAvailable(item);
-            return `<div class="outfit-system-row">
+            return `<div class="composition-item outfit-system-item outfit-entropy-system">
                 <label for="${this.id}-entropy-${OutfitWidget.escapeHTML(item.id)}">${OutfitWidget.escapeHTML(item.name)}</label>
                 <input id="${this.id}-entropy-${OutfitWidget.escapeHTML(item.id)}" class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(selection.count)}" data-system-count="entropy:${OutfitWidget.escapeHTML(item.id)}" aria-label="${OutfitWidget.escapeHTML(item.name)} quantity" ${unavailable ? 'disabled' : ''}>
                 <span class="outfit-device-stats">Radiance: ${item.radiance}</span>
             </div>`;
-        }).join('');
+        }).join('')}</div>`;
     }
 
     getGeneralSystemField(itemId) {
@@ -1213,6 +1343,70 @@ class OutfitWidget extends Widget {
             this.outfitData.systems.general[field] = count;
         }
         target.value = String(count);
+        if (field === 'berthing') {
+            const cargoInput = this.element?.querySelector(`#${this.id}-berthing-cargo`);
+            const berthInput = this.element?.querySelector(`#${this.id}-berthing-value`);
+            this.refreshBerthingAllocationUI(
+                cargoInput === document.activeElement,
+                berthInput === document.activeElement
+            );
+        }
+    }
+
+    updateBerthingFromCargo(rawValue, preserveCargoInput = false) {
+        const parsed = Number(rawValue);
+        if (!Number.isFinite(parsed) || parsed < 0) return;
+        const berthingSystems = this.parseCount(this.outfitData.systems.general.berthing);
+        const maximumCargo = berthingSystems * 50;
+        const allocation = preserveCargoInput
+            ? Math.floor(parsed / 10) * 10
+            : Math.round(parsed / 10) * 10;
+        const cargo = Math.max(0, Math.min(allocation, maximumCargo));
+        this.outfitData.systems.general.berthingCargo = cargo;
+        this.refreshBerthingAllocationUI(preserveCargoInput && parsed <= maximumCargo);
+    }
+
+    updateBerthingFromBerths(rawValue, preserveBerthsInput = false) {
+        const parsed = Number(rawValue);
+        if (!Number.isFinite(parsed) || parsed < 0) return;
+        const berthingSystems = this.parseCount(this.outfitData.systems.general.berthing);
+        const maximumBerths = berthingSystems * 5;
+        const berths = Math.max(0, Math.min(Math.round(parsed), maximumBerths));
+        this.outfitData.systems.general.berthingCargo =
+            (maximumBerths - berths) * 10;
+        this.refreshBerthingAllocationUI(false, preserveBerthsInput && parsed <= maximumBerths);
+    }
+
+    refreshBerthingAllocationUI(preserveCargoInput = false, preserveBerthsInput = false) {
+        const berthingInput = this.element?.querySelector(`#${this.id}-system-berthing`);
+        const cargoInput = this.element?.querySelector(`#${this.id}-berthing-cargo`);
+        const slider = this.element?.querySelector(`#${this.id}-berthing-slider`);
+        const berthingValue = this.element?.querySelector(`#${this.id}-berthing-value`);
+        const berthingSystems = this.parseCount(this.outfitData.systems.general.berthing);
+        const maximumCargo = berthingSystems * 50;
+        const cargo = Math.min(
+            this.parseCount(this.outfitData.systems.general.berthingCargo),
+            maximumCargo
+        );
+        this.outfitData.systems.general.berthingCargo = cargo;
+        const berths = Math.max(0, berthingSystems * 5 - cargo / 10);
+        if (berthingInput) berthingInput.value = String(berthingSystems);
+        if (berthingValue) {
+            if (!preserveBerthsInput) berthingValue.value = String(berths);
+            berthingValue.max = String(berthingSystems * 5);
+        }
+        if (cargoInput) {
+            if (!preserveCargoInput) cargoInput.value = String(cargo);
+            cargoInput.max = String(maximumCargo);
+            cargoInput.disabled = berthingSystems <= 0 ||
+                berthingInput?.disabled === true;
+        }
+        if (slider) {
+            slider.max = String(maximumCargo);
+            slider.value = String(cargo);
+            slider.disabled = berthingSystems <= 0 ||
+                berthingInput?.disabled === true;
+        }
     }
 
     refreshUtilityDeviceRows(collection) {
@@ -1280,20 +1474,23 @@ class OutfitWidget extends Widget {
         this.refreshUtilityDeviceRows('radiators');
         this.refreshUtilityDeviceRows('defenses');
         this.refreshSystemsControls();
+        this.refreshBerthingAllocationUI();
         this.refreshSectionCostLabels();
         this.refreshWeaponResourceDisplay();
+        this.refreshSubsectionAvailability();
     }
 
     renderWeaponCategory(category, title) {
         const turretColumn = category === 'offensive';
         const arcColumn = category === 'offensive';
-        return `<div class="${category}-weapons-group">
+        return `<div class="${category}-weapons-group outfit-availability-container" data-availability-key="${category}-weapons">
             <h5>${title}</h5>
-            <button type="button" data-weapon-action="add" data-category="${category}">Add Weapon</button>
-            <table class="weapons-table">
-                <thead><tr><th>Weapon</th>${turretColumn ? '<th>Turret</th>' : ''}${arcColumn ? '<th>Arc</th>' : ''}<th>Count</th><th>Cost</th><th></th></tr></thead>
+            <button type="button" class="add-weapon-btn" data-weapon-action="add" data-category="${category}">Add Weapon</button>
+            <table class="weapons-table${category === 'defensive' ? ' outfit-utility-table' : ''}">
+                <thead><tr><th>Weapon</th>${turretColumn ? '<th>Turret</th>' : ''}${arcColumn ? '<th>Arc</th>' : ''}<th>Count</th><th></th></tr></thead>
                 <tbody id="${this.id}-${category}-weapons-body">${this.renderWeaponRows(category)}</tbody>
             </table>
+            <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
         </div>`;
     }
 
@@ -1311,7 +1508,7 @@ class OutfitWidget extends Widget {
     renderWeaponRows(category) {
         const weapons = this.outfitData.weapons?.[category] || [];
         if (!weapons.length) {
-            return `<tr class="no-weapons"><td colspan="${category === 'offensive' ? 6 : 4}">No weapons added</td></tr>`;
+            return `<tr class="no-weapons"><td colspan="${category === 'offensive' ? 5 : 3}">No weapons added</td></tr>`;
         }
         return weapons.map((weapon, index) => this.renderWeaponRow(category, weapon, index)).join('');
     }
@@ -1340,8 +1537,7 @@ class OutfitWidget extends Widget {
             ${turretOption}
             ${arcField}
             <td><input type="number" min="0" step="1" value="${this.parseCount(weapon.count)}" data-weapon-field="count" data-category="${category}" data-index="${index}"></td>
-            <td class="cost-cell">${OutfitWidget.escapeHTML(this.getWeaponCostDisplay(selected, this.parseCount(weapon.count)))}</td>
-            <td><button type="button" data-weapon-action="remove" data-category="${category}" data-index="${index}" aria-label="Remove weapon">×</button></td>
+            <td><button type="button" class="remove-weapon-btn" data-weapon-action="remove" data-category="${category}" data-index="${index}" aria-label="Remove weapon">×</button></td>
         </tr>`;
     }
 
@@ -1357,9 +1553,32 @@ class OutfitWidget extends Widget {
             const body = this.element.querySelector(`#${this.id}-${category}-weapons-body`);
             if (body) body.innerHTML = this.renderWeaponRows(category);
         }
-        this.refreshWeaponCostLabels();
         this.refreshSectionCostLabels();
         this.refreshWeaponResourceDisplay();
+        this.refreshSubsectionAvailability();
+    }
+
+    refreshSubsectionAvailability() {
+        if (!this.element) return;
+        const availability = {
+            radiators: this.filterByRequiredTech(this.utilitiesData.radiators).length > 0,
+            'utility-defenses': this.filterByRequiredTech(this.utilitiesData.defenses).length > 0,
+            'spinal': this.filterByRequiredTech(this.getSpinalWeapons()).length > 0,
+            'offensive-weapons': this.filterByRequiredTech(this.getOffensiveWeapons()).length > 0,
+            'defensive-weapons': this.filterByRequiredTech(this.getPDWeapons()).length > 0,
+            'general-systems': this.systemsData.general.some(item =>
+                item.id === 'laser-generator'
+                    ? this.getAvailableLaserGeneratorTechs().length > 0
+                    : this.isCatalogItemAvailable(item)
+            ),
+            'entropy-systems': this.systemsData.entropy.some(item => this.isCatalogItemAvailable(item))
+        };
+        this.element.querySelectorAll('[data-availability-key]').forEach(container => {
+            const available = availability[container.dataset.availabilityKey] ?? true;
+            container.classList.toggle('outfit-subsection-unavailable', !available);
+            const hint = container.querySelector('.outfit-unavailable-hint');
+            if (hint) hint.hidden = available;
+        });
     }
 
     getWeaponResourceUse() {
@@ -1423,36 +1642,12 @@ class OutfitWidget extends Widget {
         };
     }
 
-    getWeaponCostDisplay(weapon, count = 1) {
-        if (!weapon) return '';
-        const cost = Number(weapon.cost) || 0;
-        return this.formatOptionCost(cost * count, 'weapons', weapon.id);
-    }
-
-    refreshWeaponCostLabels() {
-        if (!this.element) return;
-        for (const category of ['offensive', 'defensive']) {
-            const body = this.element.querySelector(`#${this.id}-${category}-weapons-body`);
-            if (!body) continue;
-            body.querySelectorAll('tr:not(.no-weapons)').forEach(row => {
-                const weaponSelect = row.querySelector('[data-weapon-field="weaponId"]');
-                const countInput = row.querySelector('[data-weapon-field="count"]');
-                const costCell = row.querySelector('.cost-cell');
-                if (!weaponSelect || !costCell) return;
-                const weapon = this.getAllWeapons().find(item => item.id === weaponSelect.value);
-                const count = this.parseCount(countInput?.value ?? 1);
-                costCell.textContent = this.getWeaponCostDisplay(weapon, count);
-            });
-        }
-    }
-
     onTechTreeUpdated() {
         this.refreshWeapons();
         this.refreshCatalogControls();
     }
 
     onEconomyModeChanged() {
-        this.refreshWeaponCostLabels();
         this.refreshSectionCostLabels();
         this.renderCoreProperties(this.getCoreData());
     }
@@ -1489,14 +1684,11 @@ class OutfitWidget extends Widget {
 
     createNodes() {
         this.clearNodes();
-        this.addNode('input', 'Core', 'Core', 0, 0.25, {
-            sectionId: 'category-core', anchorId: `${this.id}-category-core`, minSpacing: 32
-        });
         this.addNode('input', 'Class', 'Class', 0, 0.5, {
             sectionId: 'category-core', anchorId: `${this.id}-category-core`, anchorOffset: 32, minSpacing: 32
         });
-        this.addNode('output', 'Statistics', 'Statistics', 1, 0.65, {
-            sectionId: 'category-core', anchorId: `${this.id}-category-core`, minSpacing: 32
+        this.addNode('input', 'Core', 'Core', 0, 0.25, {
+            sectionId: 'category-core', anchorId: 'outfit-category-core-heading', minSpacing: 32
         });
         this.addNode('output', 'Outfit', 'Outfit', 1, 0.25, {
             sectionId: 'meta', anchorId: `${this.id}-meta`, minSpacing: 32
@@ -1543,6 +1735,12 @@ class OutfitWidget extends Widget {
         }
         this.element.querySelectorAll('[data-system-count]').forEach(input =>
             this.updateSystemCount(input)
+        );
+        const cargoInput = this.element.querySelector(`#${this.id}-berthing-cargo`);
+        const berthInput = this.element.querySelector(`#${this.id}-berthing-value`);
+        this.refreshBerthingAllocationUI(
+            cargoInput === document.activeElement,
+            berthInput === document.activeElement
         );
     }
 
@@ -1607,10 +1805,11 @@ class OutfitWidget extends Widget {
         }
         for (const item of this.systemsData.entropy) {
             const selection = this.outfitData.systems.entropy[item.id] || {};
+            const count = this.parseCount(selection.count);
             this.outfitData.systems.entropy[item.id] = {
-                count: this.parseCount(selection.count),
+                count,
                 radiance: item.radiance,
-                requiredTech: [...(item.requiredTech || [])]
+                requiredTech: count > 0 ? [...(item.requiredTech || [])] : []
             };
         }
         const requiredTech = this.getSelectedRequiredTech();
@@ -1706,7 +1905,7 @@ class OutfitWidget extends Widget {
                 general: {
                     ...this.outfitData.systems.general,
                     ...pickFields(incoming.systems?.general, [
-                        'berthing', 'craftLauncher', 'tending'
+                        'berthing', 'berthingCargo', 'craftLauncher', 'tending'
                     ]),
                     laserGenerator: {
                         ...this.outfitData.systems.general.laserGenerator,

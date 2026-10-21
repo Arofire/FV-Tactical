@@ -1,7 +1,7 @@
 {
   "intelligence-models": {
     "name": "Intelligence Models",
-    "category": "Information Technology",
+    "category": "Foundation - Information Technology",
     "abbreviation": "IT0",
     "cost": 0,
     "requiredTech": [],
@@ -9,7 +9,7 @@
   },
   "quantum-integration": {
     "name": "Quantum Integration",
-    "category": "Information Technology",
+    "category": "Foundation - Information Technology",
     "abbreviation": "IT1",
     "cost": 30,
     "requiredTech": [
@@ -19,7 +19,7 @@
   },
   "living-network": {
     "name": "Living Network",
-    "category": "Information Technology",
+    "category": "Foundation - Information Technology",
     "abbreviation": "IT2",
     "cost": 60,
     "requiredTech": [
@@ -29,7 +29,7 @@
   },
   "oracle-machines": {
     "name": "Oracle Machines",
-    "category": "Information Technology",
+    "category": "Foundation - Information Technology",
     "abbreviation": "IT3",
     "cost": 90,
     "requiredTech": [
@@ -39,7 +39,7 @@
   },
   "conformal-field-computing": {
     "name": "Conformal Field Computing",
-    "category": "Information Technology",
+    "category": "Foundation - Information Technology",
     "abbreviation": "IT4",
     "cost": 120,
     "requiredTech": [
@@ -49,7 +49,7 @@
   },
   "relativistic-simulation": {
     "name": "Relativistic Simulation",
-    "category": "Information Technology",
+    "category": "Foundation - Information Technology",
     "abbreviation": "IT5",
     "cost": 150,
     "requiredTech": [
@@ -59,7 +59,7 @@
   },
   "thermal": {
     "name": "Thermal",
-    "category": "Energy Generation",
+    "category": "Foundation - Energy Generation",
     "abbreviation": "EG0",
     "cost": 0,
     "requiredTech": [],
@@ -67,7 +67,7 @@
   },
   "fission": {
     "name": "Fission",
-    "category": "Energy Generation",
+    "category": "Foundation - Energy Generation",
     "abbreviation": "EG1",
     "cost": 30,
     "requiredTech": [
@@ -77,7 +77,7 @@
   },
   "fusion": {
     "name": "Fusion",
-    "category": "Energy Generation",
+    "category": "Foundation - Energy Generation",
     "abbreviation": "EG2",
     "cost": 60,
     "requiredTech": [
@@ -87,7 +87,7 @@
   },
   "antimatter": {
     "name": "Antimatter",
-    "category": "Energy Generation",
+    "category": "Foundation - Energy Generation",
     "abbreviation": "EG3",
     "cost": 90,
     "requiredTech": [
@@ -97,7 +97,7 @@
   },
   "singularity": {
     "name": "Singularity",
-    "category": "Energy Generation",
+    "category": "Foundation - Energy Generation",
     "abbreviation": "EG4",
     "cost": 120,
     "requiredTech": [
@@ -107,7 +107,7 @@
   },
   "zero-point-vacuum": {
     "name": "Zero Point Vacuum",
-    "category": "Energy Generation",
+    "category": "Foundation - Energy Generation",
     "abbreviation": "EG5",
     "cost": 150,
     "requiredTech": [
@@ -115,29 +115,20 @@
     ],
     "description": "Zero-point energy harvesting from quantum vacuum"
   },
-  "automation": {
-    "name": "Automation",
-    "category": "Materials Science",
-    "abbreviation": "MS0",
-    "cost": 0,
-    "requiredTech": [],
-    "description": "Basic industrial automation and manufacturing"
-  },
   "microgravity-engineering": {
     "name": "Microgravity Engineering",
-    "category": "Materials Science",
-    "abbreviation": "MS1",
-    "cost": 30,
+    "category": "Foundation - Materials Science",
+    "abbreviation": "MS0",
+    "cost": 0,
     "requiredTech": [
-      "automation"
     ],
     "description": "Engineering and manufacturing in microgravity environments"
   },
   "atomic-manufacturing": {
     "name": "Atomic Manufacturing",
-    "category": "Materials Science",
-    "abbreviation": "MS2",
-    "cost": 60,
+    "category": "Foundation - Materials Science",
+    "abbreviation": "MS1",
+    "cost": 30,
     "requiredTech": [
       "microgravity-engineering"
     ],
@@ -145,27 +136,37 @@
   },
   "metamaterials": {
     "name": "Metamaterials",
-    "category": "Materials Science",
-    "abbreviation": "MS3",
-    "cost": 90,
+    "category": "Foundation - Materials Science",
+    "abbreviation": "MS2",
+    "cost": 60,
     "requiredTech": [
       "atomic-manufacturing"
     ],
     "description": "Artificially structured materials with novel properties"
   },
+  "programmable-matter": {
+    "name": "Programmable Matter",
+    "category": "Foundation - Materials Science",
+    "abbreviation": "MS3",
+    "cost": 90,
+    "requiredTech": [
+      "metamaterials"
+    ],
+    "description": "Matter that can be programmed to change its properties and shape"
+  },
   "chronal-condensates": {
     "name": "Chronal Condensates",
-    "category": "Materials Science",
+    "category": "Foundation - Materials Science",
     "abbreviation": "MS4",
     "cost": 120,
     "requiredTech": [
-      "metamaterials"
+      "programmable-matter"
     ],
     "description": "Time-affecting material states and condensates"
   },
   "boson-mastery": {
     "name": "Boson Mastery",
-    "category": "Materials Science",
+    "category": "Foundation - Materials Science",
     "abbreviation": "MS5",
     "cost": 150,
     "requiredTech": [
@@ -173,6 +174,62 @@
     ],
     "description": "Complete control over bosonic matter states"
   },
+
+
+  "mechanized-rocket": {
+    "name": "Mechanized Rocket",
+    "category": "Engine",
+    "cost": 0,
+    "requiredTech": [],
+    "description": "Mechanized rocket propulsion technology"
+  },
+  "fission-plasma-rocket": {
+    "name": "Fission Plasma Rocket",
+    "category": "Engine",
+    "cost": 30,
+    "requiredTech": [
+      "fission"
+    ],
+    "description": "Fission plasma rocket propulsion technology"
+  },
+  "engine-2": {
+    "name": "Engine 2",
+    "category": "Engine",
+    "cost": 60,
+    "requiredTech": [
+      "fission-plasma-rocket"
+    ],
+    "description": "Fission plasma rocket propulsion technology"
+  },
+  "phased-array-repulsion-engine": {
+    "name": "Phased Array Repulsion Engine",
+    "category": "Engine",
+    "cost": 90,
+    "requiredTech": [
+      "programmable-matter"
+    ],
+    "description": "Phased array repulsion technology"
+  },
+  "engine-4": {
+    "name": "Engine 4",
+    "category": "Engine",
+    "cost": 120,
+    "requiredTech": [
+      "singularity"
+    ],
+    "description": "Fission plasma rocket propulsion technology"
+  },
+  "reactionless": {
+    "name": "Reactionless Engine",
+    "category": "Engine",
+    "cost": 150,
+    "requiredTech": [
+      "zero-point-vacuum"
+    ],
+    "description": "Reactionless translation technology"
+  },
+
+  
   "heavy-cannon": {
     "name": "Heavy Cannon",
     "category": "Gun",
@@ -702,15 +759,6 @@
     ],
     "description": "Point defense chemical laser systems"
   },
-  "chemlaser-warhead": {
-    "name": "ChemLASER Warhead",
-    "category": "LASER - ChemLASER",
-    "cost": 0,
-    "requiredTech": [
-      "heavy-chemical-laser"
-    ],
-    "description": "Chemical laser warhead systems"
-  },
   "heavy-optical-aperture": {
     "name": "Heavy Optical Aperture",
     "category": "LASER - Optical Aperture",
@@ -819,10 +867,10 @@
     ],
     "description": "Point defense uninterrupted beam laser systems"
   },
-  "magnetron-maser-generator-01": {
-    "name": "Magnetron MASER Generator-01",
+  "magnetron-maser-generator": {
+    "name": "Magnetron MASER Generator",
     "category": "LASER - Generator",
-    "abbreviation": "MASER01",
+    "abbreviation": "MASER",
     "cost": 0,
     "requiredTech": [
       "heavy-chemical-laser",
@@ -830,189 +878,54 @@
     ],
     "description": "First generation magnetron MASER systems"
   },
-  "magnetron-maser-generator-02": {
-    "name": "Magnetron MASER Generator-02",
+  "excimer-uvaser-generator": {
+    "name": "Excimer UVASER Generator",
     "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "magnetron-maser-generator-01"
-    ],
-    "description": "Second generation magnetron MASER systems"
-  },
-  "magnetron-maser-generator-03": {
-    "name": "Magnetron MASER Generator-03",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "magnetron-maser-generator-01"
-    ],
-    "description": "Third generation magnetron MASER systems"
-  },
-  "magnetron-maser-generator-04": {
-    "name": "Magnetron MASER Generator-04",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "magnetron-maser-generator-01"
-    ],
-    "description": "Fourth generation magnetron MASER systems"
-  },
-  "magnetron-maser-generator-05": {
-    "name": "Magnetron MASER Generator-05",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "magnetron-maser-generator-01"
-    ],
-    "description": "Fifth generation magnetron MASER systems"
-  },
-  "excimer-uvaser-generator-01": {
-    "name": "Excimer UVASER Generator-01",
-    "category": "LASER - Generator",
-    "abbreviation": "UVASER01",
+    "abbreviation": "UVASER",
     "cost": 0,
     "requiredTech": [
-      "magnetron-maser-generator-01",
+      "magnetron-maser-generator",
       "fusion"
     ],
     "description": "First generation excimer UVASER systems"
   },
-  "excimer-uvaser-generator-02": {
-    "name": "Excimer UVASER Generator-02",
+  "fel-generator": {
+    "name": "FEL Generator",
     "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "excimer-uvaser-generator-01"
-    ],
-    "description": "Second generation excimer UVASER systems"
-  },
-  "excimer-uvaser-generator-03": {
-    "name": "Excimer UVASER Generator-03",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "excimer-uvaser-generator-01"
-    ],
-    "description": "Third generation excimer UVASER systems"
-  },
-  "excimer-uvaser-generator-04": {
-    "name": "Excimer UVASER Generator-04",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "excimer-uvaser-generator-01"
-    ],
-    "description": "Fourth generation excimer UVASER systems"
-  },
-  "excimer-uvaser-generator-05": {
-    "name": "Excimer UVASER Generator-05",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "excimer-uvaser-generator-01"
-    ],
-    "description": "Fifth generation excimer UVASER systems"
-  },
-  "fel-generator-01": {
-    "name": "FEL Generator-01",
-    "category": "LASER - Generator",
-    "abbreviation": "FEL01",
+    "abbreviation": "FEL",
     "cost": 0,
     "requiredTech": [
-      "excimer-uvaser-generator-01",
+      "excimer-uvaser-generator",
       "antimatter"
     ],
     "description": "First generation free electron laser systems"
   },
-  "fel-generator-02": {
-    "name": "FEL Generator-02",
+  "haser-generator": {
+    "name": "HASER Generator",
     "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "fel-generator-01"
-    ],
-    "description": "Second generation free electron laser systems"
-  },
-  "fel-generator-03": {
-    "name": "FEL Generator-03",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "fel-generator-01"
-    ],
-    "description": "Third generation free electron laser systems"
-  },
-  "fel-generator-04": {
-    "name": "FEL Generator-04",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "fel-generator-01"
-    ],
-    "description": "Fourth generation free electron laser systems"
-  },
-  "fel-generator-05": {
-    "name": "FEL Generator-05",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "fel-generator-01"
-    ],
-    "description": "Fifth generation free electron laser systems"
-  },
-  "haser-generator-01": {
-    "name": "HASER Generator-01",
-    "category": "LASER - Generator",
-    "abbreviation": "HASER01",
+    "abbreviation": "HASER",
     "cost": 0,
     "requiredTech": [
-      "fel-generator-01",
+      "fel-generator",
       "zero-point-vacuum"
     ],
     "description": "First generation hyperon laser systems"
   },
-  "haser-generator-02": {
-    "name": "HASER Generator-02",
-    "category": "LASER - Generator",
-    "cost": 6,
+  "chemlaser-warhead": {
+    "name": "ChemLASER Warhead",
+    "category": "LASER - Miniature",
+    "cost": 0,
     "requiredTech": [
-      "haser-generator-01"
+      "heavy-chemical-laser"
     ],
-    "description": "Second generation hyperon laser systems"
-  },
-  "haser-generator-03": {
-    "name": "HASER Generator-03",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "haser-generator-01"
-    ],
-    "description": "Third generation hyperon laser systems"
-  },
-  "haser-generator-04": {
-    "name": "HASER Generator-04",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "haser-generator-01"
-    ],
-    "description": "Fourth generation hyperon laser systems"
-  },
-  "haser-generator-05": {
-    "name": "HASER Generator-05",
-    "category": "LASER - Generator",
-    "cost": 6,
-    "requiredTech": [
-      "haser-generator-01"
-    ],
-    "description": "Fifth generation hyperon laser systems"
+    "description": "Chemical laser warhead systems"
   },
   "hyperon-warhead": {
     "name": "Hyperon Warhead",
-    "category": "LASER - Generator",
+    "category": "LASER - Miniature",
     "cost": 0,
     "requiredTech": [
-      "haser-generator-01"
+      "haser-generator"
     ],
     "description": "Hyperon-based warhead systems"
   },

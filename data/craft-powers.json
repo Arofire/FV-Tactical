@@ -1,5 +1,0 @@
-[
-  { "id": "standard", "name": "Standard", "power": 2 },
-  { "id": "efficient", "name": "Efficient", "power": 1 },
-  { "id": "high-output", "name": "High Output", "power": 3 }
-]

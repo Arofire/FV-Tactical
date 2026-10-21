@@ -864,6 +864,10 @@ body {
     align-items: flex-end;
 }
 
+.preflight-overlay[hidden] {
+    display: none !important;
+}
+
 .preflight-overlay.hidden .preflight-issues { 
     opacity: 0; 
     transform: translateY(-10px); 

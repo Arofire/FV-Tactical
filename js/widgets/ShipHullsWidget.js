@@ -247,22 +247,11 @@ class ShipHullsWidget extends Widget {
 
     createNodes() {
         this.clearNodes();
-
-        this.addNode('input', 'Class', 'Class', 0, 0.2, {
-            sectionId: 'info',
-            anchorId: `${this.id}-info`,
-            minSpacing: 30
-        });
-        this.addNode('input', 'Outfit', 'Outfit', 0, 0.52, {
+        this.addNode('input', 'Outfit', 'Outfit', 0, 0.5, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             minSpacing: 30,
             allowMultipleConnections: true
-        });
-        this.addNode('output', 'Statistics', 'Statistics', 1, 0.5, {
-            sectionId: 'info',
-            anchorId: `${this.id}-info`,
-            minSpacing: 32
         });
         this.reflowNodes();
     }
@@ -667,17 +656,27 @@ class ShipHullsWidget extends Widget {
     }
 
     getMetrics(model) {
-        const { classData, outfits, cores, counts, components } = model;
-        const ship = classData || {};
+        const { outfits, cores, counts, components } = model;
         const outfitData = outfits;
         const sources = components.map(component => component.data);
         const reserve = this.getMetricValue(sources, ['magneticReserve', 'barrierReserve', 'magneticBarrierReserve']);
         const barriers = this.getMetricValue(sources, ['magneticBarriers', 'magneticBarrier', 'barriers']);
         const activeArmor = this.getMetricValue(sources, ['activeArmor', 'activeArmour']);
         const plasmaFields = this.getMetricValue(sources, ['plasmaFields', 'plasmaField']);
-        const crewCapacity = this.getMetricValue(sources, [
+        const reportedCrewCapacity = this.getMetricValue(sources, [
             'crewBerthings', 'crewBerths', 'crewCapacity', 'berthingCapacity', 'berthCapacity'
         ]);
+        const crewCapacity = reportedCrewCapacity ?? (outfitData.length
+            ? outfitData.reduce((total, outfit) => {
+                const generalSystems = outfit.systems?.general;
+                const berthingSystems = this.numeric(generalSystems?.berthing);
+                const cargoAllocation = Math.min(
+                    this.numeric(generalSystems?.berthingCargo),
+                    berthingSystems * 50
+                );
+                return total + Math.max(0, berthingSystems * 5 - cargoAllocation / 10);
+            }, 0)
+            : null);
         const sumDeviceMetric = (collection, property) => outfitData.reduce((total, outfit) =>
             total + (Array.isArray(outfit.utilityDevices?.[collection])
                 ? outfit.utilityDevices[collection].reduce((subtotal, selection) => {
@@ -712,7 +711,7 @@ class ShipHullsWidget extends Widget {
             this.getMetricValue(sources, ['passiveRadiance']),
             passiveDeviceRadiance
         );
-        const coreInterval = this.getMetricValue([...sources, ...cores], ['coreInterval']);
+        const threshold = this.getMetricValue(cores, ['reactorStability']);
         const entropyCapacity = counts.Emplacement === null || counts.System === null
             ? null
             : 2 * (counts.Emplacement + counts.System);
@@ -727,7 +726,7 @@ class ShipHullsWidget extends Widget {
             item && typeof item === 'object' ? JSON.stringify(item) : String(item)) => ({
             label,
             value: value === undefined || value === null || value === ''
-                ? 'Not available from connected data'
+                ? 'Not available'
                 : format(value),
             available: value !== undefined && value !== null && value !== ''
         });
@@ -739,19 +738,48 @@ class ShipHullsWidget extends Widget {
                 label: 'Magnetic barriers / reserve',
                 value: barriers !== null || reserve !== null
                     ? [barriers !== null ? `${barriers} barriers` : null, reserve !== null ? `${reserve} reserve` : null].filter(Boolean).join(' · ')
-                    : 'Not available from connected data',
+                    : 'Not available',
                 available: barriers !== null || reserve !== null
             },
             metric('Crew berthings', crewCapacity),
             metric('Hardpoints', model.hardpoints, value => String(value)),
             metric('Active radiance', activeRadiance),
             metric('Passive radiance', passiveRadiance),
-            metric('Core interval', coreInterval),
+            metric('Threshold', threshold),
             metric('Entropy capacity', entropyCapacity),
             metric('Entropy bands', entropyBands, values => values.join('  ')),
             metric('Magazine cells', magazineCells, value => String(value)),
             metric('Hangar bays', hangarBays, value => String(value))
         ];
+    }
+
+    getHullResourceMetrics(model) {
+        const outfitCargo = this.getMetricValue(
+            model.outfits.map(outfit => outfit.resources || {}),
+            ['cargo']
+        );
+        const classCargo = this.getMetricValue([model.classData?.resources || {}], ['cargo']);
+        const berthingCargo = model.outfits.reduce(
+            (total, outfit) => total + this.numeric(outfit.systems?.general?.berthingCargo),
+            0
+        );
+        const cargoBase = outfitCargo ?? classCargo;
+        const cargo = cargoBase !== null
+            ? this.numeric(cargoBase) + berthingCargo
+            : berthingCargo > 0 ? berthingCargo : null;
+        const consumption = model.outfits.length
+            ? model.outfits.reduce((total, outfit) =>
+                total + this.numeric(outfit.resources?.systems) +
+                    this.numeric(outfit.resources?.core), 0)
+            : null;
+
+        return {
+            cargo,
+            consumption,
+            endurance: cargo !== null && consumption > 0
+                ? Math.floor(cargo / consumption)
+                : null
+        };
     }
 
     static get HULL_CODES() {
@@ -837,6 +865,40 @@ class ShipHullsWidget extends Widget {
         if (!container) return;
         container.replaceChildren();
         const metrics = this.getMetrics(model);
+        const hullResourceMetrics = this.getHullResourceMetrics(model);
+        const supplySection = document.createElement('section');
+        supplySection.className = 'widget-section hull-plan-metrics-section';
+        const supplyTitle = document.createElement('h4');
+        supplyTitle.className = 'section-title';
+        supplyTitle.textContent = 'Supply';
+        const supplyContent = document.createElement('div');
+        supplyContent.className = 'section-content';
+        const resourceTiles = document.createElement('div');
+        resourceTiles.className = 'triangle-values hull-plan-resource-tiles';
+        for (const [label, value] of [
+            ['Cargo', hullResourceMetrics.cargo],
+            ['Consumption', hullResourceMetrics.consumption],
+            ['Endurance', hullResourceMetrics.endurance]
+        ]) {
+            const tile = document.createElement('div');
+            tile.className = 'triangle-value hull-plan-resource-tile';
+            const title = document.createElement('div');
+            title.className = 'triangle-component-title';
+            title.textContent = label;
+            const valueText = document.createElement('span');
+            valueText.className = 'hull-plan-resource-value';
+            valueText.textContent = value === null ? 'Not available' : String(value);
+            valueText.setAttribute(
+                'aria-label',
+                `${label}: ${value === null ? 'Not available' : String(value)}`
+            );
+            tile.append(title, valueText);
+            resourceTiles.appendChild(tile);
+        }
+        supplyContent.appendChild(resourceTiles);
+        supplySection.append(supplyTitle, supplyContent);
+        container.appendChild(supplySection);
+
         const armorSection = document.createElement('section');
         armorSection.className = 'widget-section hull-plan-metrics-section';
         const armorTitle = document.createElement('h4');
@@ -859,7 +921,7 @@ class ShipHullsWidget extends Widget {
             empty.className = 'hull-plan-empty';
             empty.textContent = model.classData
                 ? 'No hulls are allocated in the connected ship class.'
-                : 'Connect a Ship Class and/or Outfit to populate the hull plan.';
+                : 'Connect a Ship Outfit to populate the hull plan.';
             (this.hullPlanFlyoutContent || container).appendChild(empty);
         } else {
             const grid = document.createElement('div');
@@ -1113,6 +1175,7 @@ class ShipHullsWidget extends Widget {
         resourceCost: {}
     }) {
         const classData = model.classData || {};
+        const hullResourceMetrics = this.getHullResourceMetrics(model);
         const coreComponent = model.components.find(component =>
             component.sourceWidgetType === 'shipCore'
         );
@@ -1216,7 +1279,7 @@ class ShipHullsWidget extends Widget {
             HullCount: model.total,
             ContainmentCargo: firstValue(classResources.cargo, statistics.cargo),
             ContainmentRemass: firstValue(classResources.remass, statistics.remass),
-            Endurance: firstValue(statistics.endurance, metricValue('Endurance')),
+            Endurance: hullResourceMetrics.endurance,
             Hardpoints: model.hardpoints,
             Berthing: metricValue('Crew berthings'),
             HangarHull: model.counts.Hangar,

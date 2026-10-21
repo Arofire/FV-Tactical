@@ -5,7 +5,7 @@ class FVTacticalApp {
         this.widgetManager = new WidgetManager();
         this.nodeSystem = new NodeSystem();
         this.dataManager = new DataManager();
-        this.preflightCheck = new PreflightCheck(this.empire, this.widgetManager, this.nodeSystem);
+        this.preflightCheck = null;
         this.cascadeDragEnabled = false;
         this.activeEmpireView = 'design';
         
@@ -46,9 +46,6 @@ class FVTacticalApp {
             () => this.widgetManager.widgets,
             () => this.nodeSystem
         );
-        
-        // Initial preflight check
-        this.preflightCheck.runCheck();
         
         console.log('FV-Tactical initialized successfully');
     }
@@ -446,10 +443,10 @@ class FVTacticalApp {
         const normalizedCategory = String(category).toLowerCase();
         const rule = rules.items?.[itemId] || rules.categories?.[normalizedCategory] || 'split';
         if (rule === 'industry') return `${cost} Industry`;
-        if (rule === 'materiel') return `${cost} Materiel`;
+        if (rule === 'materiel') return `${cost} Material`;
         const industry = Math.round(cost * 100 / 2) / 100;
         const materiel = cost - industry;
-        return `${industry} Industry + ${materiel} Materiel`;
+        return `${industry} Industry + ${materiel} Material`;
     }
 
     notifyEconomyModeChanged() {
@@ -615,9 +612,6 @@ class FVTacticalApp {
                 case 'outfit':
                     widget = new OutfitWidget(x, y);
                     break;
-                case 'statistics':
-                    widget = new StatisticsWidget(null, x, y);
-                    break;
                 case 'reroute':
                     widget = new RerouteWidget(x, y);
                     break;
@@ -640,7 +634,7 @@ class FVTacticalApp {
         if (widget) {
             this.widgetManager.addWidget(widget);
             widget.select();
-            this.preflightCheck.runCheck();
+            this.runPreflightCheck();
             return widget; // Return widget for auto-connection system
         }
     }
@@ -769,7 +763,7 @@ class FVTacticalApp {
                             if (await this.empire.researchTech(tech.id)) {
                                 await this.updateTechTree();
                                 this.updateEmpireDisplay();
-                                this.preflightCheck.runCheck();
+                                this.runPreflightCheck();
                             } else {
                                 alert('Insufficient tech points!');
                             }
@@ -1021,7 +1015,6 @@ class FVTacticalApp {
                 case 'outfit': widget = new OutfitWidget(); break;
                 case 'shipCore': widget = new ShipCoreWidget(); break;
                 case 'shipHulls': widget = new ShipHullsWidget(); break;
-                case 'statistics': widget = new StatisticsWidget(); break;
                 case 'reroute': widget = new RerouteWidget(); break;
                 default:
                     console.warn(`Skipping unsupported saved widget type "${widgetData.type}"`);
@@ -1090,7 +1083,7 @@ class FVTacticalApp {
             if (rulesButton) rulesButton.hidden = this.empire.economyMode !== 'campaign';
         }
         this.notifyEconomyModeChanged();
-        this.preflightCheck.runCheck();
+        this.runPreflightCheck();
         
 
     }
@@ -1135,7 +1128,9 @@ class FVTacticalApp {
     }
 
     runPreflightCheck() {
-        this.preflightCheck.runCheck();
+        if (this.preflightCheck) {
+            this.preflightCheck.runCheck();
+        }
     }
 
     addTechPoints(amount) {
@@ -1159,8 +1154,7 @@ class FVTacticalApp {
             { type: 'missiles', label: 'Missile Design' },
             { type: 'outfit', label: 'Ship Outfit' },
             { type: 'shipCore', label: 'Ship Core' },
-            { type: 'shipHulls', label: 'Hull Plan' },
-            { type: 'statistics', label: 'Statistics Hub' }
+            { type: 'shipHulls', label: 'Hull Plan' }
         ];
         
         widgetTypes.forEach(({ type, label }) => {

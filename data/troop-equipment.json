@@ -1,7 +1,0 @@
-[
-  { "id": "armor", "name": "Personal Armor", "combatValue": 1 },
-  { "id": "rifle", "name": "Assault Rifle", "combatValue": 1 },
-  { "id": "heavy-weapon", "name": "Heavy Weapon", "combatValue": 2 },
-  { "id": "communications", "name": "Communications Gear", "combatValue": 0 },
-  { "id": "medical-kit", "name": "Medical Kit", "combatValue": 0 }
-]

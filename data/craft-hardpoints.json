@@ -1,4 +1,0 @@
-[
-  { "id": "light-hardpoint", "name": "Light Hardpoint", "capacity": 1, "combatValue": 1 },
-  { "id": "heavy-hardpoint", "name": "Heavy Hardpoint", "capacity": 2, "combatValue": 2 }
-]
