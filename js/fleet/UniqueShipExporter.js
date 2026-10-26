@@ -701,7 +701,7 @@ class UniqueShipExporter {
     async exportPDF(ship) {
         const payload = await UniqueShipExporter.getExportData(ship, this.app);
         const pdfLib = await SummaryWidget.prototype.loadPdfLibrary.call(UniqueShipExporter);
-        const response = await fetch('data/Unique%20Ship%20Sheet.pdf');
+        const response = await fetch('data/Unique-Ship-Sheet.pdf');
         if (!response.ok) {
             throw new Error(`Unable to load the Unique Ship Sheet PDF template (${response.status}).`);
         }

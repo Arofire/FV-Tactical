@@ -1217,7 +1217,7 @@ class SummaryWidget extends Widget {
 
     async downloadFilledPDF(payload) {
         const pdfLib = await this.loadPdfLibrary();
-        const response = await fetch('data/Build%20Sheet%20Ship.pdf');
+        const response = await fetch('data/Build-Sheet-Ship.pdf');
         if (!response.ok) {
             throw new Error(`Unable to load the build sheet PDF template (${response.status}).`);
         }
