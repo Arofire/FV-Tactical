@@ -1,4 +1,4 @@
-class ShipHullsWidget extends Widget {
+class SummaryWidget extends Widget {
     static calculateEntropyBands(entropyCapacity, radiatorOffset = 0) {
         if (!Number.isFinite(entropyCapacity) || entropyCapacity < 0 ||
             !Number.isFinite(radiatorOffset)) {
@@ -16,12 +16,8 @@ class ShipHullsWidget extends Widget {
         });
     }
 
-    constructor(x = 100, y = 100) {
-        super('shipHulls', 'Hull Plan', x, y, null);
-        this.hullPlanFlyoutLocked = false;
-        this.hullPlanFlyout = null;
-        this.hullPlanFlyoutContent = null;
-        this.hullPlanFlyoutHideTimer = null;
+    constructor(x = 100, y = 100, type = 'summary', title = 'Summary') {
+        super(type, title, x, y, null);
         this.exportMenuRoot = null;
         this.exportMenu = null;
         this.exportButton = null;
@@ -34,7 +30,6 @@ class ShipHullsWidget extends Widget {
             }
         };
         this.exportMenuKeydownHandler = event => this.handleExportMenuKeydown(event);
-        this.layoutMode = 'three-column';
         this.init();
     }
 
@@ -48,18 +43,14 @@ class ShipHullsWidget extends Widget {
                     Export
                 </button>
                 <div class="hull-plan-export-menu" id="${this.id}-export-menu" role="menu"
-                    aria-label="Hull Plan export options" hidden>
-                    <button type="button" role="menuitem" data-export-format="json">JSON</button>
-                    <button type="button" role="menuitem" data-export-format="pdf">PDF</button>
+                        aria-label="Summary export options" hidden>
+                        <button type="button" role="menuitem" data-export-format="json">JSON</button>
+                        <button type="button" role="menuitem" data-export-format="pdf">PDF</button>
+                    </div>
                 </div>
-            </div>
-            <button type="button" class="hull-plan-open" id="${this.id}-open" aria-haspopup="dialog" aria-expanded="false">
-                Hull tiles
-            </button>
-            <div class="hull-plan-view" id="${this.id}-plan-view" aria-live="polite"></div>
+                <div class="hull-plan-view" id="${this.id}-plan-view" aria-live="polite"></div>
         `);
         sections.appendChild(infoSection.section);
-        this.createHullPlanFlyout();
         this.exportMenuRoot = contentElement.querySelector('.hull-plan-export');
         this.exportMenu = contentElement.querySelector(`#${this.id}-export-menu`);
         this.exportButton = contentElement.querySelector(`#${this.id}-export`);
@@ -77,20 +68,6 @@ class ShipHullsWidget extends Widget {
             }
         });
         this.exportMenuRoot?.addEventListener('focusout', this.exportMenuFocusoutHandler);
-        const openButton = contentElement.querySelector(`#${this.id}-open`);
-        if (openButton) {
-            openButton.addEventListener('mouseenter', () => this.showHullPlanFlyout());
-            openButton.addEventListener('focus', () => this.showHullPlanFlyout());
-            openButton.addEventListener('click', () => this.showHullPlanFlyout());
-            openButton.addEventListener('mouseleave', () => this.scheduleHullPlanFlyoutHide());
-            openButton.addEventListener('blur', () => this.scheduleHullPlanFlyoutHide());
-            openButton.addEventListener('keydown', event => {
-                if (event.key === 'Escape' && !this.hullPlanFlyoutLocked) {
-                    this.hideHullPlanFlyout();
-                }
-            });
-        }
-
         this.refreshPlan();
     }
 
@@ -135,119 +112,20 @@ class ShipHullsWidget extends Widget {
         if (restoreFocus) this.exportButton?.focus();
     }
 
-    createHullPlanFlyout() {
-        this.hullPlanFlyout?.remove();
-        const flyout = document.createElement('section');
-        flyout.className = 'hull-plan-flyout';
-        flyout.id = `${this.id}-flyout`;
-        flyout.setAttribute('role', 'dialog');
-        flyout.setAttribute('aria-label', 'Hull tiles diagram');
-        flyout.tabIndex = -1;
-        flyout.hidden = true;
-
-        const header = document.createElement('header');
-        header.className = 'hull-plan-flyout-header';
-        const title = document.createElement('strong');
-        title.textContent = 'Hull tiles';
-        const lockButton = document.createElement('button');
-        lockButton.type = 'button';
-        lockButton.className = 'hull-plan-flyout-lock';
-        lockButton.textContent = 'Lock open';
-        lockButton.setAttribute('aria-pressed', 'false');
-        lockButton.addEventListener('click', () => {
-            this.hullPlanFlyoutLocked = !this.hullPlanFlyoutLocked;
-            lockButton.setAttribute('aria-pressed', String(this.hullPlanFlyoutLocked));
-            lockButton.textContent = this.hullPlanFlyoutLocked ? 'Unlock' : 'Lock open';
-            flyout.classList.toggle('is-locked', this.hullPlanFlyoutLocked);
-            if (!this.hullPlanFlyoutLocked && !flyout.matches(':hover') &&
-                !this.element?.querySelector(`#${this.id}-open`)?.matches(':hover')) {
-                this.scheduleHullPlanFlyoutHide();
-            }
-        });
-        header.append(title, lockButton);
-
-        const content = document.createElement('div');
-        content.className = 'hull-plan-flyout-content';
-        flyout.append(header, content);
-        flyout.addEventListener('mouseenter', () => this.showHullPlanFlyout());
-        flyout.addEventListener('mouseleave', () => {
-            if (!this.hullPlanFlyoutLocked &&
-                !this.element?.querySelector(`#${this.id}-open`)?.matches(':hover')) {
-                this.scheduleHullPlanFlyoutHide();
-            }
-        });
-        flyout.addEventListener('focusout', () => this.scheduleHullPlanFlyoutHide());
-        flyout.addEventListener('keydown', event => {
-            if (event.key === 'Escape' && !this.hullPlanFlyoutLocked) {
-                this.hideHullPlanFlyout();
-                this.element?.querySelector(`#${this.id}-open`)?.focus();
-            }
-        });
-
-        this.hullPlanFlyout = flyout;
-        this.hullPlanFlyoutContent = content;
-        document.body.appendChild(flyout);
-    }
-
-    showHullPlanFlyout() {
-        const flyout = this.hullPlanFlyout;
-        const trigger = this.element?.querySelector(`#${this.id}-open`);
-        if (!flyout || !trigger) return;
-        clearTimeout(this.hullPlanFlyoutHideTimer);
-        flyout.hidden = false;
-        trigger.setAttribute('aria-expanded', 'true');
-        this.positionHullPlanFlyout();
-    }
-
-    scheduleHullPlanFlyoutHide() {
-        clearTimeout(this.hullPlanFlyoutHideTimer);
-        this.hullPlanFlyoutHideTimer = setTimeout(() => {
-            const flyout = this.hullPlanFlyout;
-            const trigger = this.element?.querySelector(`#${this.id}-open`);
-            if (this.hullPlanFlyoutLocked || flyout?.matches(':hover, :focus-within') ||
-                trigger?.matches(':hover, :focus-within')) return;
-            this.hideHullPlanFlyout();
-        }, 150);
-    }
-
-    hideHullPlanFlyout() {
-        if (this.hullPlanFlyoutLocked || !this.hullPlanFlyout) return;
-        this.hullPlanFlyout.hidden = true;
-        this.element?.querySelector(`#${this.id}-open`)?.setAttribute('aria-expanded', 'false');
-    }
-
-    positionHullPlanFlyout() {
-        const flyout = this.hullPlanFlyout;
-        const trigger = this.element?.querySelector(`#${this.id}-open`);
-        if (!flyout || flyout.hidden || !trigger) return;
-
-        const margin = 8;
-        const anchor = trigger.getBoundingClientRect();
-        const rect = flyout.getBoundingClientRect();
-        const viewportWidth = document.documentElement.clientWidth;
-        const viewportHeight = document.documentElement.clientHeight;
-        const left = Math.min(
-            Math.max(margin, anchor.right + margin),
-            Math.max(margin, viewportWidth - rect.width - margin)
-        );
-        const top = Math.min(
-            Math.max(margin, anchor.top),
-            Math.max(margin, viewportHeight - rect.height - margin)
-        );
-        flyout.style.left = `${left}px`;
-        flyout.style.top = `${top}px`;
-    }
-
     close() {
-        clearTimeout(this.hullPlanFlyoutHideTimer);
         this.closeExportMenu();
-        this.hullPlanFlyout?.remove();
         super.close();
     }
 
     createNodes() {
         this.clearNodes();
         this.addNode('input', 'Outfit', 'Outfit', 0, 0.5, {
+            sectionId: 'info',
+            anchorId: `${this.id}-info`,
+            minSpacing: 30,
+            allowMultipleConnections: true
+        });
+        this.addNode('input', 'Craft', 'Craft', 0, 0.7, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             minSpacing: 30,
@@ -282,7 +160,7 @@ class ShipHullsWidget extends Widget {
         const hasConnectedInputs = Array.from(this.nodes.values()).some(node =>
             node.type === 'input' && node.connections?.size
         );
-        this.element.classList.toggle('has-connected-hull-plan-inputs', hasConnectedInputs);
+        this.element.classList.toggle('has-connected-summary-inputs', hasConnectedInputs);
         this.element.style.zIndex = this.isDragging
             ? '100'
             : hasConnectedInputs ? '30' : (this.selected ? '20' : '10');
@@ -333,8 +211,10 @@ class ShipHullsWidget extends Widget {
                     data: sourceWidget.getSerializedData()
                 });
             } catch (error) {
-                console.warn(`[ShipHullsWidget ${this.id}] Unable to read connected ${inputType} data`, error);
+                console.warn(`[SummaryWidget ${this.id}] Unable to read connected ${inputType} data`, error);
             }
+            // Craft statistics stand alone; a craft's core is not part of the ship plan.
+            if (inputType === 'Craft') return;
 
             for (const parentId of sourceWidget.parents || []) {
                 const parentWidget = window.widgetManager?.getWidget(parentId);
@@ -371,15 +251,21 @@ class ShipHullsWidget extends Widget {
     getModel(components = this.getConnectedComponents()) {
         const classes = this.getSourceData(components, 'Class');
         const classData = classes[0]?.shipData || null;
-        const outfits = this.getSourceData(components, 'Outfit')
-            .map(data => {
-                const outfit = data?.outfitData || {};
+        const outfits = components
+            .filter(component => component.inputType === 'Outfit')
+            .map(component => {
+                const data = component.data || {};
+                const outfit = data.outfitData || {};
+                const widget = window.widgetManager?.getWidget(component.sourceWidgetId);
+                if (typeof widget?.getHullPlanExportDevices !== 'function') {
+                    throw new Error(`Connected outfit ${component.sourceWidgetId} cannot provide Summary export devices.`);
+                }
                 return {
                     ...outfit,
-                    spinalWeapon: data?.spinalWeapon || outfit.spinalWeapon || null
+                    spinalWeapon: data.spinalWeapon || outfit.spinalWeapon || null,
+                    hullPlanExportDevices: widget.getHullPlanExportDevices()
                 };
-            })
-            .filter(Boolean);
+            });
         const cores = outfits.map(outfit => outfit.selectedCore).filter(Boolean);
         const hullComposition = classData?.hullComposition || {};
         const rawCounts = {
@@ -406,7 +292,7 @@ class ShipHullsWidget extends Widget {
         }
         const classConnected = !!classData;
         const counts = {};
-        for (const category of Object.keys(ShipHullsWidget.HULL_CODES)) {
+        for (const category of Object.keys(SummaryWidget.HULL_CODES)) {
             counts[category] = rawCounts[category] === null
                 ? (classConnected ? 0 : null)
                 : rawCounts[category];
@@ -712,13 +598,16 @@ class ShipHullsWidget extends Widget {
             passiveDeviceRadiance
         );
         const threshold = this.getMetricValue(cores, ['reactorStability']);
-        const entropyCapacity = counts.Emplacement === null || counts.System === null
-            ? null
-            : 2 * (counts.Emplacement + counts.System);
+        const outfitEntropyCapacities = outfitData
+            .map(outfit => outfit.selectedCore?.burnAnalysis?.totalEntropy)
+            .filter(capacity => Number.isFinite(capacity) && capacity >= 0);
+        const entropyCapacity = outfitEntropyCapacities.length
+            ? outfitEntropyCapacities.reduce((total, capacity) => total + capacity, 0)
+            : null;
         const radiatorOffset = sumDeviceMetric('radiators', 'offset');
         const entropyBands = entropyCapacity === null
             ? null
-            : ShipHullsWidget.calculateEntropyBands(entropyCapacity, radiatorOffset);
+            : SummaryWidget.calculateEntropyBands(entropyCapacity, radiatorOffset);
         const magazineCells = counts.Magazine === null ? null : counts.Magazine * 25;
         const hangarBays = counts.Hangar === null ? null : counts.Hangar * 4;
 
@@ -817,7 +706,7 @@ class ShipHullsWidget extends Widget {
 
         const descending = [...slots].sort((a, b) => b.col - a.col || b.row - a.row);
         const cells = [];
-        for (const category of ShipHullsWidget.STACK_ORDER) {
+        for (const category of SummaryWidget.STACK_ORDER) {
             for (let index = 0; index < (counts[category] || 0); index++) {
                 const slot = descending[cells.length];
                 if (!slot) break;
@@ -827,7 +716,7 @@ class ShipHullsWidget extends Widget {
         const occupied = new Set(cells.map(cell => `${cell.row}:${cell.col}`));
         const flowSlots = slots.filter(slot => !occupied.has(`${slot.row}:${slot.col}`));
         let flowIndex = 0;
-        for (const category of ShipHullsWidget.FLOW_ORDER) {
+        for (const category of SummaryWidget.FLOW_ORDER) {
             for (let index = 0; index < (counts[category] || 0); index++) {
                 const slot = flowSlots[flowIndex++];
                 if (!slot) break;
@@ -864,6 +753,51 @@ class ShipHullsWidget extends Widget {
     renderPlan(container, model) {
         if (!container) return;
         container.replaceChildren();
+        const craftComponents = model.components.filter(component => component.inputType === 'Craft');
+        const hasShipInputs = model.components.some(component => component.inputType !== 'Craft');
+        if (hasShipInputs || !craftComponents.length) this.renderShipPlan(container, model);
+        craftComponents.forEach(component => this.renderCraftStatistics(container, component));
+    }
+
+    // Combined statistics for a connected craft design.
+    renderCraftStatistics(container, component) {
+        const widget = window.widgetManager?.getWidget(component.sourceWidgetId);
+        if (typeof widget?.calculateStats !== 'function') return;
+        const stats = widget.calculateStats();
+        const list = values => (values?.length ? values.join(', ') : '—');
+        const usage = resource => `${stats[`${resource}Used`]} / ${stats[resource]}`;
+        const section = document.createElement('section');
+        section.className = 'widget-section hull-plan-metrics-section summary-craft-statistics';
+        const title = document.createElement('h4');
+        title.className = 'section-title';
+        title.textContent = `${widget.title || 'Craft'} statistics`;
+        const content = document.createElement('div');
+        content.className = 'section-content';
+        content.appendChild(this.createPropertiesGrid([
+            ['Profile', stats.profile],
+            ['Roles', `${list(stats.roles)} (${stats.roleCount} / ${stats.roleLimit})`],
+            ['Combat value', widget.formatOptionCost?.(stats.combatValue, 'general') || `${stats.combatValue} CV`],
+            ['Cohesion', stats.cohesion],
+            ['Burns', stats.burns],
+            ['Power', stats.power],
+            ['Fuel', stats.fuel],
+            ['Hardpoints', usage('hardpoints')],
+            ['Utilities', usage('utilities')],
+            ['Equipment', usage('equipment')],
+            ['Troops', stats.troops],
+            ['Cells', stats.cells],
+            ['Containment', stats.containment],
+            ['Bays required', stats.baysRequired],
+            ['Facing', stats.facing],
+            ['Traits', list(stats.traits)],
+            ['Tags', list(stats.tags)],
+            ['Actions', list(stats.actions)]
+        ].map(([label, value]) => ({ label, value: String(value), available: true }))));
+        section.append(title, content);
+        container.appendChild(section);
+    }
+
+    renderShipPlan(container, model) {
         const metrics = this.getMetrics(model);
         const hullResourceMetrics = this.getHullResourceMetrics(model);
         const supplySection = document.createElement('section');
@@ -911,95 +845,6 @@ class ShipHullsWidget extends Widget {
         ]));
         armorSection.append(armorTitle, armorContent);
         container.appendChild(armorSection);
-
-        if (this.hullPlanFlyoutContent) this.hullPlanFlyoutContent.replaceChildren();
-        const layout = this.createLayout(model.counts);
-        const armorCount = this.numeric(model.armor);
-        const utilityCount = this.numeric(model.utilityTotal);
-        if (!layout.cells.length && armorCount === 0 && utilityCount === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'hull-plan-empty';
-            empty.textContent = model.classData
-                ? 'No hulls are allocated in the connected ship class.'
-                : 'Connect a Ship Outfit to populate the hull plan.';
-            (this.hullPlanFlyoutContent || container).appendChild(empty);
-        } else {
-            const grid = document.createElement('div');
-            grid.className = 'hull-plan-grid';
-            const cols = layout.cols || Math.max(1, Math.ceil(Math.sqrt(Math.max(armorCount, utilityCount))));
-            grid.setAttribute('role', 'grid');
-            const appendRow = cells => {
-                const row = document.createElement('div');
-                row.className = 'hull-plan-row';
-                for (let colIndex = 0; colIndex < cols; colIndex++) {
-                    row.appendChild(cells[colIndex] || document.createElement('span'));
-                }
-                grid.appendChild(row);
-            };
-            const appendTiles = (table, title) => {
-                table.forEach(row => {
-                    appendRow(row.map(code => {
-                        if (!code) return null;
-                        const cell = document.createElement('div');
-                        const tileType = { D: 'armor', A: 'hardpoint', U: 'utility' }[code] || code.toLowerCase();
-                        cell.className = `hull-plan-cell hull-plan-${tileType}`;
-                        cell.setAttribute('role', 'gridcell');
-                        cell.title = title;
-                        cell.setAttribute('aria-label', `${title}: ${code}`);
-                        const label = document.createElement('strong');
-                        label.className = 'hull-plan-cell-code';
-                        label.textContent = code;
-                        cell.appendChild(label);
-                        return cell;
-                    }));
-                });
-            };
-
-            appendTiles(this.buildArmorTable(model.armor, model.hardpoints, cols), 'Armour/Hardpoints');
-            appendTiles(this.blockTable(model.utilityTotal, cols, 'U'), 'Utilities');
-
-            const hullRows = Array.from({ length: layout.rows }, () => new Array(cols).fill(null));
-            const totals = {};
-            layout.cells.forEach(cell => {
-                totals[cell.category] = (totals[cell.category] || 0) + 1;
-                const element = document.createElement('div');
-                element.className = `hull-plan-cell hull-plan-${cell.category.toLowerCase()}`;
-                element.setAttribute('role', 'gridcell');
-
-                const items = (model.hullItems[cell.category] || []);
-                const item = items[totals[cell.category] - 1];
-                const code = document.createElement('strong');
-                code.className = 'hull-plan-cell-code';
-                code.textContent = ShipHullsWidget.HULL_CODES[cell.category];
-                element.appendChild(code);
-
-                if (cell.category === 'Emplacement' && item) {
-                    const costLabel = `${item.resourceCost} emplacement${item.resourceCost === 1 ? '' : 's'}`;
-                    const weaponIdentifier = item.weaponInstanceNumber
-                        ? `${item.name} #${item.weaponInstanceNumber}`
-                        : item.name;
-                    if (item.weaponId) element.dataset.weaponId = item.weaponId;
-                    if (item.weaponInstanceId) element.dataset.weaponInstanceId = item.weaponInstanceId;
-                    element.title = `${weaponIdentifier} (${costLabel})`;
-                    element.setAttribute('aria-label', `${ShipHullsWidget.HULL_CODES[cell.category]}: ${weaponIdentifier} (${costLabel})`);
-                    if (item.weaponInstanceNumber) {
-                        const identifier = document.createElement('small');
-                        identifier.className = 'hull-plan-weapon-instance';
-                        identifier.textContent = `#${item.weaponInstanceNumber}`;
-                        element.appendChild(identifier);
-                    }
-                } else {
-                    element.title = cell.category === 'Emplacement'
-                        ? 'Unassigned emplacement'
-                        : ShipHullsWidget.HULL_CODES[cell.category];
-                    element.setAttribute('aria-label', `${ShipHullsWidget.HULL_CODES[cell.category]}: ${cell.category}`);
-                }
-                hullRows[cell.row][cell.col] = element;
-            });
-            hullRows.forEach(row => appendRow(row));
-            (this.hullPlanFlyoutContent || container).appendChild(grid);
-        }
-        this.positionHullPlanFlyout();
 
         const statisticsSection = document.createElement('section');
         statisticsSection.className = 'widget-section hull-plan-metrics-section';
@@ -1049,7 +894,8 @@ class ShipHullsWidget extends Widget {
         const metrics = this.getMetrics(model);
         const layout = this.createLayout(model.counts);
         const riggingTotals = this.getConnectedRiggingTotals(components);
-        const formFields = this.getPdfFormFields(model, layout, metrics, riggingTotals);
+        const deviceLines = this.getOutfitDeviceLines(model.outfits);
+        const formFields = this.getPdfFormFields(model, layout, metrics, riggingTotals, deviceLines);
         const exportedCellCounts = {};
         const layoutCells = layout.cells.map(cell => {
             exportedCellCounts[cell.category] = (exportedCellCounts[cell.category] || 0) + 1;
@@ -1058,7 +904,7 @@ class ShipHullsWidget extends Widget {
                 row: cell.row + 1,
                 column: cell.col + 1,
                 type: cell.category,
-                code: ShipHullsWidget.HULL_CODES[cell.category],
+                code: SummaryWidget.HULL_CODES[cell.category],
                 ...(cell.category === 'Emplacement' && item
                     ? {
                         weaponId: item.weaponId,
@@ -1076,6 +922,7 @@ class ShipHullsWidget extends Widget {
             schema: 'fv-tactical.hull-plan/v2',
             hullPlan: {
                 formFields,
+                deviceLines,
                 layout: {
                     rows: layout.rows,
                     columns: layout.cols,
@@ -1083,6 +930,7 @@ class ShipHullsWidget extends Widget {
                 }
             },
             formFields,
+            deviceLines,
             unavailableFormFields: Object.entries(formFields)
                 .filter(([, value]) => value === null || value === '')
                 .map(([fieldName]) => fieldName),
@@ -1092,9 +940,13 @@ class ShipHullsWidget extends Widget {
                 CombatValue: 'Uses the connected widgets\' combat value total when the active economy mode provides CV.',
                 CoreCombatValue: 'Uses the connected core\'s serialized cost.',
                 CoreName: 'Uses the core name or widget title; falls back to the selected reactor, engine, and manifold names.',
-                DevValue: 'Uses the connected ship class development cost, falling back to its serialized value. The totals object reports the full connected development-point total.'
+                DevValue: 'Uses the connected ship class development cost, falling back to its serialized value. The totals object reports the full connected development-point total.',
+                QuantumHull: 'Uses the connected class hull-composition quantum count when available.',
+                EmplacementWeapon1To7: 'Maps up to seven selected outfit emplacement weapons to their individual PDF fields.',
+                SystemDevice1To7: 'Maps up to seven selected outfit systems to their individual PDF fields.',
+                UtilityDevice1To7: 'Maps up to seven selected outfit utilities to their individual PDF fields.'
             },
-            hullCodes: { ...ShipHullsWidget.HULL_CODES },
+            hullCodes: { ...SummaryWidget.HULL_CODES },
             layout: {
                 rows: layout.rows,
                 columns: layout.cols,
@@ -1168,12 +1020,36 @@ class ShipHullsWidget extends Widget {
         return values.length ? values.join(' + ') : null;
     }
 
+    getOutfitDeviceLines(outfits) {
+        const formatLine = (name, count) => {
+            const quantity = this.numeric(count);
+            if (!name || quantity < 1) return null;
+            return quantity > 1 ? `${name} x${quantity}` : name;
+        };
+        const formatLines = items => items
+            .map(item => formatLine(item?.name, item?.count))
+            .filter(Boolean);
+        const systems = [];
+        const utilities = [];
+        for (const outfit of outfits) {
+            const devices = outfit.hullPlanExportDevices;
+            systems.push(...formatLines(devices.systems));
+            utilities.push(...formatLines(devices.utilities));
+        }
+
+        return {
+            systems,
+            emplacements: this.formatEmplacementWeaponsForExport(outfits),
+            utilities
+        };
+    }
+
     getPdfFormFields(model, layout, metrics, riggingTotals = {
         developmentPoints: null,
         classDevelopmentPoints: null,
         coreDevelopmentPoints: null,
         resourceCost: {}
-    }) {
+    }, deviceLines = this.getOutfitDeviceLines(model.outfits)) {
         const classData = model.classData || {};
         const hullResourceMetrics = this.getHullResourceMetrics(model);
         const coreComponent = model.components.find(component =>
@@ -1196,12 +1072,6 @@ class ShipHullsWidget extends Widget {
         const firstValue = (...values) => values.find(value =>
             value !== undefined && value !== null && value !== ''
         ) ?? null;
-        const listText = items => {
-            const names = Array.from(new Set(items.map(item =>
-                typeof item === 'string' ? item : item?.name
-            ).filter(Boolean)));
-            return names.length ? names.join('\n') : null;
-        };
         const industryMateriel = firstValue(
             classData.campaignValue,
             classData.campaignCost,
@@ -1218,17 +1088,6 @@ class ShipHullsWidget extends Widget {
         const armorHullCount = this.getCount(classData.hullComposition || {}, [
             'armour', 'Armour', 'armor', 'Armor'
         ]);
-        const utilityDevices = model.outfits.flatMap(outfit => {
-            const weapons = outfit.weapons || {};
-            const utilityWeapons = [
-                ...(weapons.offensive || []),
-                ...(weapons.defensive || [])
-            ].filter(weapon => weapon?.resourceType === 'utilities');
-            const explicitDevices = Array.isArray(outfit.utilityDevices)
-                ? outfit.utilityDevices
-                : [];
-            return [...explicitDevices, ...utilityWeapons];
-        });
         const classResources = classData.resources || {};
         const statistics = classData.statistics || {};
         const coreName = firstValue(
@@ -1277,6 +1136,9 @@ class ShipHullsWidget extends Widget {
             FreightHull: model.counts.Freight,
             TankageHull: model.counts.Tankage,
             HullCount: model.total,
+            QuantumHull: this.getCount(classData.hullComposition || {}, [
+                'quantum', 'quantumHull', 'quantumHulls'
+            ]),
             ContainmentCargo: firstValue(classResources.cargo, statistics.cargo),
             ContainmentRemass: firstValue(classResources.remass, statistics.remass),
             Endurance: hullResourceMetrics.endurance,
@@ -1285,11 +1147,16 @@ class ShipHullsWidget extends Widget {
             HangarHull: model.counts.Hangar,
             HangarBays: metricValue('Hangar bays'),
             MagazineHull: model.counts.Magazine,
-            MagazineCells: metricValue('Magazine cells'),
-            EmplacementWeapons: this.formatEmplacementWeaponsForExport(model.outfits).join('\n') || null,
-            SystemDevices: model.outfits.length ? listText(model.hullItems.System) : null,
-            UtilityDevices: listText(utilityDevices)
+            MagazineCells: metricValue('Magazine cells')
         };
+        for (let index = 1; index <= 7; index++) {
+            formFields[`EmplacementWeapon${index}`] =
+                deviceLines.emplacements[index - 1] || null;
+            formFields[`SystemDevice${index}`] =
+                deviceLines.systems[index - 1] || null;
+            formFields[`UtilityDevice${index}`] =
+                deviceLines.utilities[index - 1] || null;
+        }
         return formFields;
     }
 
@@ -1321,7 +1188,7 @@ class ShipHullsWidget extends Widget {
 
     async loadPdfLibrary() {
         if (window.PDFLib) return window.PDFLib;
-        if (!ShipHullsWidget.pdfLibPromise) {
+        if (!SummaryWidget.pdfLibPromise) {
             const scriptUrl = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
             const loadPromise = new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -1340,19 +1207,19 @@ class ShipHullsWidget extends Widget {
                 };
                 document.head.appendChild(script);
             });
-            ShipHullsWidget.pdfLibPromise = loadPromise.catch(error => {
-                ShipHullsWidget.pdfLibPromise = null;
+            SummaryWidget.pdfLibPromise = loadPromise.catch(error => {
+                SummaryWidget.pdfLibPromise = null;
                 throw error;
             });
         }
-        return ShipHullsWidget.pdfLibPromise;
+        return SummaryWidget.pdfLibPromise;
     }
 
     async downloadFilledPDF(payload) {
         const pdfLib = await this.loadPdfLibrary();
         const response = await fetch('data/Build%20Sheet%20Ship.pdf');
         if (!response.ok) {
-            throw new Error(`Unable to load the Hull Plan PDF template (${response.status}).`);
+            throw new Error(`Unable to load the build sheet PDF template (${response.status}).`);
         }
         const document = await pdfLib.PDFDocument.load(await response.arrayBuffer());
         const form = document.getForm();
@@ -1386,7 +1253,8 @@ class ShipHullsWidget extends Widget {
             }
         }
 
-        const bytes = await document.save();
+        form.acroForm.dict.set(pdfLib.PDFName.of('NeedAppearances'), pdfLib.PDFBool.True);
+        const bytes = await document.save({ updateFieldAppearances: false });
         this.downloadBlob(new Blob([bytes], { type: 'application/pdf' }), 'hull-plan.pdf');
         return payload.unavailableFormFields;
     }
@@ -1407,11 +1275,11 @@ class ShipHullsWidget extends Widget {
                     'warning'
                 );
             } else {
-                window.app?.showNotification('Hull Plan JSON exported successfully', 'success');
+                window.app?.showNotification('Summary JSON exported successfully', 'success');
             }
         } catch (error) {
-            console.error(`[ShipHullsWidget ${this.id}] JSON export failed`, error);
-            window.app?.showNotification(`Hull Plan JSON export failed: ${error.message}`, 'error');
+            console.error(`[SummaryWidget ${this.id}] JSON export failed`, error);
+            window.app?.showNotification(`Summary JSON export failed: ${error.message}`, 'error');
         }
     }
 
@@ -1426,11 +1294,11 @@ class ShipHullsWidget extends Widget {
                     'warning'
                 );
             } else {
-                window.app?.showNotification('Hull Plan PDF exported successfully', 'success');
+                window.app?.showNotification('Summary PDF exported successfully', 'success');
             }
         } catch (error) {
-            console.error(`[ShipHullsWidget ${this.id}] PDF export failed`, error);
-            window.app?.showNotification(`Hull Plan PDF export failed: ${error.message}`, 'error');
+            console.error(`[SummaryWidget ${this.id}] PDF export failed`, error);
+            window.app?.showNotification(`Summary PDF export failed: ${error.message}`, 'error');
         }
     }
 
@@ -1442,7 +1310,7 @@ class ShipHullsWidget extends Widget {
         this.refreshCostMetrics();
     }
 
-    // Sums each resource across the widgets feeding this plan.
+    // Sums each resource across the widgets feeding this summary.
     refreshCostMetrics() {
         const totals = this.getConnectedRiggingTotals(this.getConnectedComponents());
         this.setHeaderMetric('dvp', '', this.formatDevelopmentCost(totals.developmentPoints));
@@ -1458,7 +1326,7 @@ class ShipHullsWidget extends Widget {
         container.replaceChildren();
         const title = document.createElement('div');
         title.className = 'summary-title';
-        title.textContent = 'Hull Plan';
+        title.textContent = 'Summary';
         container.appendChild(title);
 
         const model = this.getModel();

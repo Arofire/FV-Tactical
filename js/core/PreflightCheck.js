@@ -92,8 +92,8 @@ class PreflightCheck {
             case 'troops':
                 this.checkTroopsWidget(widget);
                 break;
-            case 'missiles':
-                this.checkMissilesWidget(widget);
+            case 'munitions':
+                this.checkMunitionsWidget(widget);
                 break;
             case 'outfit':
                 this.checkOutfitWidget(widget);
@@ -101,8 +101,13 @@ class PreflightCheck {
             case 'shipCore':
                 this.checkShipCoreWidget(widget);
                 break;
-            case 'shipHulls':
-                this.checkShipHullsWidget(widget);
+            case 'summary':
+                if (this.countNodeConnections(widget, 'Craft', 'input') === 0) {
+                    this.checkOutfitInputWidget(widget);
+                }
+                break;
+            case 'hullTiles':
+                this.checkOutfitInputWidget(widget);
                 break;
         }
         this.checkRequiredTech(widget);
@@ -242,6 +247,17 @@ class PreflightCheck {
         if (!data.roles || data.roles.length === 0) {
             this.addWarning(`Craft "${widget.title}" has no selected role`, widget.id);
         }
+        if (typeof widget.calculateStats === 'function' && widget.cataloguesLoaded) {
+            const stats = widget.calculateStats();
+            for (const resource of ['hardpoints', 'utilities', 'equipment']) {
+                if (stats[`${resource}Used`] > stats[resource]) {
+                    this.addWarning(
+                        `Craft "${widget.title}" uses ${stats[`${resource}Used`]} of ${stats[resource]} ${resource}`,
+                        widget.id
+                    );
+                }
+            }
+        }
     }
 
     checkTroopsWidget(widget) {
@@ -252,13 +268,25 @@ class PreflightCheck {
         }
     }
 
-    checkMissilesWidget(widget) {
+    checkMunitionsWidget(widget) {
         const data = widget.getSerializedData();
-        
-        if (!data.warhead && !data.guidance) {
-            this.addError(`Missile "${widget.title}" requires warhead and guidance systems`, widget.id);
+
+        if (!data.profile || !data.guidance || !data.payload) {
+            this.addError(`Munition "${widget.title}" requires a profile, guidance package, and payload`, widget.id);
         }
-        
+
+        if (typeof widget.getAccuracyUsed === 'function' && typeof widget.getAccuracyPool === 'function' &&
+                widget.getAccuracyUsed() > widget.getAccuracyPool()) {
+            this.addWarning(`Munition "${widget.title}" exceeds its accuracy budget`, widget.id);
+        }
+
+        const invalidBands = typeof widget.getInvalidBands === 'function' ? widget.getInvalidBands() : [];
+        if (invalidBands.length) {
+            this.addWarning(
+                `Munition "${widget.title}" has invalid accuracy bands: ${invalidBands.join(', ')}`,
+                widget.id
+            );
+        }
     }
 
     checkOutfitWidget(widget) {
@@ -280,10 +308,10 @@ class PreflightCheck {
         // No connections - could add an alert here if desired
     }
 
-    checkShipHullsWidget(widget) {
+    checkOutfitInputWidget(widget) {
         const outfitLinks = this.countNodeConnections(widget, 'Outfit', 'input');
         if (outfitLinks === 0) {
-            this.addError(`Hull plan "${widget.title}" requires a Ship Outfit connection`, widget.id);
+            this.addError(`${widget.title} requires a Ship Outfit connection`, widget.id);
         }
     }
 

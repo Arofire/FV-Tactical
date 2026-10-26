@@ -1,15 +1,29 @@
-class ShipCoreWidget extends Widget {
+class ShipCoreWidget extends DesignWidget {
     static optionsPromise = null;
     static options = null;
 
     static loadOptions() {
-        this.optionsPromise ??= fetch('data/ship-cores.json')
-            .then(response => response.json())
-            .then(options => (this.options = options))
-            .catch(error => {
-                console.error('Failed to load ship cores:', error);
-                return (this.options = {});
-            });
+        if (!this.optionsPromise) {
+            this.optionsPromise = fetch('data/ship-cores.json')
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(options => {
+                    const components = ['reactor', 'engine', 'manifold'];
+                    if (!options || components.some(component =>
+                        !options[component]?.options || typeof options[component].options !== 'object'
+                    )) {
+                        throw new Error('Ship core data must define reactor, engine, and manifold options');
+                    }
+                    this.options = options;
+                    return options;
+                })
+                .catch(error => {
+                    this.optionsPromise = null;
+                    throw error;
+                });
+        }
         return this.optionsPromise;
     }
 
@@ -39,8 +53,11 @@ class ShipCoreWidget extends Widget {
     }
 
     constructor(x = 100, y = 100) {
-        super('shipCore', 'Ship Core', x, y, null);
+        super('shipCore', 'Ship Core', x, y);
         this.coreData = {
+            name: 'Ship Core',
+            role: '',
+            notes: '',
             operational: false,
             ignoreRequiredTech: false,
             developmentCost: 0,
@@ -58,13 +75,25 @@ class ShipCoreWidget extends Widget {
         };
         this.coreUpdateTimer = null;
         this.coreOptions = null;
-        this.layoutMode = 'three-column';
         this.init();
         this.loadCoreOptions();
     }
 
+    get designData() {
+        return this.coreData;
+    }
+
+    get defaultTitle() {
+        return 'Ship Core';
+    }
+
     async loadCoreOptions() {
-        this.coreOptions = await ShipCoreWidget.loadOptions();
+        try {
+            this.coreOptions = await ShipCoreWidget.loadOptions();
+        } catch (error) {
+            this.reportCatalogueError('Ship core catalogue (data/ship-cores.json)', error);
+            return;
+        }
         ['reactor', 'engine', 'manifold'].forEach(component => {
             if (this.coreData[component]) return;
             const availableOptions = this.getComponentOptions(component);
@@ -73,23 +102,24 @@ class ShipCoreWidget extends Widget {
                 this.coreData[component] = highestOption.key;
             }
         });
-        if (this.element) {
-            this.renderTriangleWidget();
-            this.populateTechDropdowns();
-        }
-        this.recomputeStats();
+        this.refresh();
     }
 
     populateTechDropdowns() {
         ['reactor', 'engine', 'manifold'].forEach(component => {
             const select = document.getElementById(`${this.id}-${component}`);
             if (select) {
-                this.populateDropdown(select, this.getComponentOptions(component), this.coreData[component]);
+                this.populateDropdown(
+                    select,
+                    this.getComponentOptions(component),
+                    this.coreData[component],
+                    component
+                );
             }
         });
     }
 
-    populateDropdown(selectElement, techList, selectedValue) {
+    populateDropdown(selectElement, techList, selectedValue, component) {
         while (selectElement.options.length > 0) {
             selectElement.remove(0);
         }
@@ -106,6 +136,15 @@ class ShipCoreWidget extends Widget {
             }
             selectElement.appendChild(option);
         });
+        if (selectedValue && !hasSelection) {
+            const saved = this.coreOptions?.[component]?.options?.[selectedValue];
+            const option = document.createElement('option');
+            option.value = selectedValue;
+            option.textContent = `${saved?.name || selectedValue} (unavailable)`;
+            option.selected = true;
+            selectElement.appendChild(option);
+            hasSelection = true;
+        }
         if (!hasSelection) {
             selectElement.selectedIndex = -1;
         }
@@ -120,8 +159,7 @@ class ShipCoreWidget extends Widget {
     }
 
     isOptionAvailable(option) {
-        if (this.coreData.ignoreRequiredTech) return true;
-        return (option.requiredTech || []).every(tech => window.empire?.hasTech?.(tech) ?? false);
+        return super.isOptionAvailable(option);
     }
 
     getSelectedRequiredTech() {
@@ -206,35 +244,22 @@ class ShipCoreWidget extends Widget {
 
     // Called when tech tree changes - refresh tech-dependent content
     onTechTreeUpdated() {
-        this.populateTechDropdowns();
+        this.refresh();
     }
 
     createContent(contentElement) {
         const sections = contentElement.querySelector('.widget-sections');
         
         // Header section with flags
-        const headerSection = this.createSection('header', 'Configuration');
-        headerSection.contentContainer.innerHTML = `
-            <div class="ship-information-header">
-                <label class="ship-flag"><input type="checkbox" id="${this.id}-operational" ${this.coreData.operational ? 'checked' : ''}> Operational</label>
-                <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-required-tech" ${this.coreData.ignoreRequiredTech ? 'checked' : ''}> Ignore Required Tech</label>
-            </div>
-        `;
+        const headerSection = this.createDesignSection('header', '');
+        this.setSectionContent(headerSection, this.renderIdentityFields({
+            rolePlaceholder: 'Optional core role',
+            notesPlaceholder: 'Core design notes'
+        }));
         sections.appendChild(headerSection.section);
 
-        // Powerplant section
-        const powerplantSection = this.createSection('powerplant', 'Powerplant');
-        powerplantSection.contentContainer.innerHTML = `
-            <div class="composition-item">
-                <label for="${this.id}-powerplant">Powerplant Size</label>
-                <input type="number" min="1" step="1" id="${this.id}-powerplant" value="${this.coreData.powerplantSize}" class="hull-spin core-powerplant-size">
-                <output class="composition-value core-powerplant-value" id="${this.id}-powerplant-value" aria-label="Powerplant size"></output>
-            </div>
-        `;
-        sections.appendChild(powerplantSection.section);
-
         // Components section
-        const componentsSection = this.createSection('components', 'Components');
+        const componentsSection = this.createDesignSection('components', 'Components');
         componentsSection.contentContainer.innerHTML = `
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
                 <div class="input-group">
@@ -262,11 +287,16 @@ class ShipCoreWidget extends Widget {
                     </select>
                 </div>
             </div>
+            <div class="composition-item">
+                <label for="${this.id}-powerplant">Power Plant Size</label>
+                <input type="number" min="1" step="1" id="${this.id}-powerplant" value="${this.coreData.powerplantSize}" class="hull-spin core-powerplant-size">
+                <output class="composition-value core-powerplant-value" id="${this.id}-powerplant-value" aria-label="Powerplant size"></output>
+            </div>
         `;
         sections.appendChild(componentsSection.section);
 
         // Triangle widget section
-        const triangleSection = this.createSection('triangle', 'Distribution');
+        const triangleSection = this.createDesignSection('triangle', 'Distribution');
         const triangleContent = `
             <div class="core-triangle-container">
                 <div class="core-triangle" id="${this.id}-triangle-widget"></div>
@@ -310,7 +340,7 @@ class ShipCoreWidget extends Widget {
         triangleSection.contentContainer.innerHTML = triangleContent;
         sections.appendChild(triangleSection.section);
 
-        const gearingSection = this.createSection('gearing', 'Gears');
+        const gearingSection = this.createDesignSection('gearing', 'Gears');
         gearingSection.section.classList.add('outfit-category-section', 'core-gears-section');
         gearingSection.titleElement.classList.add('outfit-category-title');
         gearingSection.titleElement.replaceChildren();
@@ -328,8 +358,8 @@ class ShipCoreWidget extends Widget {
         gearingSection.titleElement.appendChild(gearsToggle);
         this.setSectionContent(gearingSection, `
             <div id="${this.id}-gears-content" class="outfit-category-content">
+                <button type="button" id="${this.id}-add-gear" class="widget-add-action">Add gear</button>
                 <div id="${this.id}-gears" class="core-gears"></div>
-                <button type="button" id="${this.id}-add-gear" class="core-add-gear">Add gear</button>
             </div>
         `);
         sections.appendChild(gearingSection.section);
@@ -342,33 +372,13 @@ class ShipCoreWidget extends Widget {
         // Call parent class setupEventListeners to enable dragging
         super.setupEventListeners();
 
-        const operationalCheckbox = document.getElementById(`${this.id}-operational`);
-        if (operationalCheckbox) {
-            operationalCheckbox.addEventListener('change', (e) => {
-                this.coreData.operational = e.target.checked;
-                this.refreshSummary();
-                this.notifyChildrenOfChange();
-                this.refreshOutfitCoreAvailability();
-            });
-        }
-
-        const ignoreRequiredTechCheckbox = document.getElementById(`${this.id}-ignore-required-tech`);
-        if (ignoreRequiredTechCheckbox) {
-            ignoreRequiredTechCheckbox.addEventListener('change', (e) => {
-                this.coreData.ignoreRequiredTech = e.target.checked;
-                // Drop selections that are no longer available
-                ['reactor', 'engine', 'manifold'].forEach(component => {
-                    const key = this.coreData[component];
-                    if (key && !this.getComponentOptions(component).some(o => o.key === key)) {
-                        this.coreData[component] = '';
-                    }
-                });
-                this.recomputeStats();
-                this.populateTechDropdowns();
-                this.refreshSummary();
-                this.notifyChildrenOfChange();
-            });
-        }
+        this.setupFlagListeners(() => {
+            this.refresh();
+            this.refreshOutfitCoreAvailability();
+        });
+        const operationalCheckbox = this.element?.querySelector(`#${this.id}-operational`);
+        operationalCheckbox?.addEventListener('change', () => this.refreshOutfitCoreAvailability());
+        this.setupIdentityFieldListeners();
 
         const powerplantInput = this.getPowerplantInput();
         if (powerplantInput) {
@@ -439,7 +449,7 @@ class ShipCoreWidget extends Widget {
                 <label class="core-gear-name" for="${instabilityInputId}">${gear.name}</label>
                 <div class="hull-controls">
                     <input id="${instabilityInputId}" type="number" class="hull-spin" min="1" step="1" data-gear-instability="${index}" aria-label="${gear.name} instability">
-                    <button type="button" class="hull-btn" data-remove-gear="${index}" aria-label="Remove gear ${index + 1}">×</button>
+                    <button type="button" class="widget-remove-action" data-remove-gear="${index}" aria-label="Remove gear ${index + 1}">×</button>
                 </div>
             `;
             const instabilityInput = row.querySelector(`[data-gear-instability="${index}"]`);
@@ -476,18 +486,9 @@ class ShipCoreWidget extends Widget {
     }
 
     renderTriangleWidget() {
-        // First try to find by current ID (normal case)
-        let container = document.getElementById(`${this.id}-triangle-widget`);
-        
-        // If not found, try to find by class within this widget (handles ID mismatch during load)
-        if (!container && this.element) {
-            container = this.element.querySelector('.core-triangle');
-        }
-        
+        const container = this.element?.querySelector(`#${this.id}-triangle-widget`);
         if (!container) {
-            // Container doesn't exist yet, retry after a short delay
-            setTimeout(() => this.renderTriangleWidget(), 50);
-            return;
+            throw new Error(`Ship Core distribution widget is missing for ${this.id}.`);
         }
 
         const width = 300;
@@ -920,6 +921,11 @@ class ShipCoreWidget extends Widget {
             ...Object.fromEntries(currentFields
                 .filter(key => Object.prototype.hasOwnProperty.call(incoming, key))
                 .map(key => [key, incoming[key]])),
+            name: typeof incoming.name === 'string' && incoming.name.trim()
+                ? incoming.name
+                : this.defaultTitle,
+            role: typeof incoming.role === 'string' ? incoming.role : this.coreData.role,
+            notes: typeof incoming.notes === 'string' ? incoming.notes : this.coreData.notes,
             gears: Array.isArray(incoming.gears)
                 ? incoming.gears
                     .filter(gear => gear && typeof gear === 'object')
@@ -942,11 +948,16 @@ class ShipCoreWidget extends Widget {
             this.coreData.engineValue,
             this.coreData.manifoldValue
         ]);
-        this.recomputeStats();
-        this.syncFormFromData();
+        this.updateTitle();
+        this.refresh();
     }
 
     syncFormFromData() {
+        const roleInput = this.element?.querySelector(`#${this.id}-role`);
+        if (roleInput) roleInput.value = this.coreData.role;
+        const notesInput = this.element?.querySelector(`#${this.id}-notes`);
+        if (notesInput) notesInput.value = this.coreData.notes;
+
         const operationalCheckbox = document.getElementById(`${this.id}-operational`);
         if (operationalCheckbox) operationalCheckbox.checked = this.coreData.operational;
 
@@ -986,17 +997,30 @@ class ShipCoreWidget extends Widget {
         this.renderTriangleWidget();
     }
 
+    refresh() {
+        if (!this.element) return;
+        this.populateTechDropdowns();
+        this.syncFormFromData();
+        this.recomputeStats();
+        this.refreshPowerplantSize();
+        this.refreshSummary();
+        this.notifyChildrenOfChange();
+    }
+
     renderSummary(container) {
         if (!container) return;
         container.innerHTML = '';
 
         const titleDiv = document.createElement('div');
         titleDiv.className = 'summary-title';
-        titleDiv.textContent = 'Ship Core';
+        titleDiv.textContent = this.coreData.name || this.defaultTitle;
         container.appendChild(titleDiv);
 
         const gridDiv = document.createElement('div');
         gridDiv.className = 'summary-grid';
+        if (this.coreData.role) {
+            this.addSummaryField(gridDiv, 'Role', this.coreData.role);
+        }
 
         // Technologies used
         const techs = ['reactor', 'engine', 'manifold']

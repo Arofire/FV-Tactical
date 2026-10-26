@@ -1,5 +1,5 @@
 // Outfit configuration for a Ship Class, with core-derived resources.
-class OutfitWidget extends Widget {
+class OutfitWidget extends DesignWidget {
     static calculateGearBurnMetrics(hullCount, baseEngineExponent, instability) {
         const hulls = Number(hullCount);
         const baseExponent = Number(baseEngineExponent);
@@ -34,7 +34,7 @@ class OutfitWidget extends Widget {
     }
 
     constructor(x = 550, y = 120) {
-        super('outfit', 'New Outfit', x, y, null);
+        super('outfit', 'New Outfit', x, y);
         this.defaultRoles = [
             'Artillery', 'Brawler', 'Lancer', 'QWarfare', 'Scout',
             'Support', 'Escort', 'Carrier', 'Interceptor'
@@ -96,18 +96,23 @@ class OutfitWidget extends Widget {
         this.systemsDataLoaded = false;
         this.laserGeneratorTechs = [];
         this.userToggledCategoryIds = new Set();
-        this.layoutMode = 'three-column';
-        this.titleEditHandler = name => {
-            this.outfitData.name = name;
-            this.updateTitle(name);
-        };
         this.ensureRoleAvailable(this.outfitData.role);
         this.init();
         this.onEconomyModeChanged();
         this.loadWeaponsData();
         this.loadUtilitiesData();
         this.loadSystemsData();
-        ShipCoreWidget.loadOptions().then(() => this.refreshResourceDisplay());
+        ShipCoreWidget.loadOptions()
+            .then(() => this.refreshResourceDisplay())
+            .catch(error => this.reportCatalogueError('Ship core catalogue (data/ship-cores.json)', error));
+    }
+
+    get designData() {
+        return this.outfitData;
+    }
+
+    get defaultTitle() {
+        return 'New Outfit';
     }
 
     static getRoleStorageKey() {
@@ -160,43 +165,40 @@ class OutfitWidget extends Widget {
 
     async loadWeaponsData() {
         try {
-            const response = await fetch('data/weapons.json');
-            if (!response.ok) throw new Error(`Unable to load weapons (${response.status})`);
-            const data = await response.json();
-            this.weaponsData = data && Array.isArray(data.categories) ? data : { categories: [] };
+            const data = await this.fetchJSON('data/weapons.json');
+            if (!data || !Array.isArray(data.categories)) {
+                throw new Error('Weapons data must contain a categories array');
+            }
+            this.weaponsData = data;
         } catch (error) {
-            console.error('Failed to load weapons data:', error);
+            this.reportCatalogueError('Weapons catalogue (data/weapons.json)', error);
             this.weaponsData = { categories: [] };
         }
         this.weaponsDataLoaded = true;
-        this.refreshWeapons();
+        this.refresh();
     }
 
     async loadUtilitiesData() {
         try {
-            const response = await fetch('data/utilities.json');
-            if (!response.ok) throw new Error(`Unable to load utilities (${response.status})`);
-            const data = await response.json();
+            const data = await this.fetchJSON('data/utilities.json');
             if (!data || !Array.isArray(data.radiators) || !Array.isArray(data.defenses)) {
                 throw new Error('Utilities data must contain radiators and defenses arrays');
             }
             this.utilitiesData = data;
             this.utilitiesDataLoaded = true;
         } catch (error) {
-            console.error('Failed to load utilities data:', error);
+            this.reportCatalogueError('Utilities catalogue (data/utilities.json)', error);
             this.utilitiesData = { radiators: [], defenses: [] };
         }
-        this.refreshCatalogControls();
+        this.refresh();
     }
 
     async loadSystemsData() {
         try {
-            const [response, techData] = await Promise.all([
-                fetch('data/systems.json'),
+            const [data, techData] = await Promise.all([
+                this.fetchJSON('data/systems.json'),
                 TechTree.ensureLoaded()
             ]);
-            if (!response.ok) throw new Error(`Unable to load systems (${response.status})`);
-            const data = await response.json();
             if (!data || !Array.isArray(data.general) || !Array.isArray(data.entropy)) {
                 throw new Error('Systems data must contain general and entropy arrays');
             }
@@ -208,7 +210,11 @@ class OutfitWidget extends Widget {
                 .filter(([, tech]) => tech?.category === techCategory &&
                     typeof tech.name === 'string' && tech.name.toLowerCase().includes('generator'))
                 .map(([id, tech]) => ({ id, name: tech.name, requiredTech: [...(tech.requiredTech || [])] }));
-            const entropySelections = {};
+            const knownEntropyIds = new Set(data.entropy.map(item => item.id));
+            const entropySelections = Object.fromEntries(
+                Object.entries(this.outfitData.systems.entropy)
+                    .filter(([id]) => !knownEntropyIds.has(id))
+            );
             for (const item of data.entropy) {
                 const existing = this.outfitData.systems.entropy[item.id];
                 entropySelections[item.id] = {
@@ -219,11 +225,11 @@ class OutfitWidget extends Widget {
             }
             this.outfitData.systems.entropy = entropySelections;
         } catch (error) {
-            console.error('Failed to load systems data:', error);
+            this.reportCatalogueError('Systems catalogue (data/systems.json)', error);
             this.systemsData = { general: [], entropy: [] };
             this.laserGeneratorTechs = [];
         }
-        this.refreshCatalogControls();
+        this.refresh();
     }
 
     refreshArmorDisplay(resources = this.getResourceSources()) {
@@ -276,10 +282,7 @@ class OutfitWidget extends Widget {
     }
 
     filterByRequiredTech(weapons) {
-        if (this.ignoreRequiredTech) return weapons;
-        return weapons.filter(weapon =>
-            (weapon.requiredTech || []).every(tech => window.empire?.hasTech?.(tech) ?? false)
-        );
+        return super.filterByRequiredTech(weapons);
     }
 
     formatOptionCost(value, category = 'general', itemId = '') {
@@ -302,32 +305,29 @@ class OutfitWidget extends Widget {
 
     createContent(contentElement) {
         const sections = contentElement.querySelector('.widget-sections');
-        const identity = this.createSection('meta', 'Outfit');
+        const identity = this.createDesignSection('meta', '');
         this.setSectionContent(identity, `
-            <div class="ship-information-header outfit-flags">
-                <label class="ship-flag"><input id="${this.id}-operational" type="checkbox" ${this.outfitData.operational ? 'checked' : ''}> Operational</label>
-                <label class="ship-flag"><input id="${this.id}-ignore-required-tech" type="checkbox" ${this.outfitData.ignoreRequiredTech ? 'checked' : ''}> Ignore Required Tech</label>
-            </div>
+            <div class="outfit-flags">${this.renderFlags()}</div>
             <div class="input-group">
                 <label for="${this.id}-role">Role</label>
                 <select id="${this.id}-role">${this.getRoleOptions()}</select>
                 <input id="${this.id}-custom-role" type="text" placeholder="Custom role" value="${OutfitWidget.escapeHTML(this.outfitData.customRole)}">
             </div>
-            <div class="input-group">
-                <label for="${this.id}-notes">Notes</label>
-                <textarea id="${this.id}-notes" placeholder="Doctrine and deployment notes">${OutfitWidget.escapeHTML(this.outfitData.notes)}</textarea>
-            </div>
+            ${this.renderDesignFields([{
+                key: 'notes', path: 'notes', type: 'textarea', label: 'Notes',
+                placeholder: 'Doctrine and deployment notes', rows: 2
+            }])}
         `);
         sections.appendChild(identity.section);
 
-        const armor = this.createSection('category-armor', 'Armor');
+        const armor = this.createDesignSection('category-armor', 'Armor');
         this.addCategoryDisclosure(armor, 'category-armor', 'Armor');
         this.addSectionSubtotal(armor.titleElement, 'armor-cost');
         this.setSectionContent(armor, this.renderArmorSection());
         this.wrapCategoryContent(armor);
         sections.appendChild(armor.section);
 
-        const core = this.createSection('category-core', 'Core');
+        const core = this.createDesignSection('category-core', 'Core');
         this.addCategoryDisclosure(core, 'category-core', 'Core');
         this.addSectionSubtotal(core.titleElement, 'core-cost');
         this.addResourceCounter(core.titleElement, 'core');
@@ -342,7 +342,7 @@ class OutfitWidget extends Widget {
 
         for (const category of ['emplacements', 'utilities']) {
             const title = category[0].toUpperCase() + category.slice(1);
-            const section = this.createSection(`category-${category}`, title);
+            const section = this.createDesignSection(`category-${category}`, title);
             this.addCategoryDisclosure(section, `category-${category}`, title);
             this.addSectionSubtotal(
                 section.titleElement,
@@ -360,7 +360,7 @@ class OutfitWidget extends Widget {
             sections.appendChild(section.section);
         }
 
-        const systems = this.createSection('category-systems', 'Systems');
+        const systems = this.createDesignSection('category-systems', 'Systems');
         this.addCategoryDisclosure(systems, 'category-systems', 'Systems');
         this.addSectionSubtotal(systems.titleElement, 'system-cost');
         this.addResourceCounter(systems.titleElement, 'systems');
@@ -450,6 +450,10 @@ class OutfitWidget extends Widget {
         this.element.addEventListener('focusin', event => {
             if (event.target.id === `${this.id}-core-select`) this.refreshCoreOptions();
         });
+        this.setupFlagListeners(() => {
+            this.refresh();
+        });
+        this.setupDesignFieldListeners([{ key: 'notes', type: 'textarea' }]);
 
         this.element.addEventListener('input', event => {
             const target = event.target;
@@ -457,8 +461,6 @@ class OutfitWidget extends Widget {
                 this.outfitData.customRole = target.value;
                 this.outfitData.role = target.value.trim();
                 this.outfitData.roleMode = 'custom';
-            } else if (target.id === `${this.id}-notes`) {
-                this.outfitData.notes = target.value;
             } else if (target.dataset.defenseField === 'armor') {
                 this.outfitData.defenses.armor = this.parseCount(target.value);
                 target.value = this.outfitData.defenses.armor;
@@ -490,20 +492,15 @@ class OutfitWidget extends Widget {
                 this.outfitData.roleMode = 'dropdown';
                 const custom = this.element.querySelector(`#${this.id}-custom-role`);
                 if (custom) custom.value = '';
-            } else if (target.id === `${this.id}-operational`) {
-                this.outfitData.operational = target.checked;
-            } else if (target.id === `${this.id}-ignore-required-tech`) {
-                this.outfitData.ignoreRequiredTech = target.checked;
-                this.refreshWeapons();
-                this.refreshCatalogControls();
+            } else if (target.id === `${this.id}-operational` ||
+                target.id === `${this.id}-ignore-required-tech`) {
+                return;
             } else if (target.id === `${this.id}-core-select`) {
                 this.outfitData.coreWidgetId = target.value;
                 this.refreshCoreOptions();
                 this.refreshResourceDisplay();
             } else if (target.id === `${this.id}-spinal-weapon`) {
                 this.outfitData.weapons.spinal = target.value;
-            } else if (target.dataset.utilityDeviceSelect) {
-                this.updateUtilityDeviceSelection(target);
             } else if (target.dataset.berthingCount !== undefined) {
                 this.updateBerthingFromBerths(target.value);
             } else if (target.dataset.berthingCargo !== undefined ||
@@ -540,10 +537,16 @@ class OutfitWidget extends Widget {
                 const collection = utilityButton.dataset.collection;
                 if (utilityButton.dataset.utilityAction === 'add' &&
                     (collection === 'radiators' || collection === 'defenses')) {
-                    this.outfitData.utilityDevices[collection].push({ id: '', count: 0, requiredTech: [] });
+                    const picker = this.element.querySelector(`[data-utility-picker="${collection}"]`);
+                    const item = this.utilitiesData[collection].find(option => option.id === picker?.value);
+                    if (!item || !this.isOptionAvailable(item)) return;
+                    this.outfitData.utilityDevices[collection].push({ ...item, count: 1 });
+                    if (picker) picker.value = '';
                 } else if (utilityButton.dataset.utilityAction === 'remove' &&
                     (collection === 'radiators' || collection === 'defenses')) {
                     this.outfitData.utilityDevices[collection].splice(Number(utilityButton.dataset.index), 1);
+                } else {
+                    return;
                 }
                 this.refreshCatalogControls();
                 this.refreshWeaponResourceDisplay();
@@ -556,13 +559,23 @@ class OutfitWidget extends Widget {
             if (!button) return;
             const category = button.dataset.category;
             if (button.dataset.weaponAction === 'add') {
+                if (category !== 'offensive' && category !== 'defensive') return;
+                const picker = this.element.querySelector(`[data-weapon-picker="${category}"]`);
+                const weapons = category === 'offensive' ? this.getOffensiveWeapons() : this.getPDWeapons();
+                const selected = weapons.find(weapon => weapon.id === picker?.value);
+                if (!selected || !this.isOptionAvailable(selected)) return;
                 const weapon = {
-                    weaponId: '', count: 0, isTurreted: false,
-                    requiredTech: []
+                    weaponId: selected.id,
+                    name: selected.name,
+                    count: 1,
+                    isTurreted: false,
+                    requiredTech: [...(selected.requiredTech || [])]
                 };
                 if (category === 'offensive') weapon.arc = '';
                 this.outfitData.weapons[category].push(weapon);
+                if (picker) picker.value = '';
             } else if (button.dataset.weaponAction === 'remove') {
+                if (category !== 'offensive' && category !== 'defensive') return;
                 this.outfitData.weapons[category].splice(Number(button.dataset.index), 1);
             } else {
                 return;
@@ -578,12 +591,7 @@ class OutfitWidget extends Widget {
         const weapon = this.outfitData.weapons?.[category]?.[Number(target.dataset.index)];
         if (!weapon) return;
         weapon[field] = field === 'count' ? value : value;
-        if (field === 'weaponId') {
-            const selected = this.getAllWeapons().find(item => item.id === value);
-            weapon.requiredTech = [...(selected?.requiredTech || [])];
-            weapon.name = selected?.name || '';
-        }
-        if (field === 'weaponId' || field === 'isTurreted') {
+        if (field === 'isTurreted') {
             this.normalizeWeaponArc(weapon, category);
         }
     }
@@ -661,6 +669,7 @@ class OutfitWidget extends Widget {
         this.refreshCoreOptions();
         this.refreshResourceDisplay();
         this.refreshSummary();
+        this.notifyChildrenOfChange();
     }
 
     getConnectedClassData() {
@@ -1161,10 +1170,8 @@ class OutfitWidget extends Widget {
 
     renderRadiatorsSection() {
         return `<section class="outfit-device-section outfit-availability-container" data-availability-key="radiators">
-            <div class="outfit-subsection-heading">
-                <h5>Radiance</h5>
-                <button type="button" class="add-weapon-btn" data-utility-action="add" data-collection="radiators">Add Radiator</button>
-            </div>
+            <h5>Radiance</h5>
+            ${this.renderUtilityDevicePicker('radiators')}
             <div id="${this.id}-radiator-rows">${this.renderUtilityDeviceRows('radiators')}</div>
             <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
         </section>`;
@@ -1172,13 +1179,33 @@ class OutfitWidget extends Widget {
 
     renderUtilityDefensesSection() {
         return `<section class="outfit-device-section outfit-availability-container" data-availability-key="utility-defenses">
-            <div class="outfit-subsection-heading">
-                <h5>Defenses</h5>
-                <button type="button" class="add-weapon-btn" data-utility-action="add" data-collection="defenses">Add Defense</button>
-            </div>
+            <h5>Defenses</h5>
+            ${this.renderUtilityDevicePicker('defenses')}
             <div id="${this.id}-utility-defense-rows">${this.renderUtilityDeviceRows('defenses')}</div>
             <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
         </section>`;
+    }
+
+    renderUtilityDevicePicker(collection) {
+        const label = collection === 'radiators' ? 'Radiator' : 'Defense';
+        const items = this.filterByRequiredTech(this.utilitiesData[collection] || []);
+        const groupedItems = new Map();
+        for (const item of items) {
+            const group = item.type || 'Other';
+            if (!groupedItems.has(group)) groupedItems.set(group, []);
+            groupedItems.get(group).push(item);
+        }
+        const options = Array.from(groupedItems, ([group, groupItems]) =>
+            `<optgroup label="${OutfitWidget.escapeHTML(group)}">${groupItems.map(item =>
+                `<option value="${OutfitWidget.escapeHTML(item.id)}">${OutfitWidget.escapeHTML(item.name)}</option>`
+            ).join('')}</optgroup>`
+        ).join('');
+        return `<div class="design-picker">
+            <select class="design-select" data-utility-picker="${collection}" aria-label="${label} to add">
+                <option value="">Select ${label.toLowerCase()}...</option>${options}
+            </select>
+            <button type="button" class="widget-add-action" data-utility-action="add" data-collection="${collection}" ${items.length ? '' : 'disabled'}>Add ${label}</button>
+        </div>`;
     }
 
     renderUtilityDeviceRows(collection) {
@@ -1196,24 +1223,13 @@ class OutfitWidget extends Widget {
     }
 
     renderUtilityDeviceRow(collection, selection, index) {
-        const items = this.filterByRequiredTech(this.utilitiesData[collection] || []);
-        const groupedItems = new Map();
-        for (const item of items) {
-            const group = item.type || 'Other';
-            if (!groupedItems.has(group)) groupedItems.set(group, []);
-            groupedItems.get(group).push(item);
-        }
-        const options = Array.from(groupedItems, ([group, groupItems]) =>
-            `<optgroup label="${OutfitWidget.escapeHTML(group)}">${groupItems.map(item =>
-                `<option value="${OutfitWidget.escapeHTML(item.id)}" ${item.id === selection.id ? 'selected' : ''}>${OutfitWidget.escapeHTML(item.name)}</option>`
-            ).join('')}</optgroup>`
-        ).join('');
+        const selectedOption = (this.utilitiesData[collection] || [])
+            .find(item => item.id === selection.id);
+        const name = selectedOption?.name || selection.name || selection.id || 'Unavailable';
         return `<tr>
-            <td><select aria-label="Select ${collection === 'radiators' ? 'radiator' : 'defense'}" data-utility-device-select="${collection}" data-index="${index}">
-                <option value="">Select type...</option>${options}
-            </select></td>
+            <td>${OutfitWidget.escapeHTML(name)}</td>
             <td><input type="number" min="0" step="1" value="${this.parseCount(selection.count)}" data-utility-device-count="${collection}" data-index="${index}" aria-label="${collection === 'radiators' ? 'Radiator' : 'Defense'} quantity"></td>
-            <td><button type="button" class="remove-weapon-btn" data-utility-action="remove" data-collection="${collection}" data-index="${index}" aria-label="Remove ${collection === 'radiators' ? 'radiator' : 'defense'}">×</button></td>
+            <td><button type="button" class="widget-remove-action" data-utility-action="remove" data-collection="${collection}" data-index="${index}" aria-label="Remove ${collection === 'radiators' ? 'radiator' : 'defense'}">×</button></td>
         </tr>`;
     }
 
@@ -1235,16 +1251,22 @@ class OutfitWidget extends Widget {
             if (item.id === 'laser-generator') {
                 const laser = this.outfitData.systems.general.laserGenerator;
                 const available = this.getAvailableLaserGeneratorTechs();
+                const selectedTech = this.laserGeneratorTechs.find(tech => tech.id === laser.techId);
+                const unavailableOption = laser.techId && !available.some(tech => tech.id === laser.techId)
+                    ? `<option value="${OutfitWidget.escapeHTML(laser.techId)}" selected>${OutfitWidget.escapeHTML(selectedTech?.name || laser.techId)} (unavailable)</option>`
+                    : '';
+                const hasAvailableSelection = available.some(tech => tech.id === laser.techId);
                 return `<div class="composition-item outfit-system-item outfit-laser-generator">
                     <label for="${this.id}-laser-generator-tech">${OutfitWidget.escapeHTML(item.name)}</label>
                     <div class="outfit-system-item-controls">
                         <select id="${this.id}-laser-generator-tech" data-laser-generator-tech aria-label="Laser generator technology">
                             <option value="">Select researched technology...</option>
+                            ${unavailableOption}
                             ${available.map(tech =>
                                 `<option value="${OutfitWidget.escapeHTML(tech.id)}" ${tech.id === laser.techId ? 'selected' : ''}>${OutfitWidget.escapeHTML(tech.name)}</option>`
                             ).join('')}
                         </select>
-                        <input class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(laser.count)}" data-system-count="laserGenerator" aria-label="Laser generator quantity" ${laser.techId ? '' : 'disabled'}>
+                        <input class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(laser.count)}" data-system-count="laserGenerator" aria-label="Laser generator quantity" ${hasAvailableSelection ? '' : 'disabled'}>
                     </div>
                 </div>`;
             }
@@ -1270,9 +1292,10 @@ class OutfitWidget extends Widget {
                     </div>
                 </div>`;
             }
-            return `<div class="composition-item outfit-system-item">
+            return `<div class="composition-item outfit-system-item${unavailable ? ' is-unavailable' : ''}">
                 <label for="${this.id}-system-${OutfitWidget.escapeHTML(field)}">${OutfitWidget.escapeHTML(item.name)}</label>
                 <input id="${this.id}-system-${OutfitWidget.escapeHTML(field)}" class="hull-spin" type="number" min="0" step="1" value="${count}" data-system-count="${OutfitWidget.escapeHTML(field)}" aria-label="${OutfitWidget.escapeHTML(item.name)} quantity" ${unavailable ? 'disabled' : ''}>
+                ${unavailable ? '<span class="outfit-device-stats">Required technology unavailable</span>' : ''}
             </div>`;
         }).join('')}</div>`;
     }
@@ -1281,10 +1304,11 @@ class OutfitWidget extends Widget {
         return `<div class="composition-grid outfit-systems-grid">${this.systemsData.entropy.map(item => {
             const selection = this.outfitData.systems.entropy[item.id] || { count: 0 };
             const unavailable = !this.isCatalogItemAvailable(item);
-            return `<div class="composition-item outfit-system-item outfit-entropy-system">
+            return `<div class="composition-item outfit-system-item outfit-entropy-system${unavailable ? ' is-unavailable' : ''}">
                 <label for="${this.id}-entropy-${OutfitWidget.escapeHTML(item.id)}">${OutfitWidget.escapeHTML(item.name)}</label>
                 <input id="${this.id}-entropy-${OutfitWidget.escapeHTML(item.id)}" class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(selection.count)}" data-system-count="entropy:${OutfitWidget.escapeHTML(item.id)}" aria-label="${OutfitWidget.escapeHTML(item.name)} quantity" ${unavailable ? 'disabled' : ''}>
                 <span class="outfit-device-stats">Radiance: ${item.radiance}</span>
+                ${unavailable ? '<span class="outfit-device-stats">Required technology unavailable</span>' : ''}
             </div>`;
         }).join('')}</div>`;
     }
@@ -1300,20 +1324,7 @@ class OutfitWidget extends Widget {
     }
 
     isCatalogItemAvailable(item) {
-        return this.ignoreRequiredTech ||
-            (item.requiredTech || []).every(tech => window.empire?.hasTech?.(tech) ?? false);
-    }
-
-    updateUtilityDeviceSelection(target) {
-        const collection = target.dataset.utilityDeviceSelect;
-        const index = Number(target.dataset.index);
-        const selection = this.outfitData.utilityDevices?.[collection]?.[index];
-        if (!selection || (collection !== 'radiators' && collection !== 'defenses')) return;
-        const item = this.utilitiesData[collection].find(option => option.id === target.value);
-        Object.assign(selection, item
-            ? { ...item, count: this.parseCount(selection.count) }
-            : { id: '', count: 0, requiredTech: [] });
-        this.refreshUtilityDeviceRows(collection);
+        return this.isOptionAvailable(item);
     }
 
     updateUtilityDeviceCount(target) {
@@ -1415,6 +1426,34 @@ class OutfitWidget extends Widget {
         if (container) container.innerHTML = this.renderUtilityDeviceRows(collection);
     }
 
+    refreshUtilityDevicePickers() {
+        for (const collection of ['radiators', 'defenses']) {
+            const picker = this.element?.querySelector(`[data-utility-picker="${collection}"]`);
+            const wrapper = picker?.closest('.design-picker');
+            if (!picker || !wrapper) continue;
+            const selectedId = picker.value;
+            wrapper.outerHTML = this.renderUtilityDevicePicker(collection);
+            const refreshedPicker = this.element?.querySelector(`[data-utility-picker="${collection}"]`);
+            if (refreshedPicker && Array.from(refreshedPicker.options).some(option => option.value === selectedId)) {
+                refreshedPicker.value = selectedId;
+            }
+        }
+    }
+
+    refreshWeaponPickers() {
+        for (const category of ['offensive', 'defensive']) {
+            const picker = this.element?.querySelector(`[data-weapon-picker="${category}"]`);
+            const wrapper = picker?.closest('.design-picker');
+            if (!picker || !wrapper) continue;
+            const selectedId = picker.value;
+            wrapper.outerHTML = this.renderWeaponPicker(category);
+            const refreshedPicker = this.element?.querySelector(`[data-weapon-picker="${category}"]`);
+            if (refreshedPicker && Array.from(refreshedPicker.options).some(option => option.value === selectedId)) {
+                refreshedPicker.value = selectedId;
+            }
+        }
+    }
+
     refreshSystemsControls() {
         const general = this.element?.querySelector(`#${this.id}-general-system-rows`);
         const entropy = this.element?.querySelector(`#${this.id}-entropy-system-rows`);
@@ -1423,54 +1462,26 @@ class OutfitWidget extends Widget {
     }
 
     refreshCatalogControls() {
-        if (this.utilitiesDataLoaded) {
-            for (const collection of ['radiators', 'defenses']) {
-                this.outfitData.utilityDevices[collection] =
-                    this.outfitData.utilityDevices[collection].map(selection => {
-                        const item = this.utilitiesData[collection].find(option => option.id === selection.id);
-                        return !item || (!this.ignoreRequiredTech && !this.isCatalogItemAvailable(item))
-                            ? { id: '', count: 0, requiredTech: [] }
-                            : selection;
-                    });
-            }
-        }
         if (this.systemsDataLoaded) {
-            const laser = this.outfitData.systems.general.laserGenerator;
-            if (laser.techId &&
-                (!this.laserGeneratorTechs.some(tech => tech.id === laser.techId) ||
-                    (!this.ignoreRequiredTech && !this.getAvailableLaserGeneratorTechs().some(tech => tech.id === laser.techId)))) {
-                laser.techId = '';
-                laser.count = 0;
-            }
-        }
-        if (!this.ignoreRequiredTech) {
-            for (const item of this.systemsDataLoaded ? this.systemsData.general : []) {
-                if (item.id === 'laser-generator') continue;
-                const field = this.getGeneralSystemField(item.id);
-                if (!this.isCatalogItemAvailable(item)) this.outfitData.systems.general[field] = 0;
-            }
-            for (const item of this.systemsDataLoaded ? this.systemsData.entropy : []) {
-                if (!this.isCatalogItemAvailable(item)) {
-                    this.outfitData.systems.entropy[item.id] = {
-                        count: 0,
-                        radiance: item.radiance,
-                        requiredTech: [...(item.requiredTech || [])]
-                    };
-                }
-            }
-        }
-        if (this.systemsDataLoaded) {
-            this.outfitData.systems.entropy = Object.fromEntries(
-                this.systemsData.entropy.map(item => {
+            const knownIds = new Set(this.systemsData.entropy.map(item => item.id));
+            const unknownSelections = Object.fromEntries(
+                Object.entries(this.outfitData.systems.entropy)
+                    .filter(([id]) => !knownIds.has(id))
+            );
+            this.outfitData.systems.entropy = {
+                ...unknownSelections,
+                ...Object.fromEntries(this.systemsData.entropy.map(item => {
                     const selection = this.outfitData.systems.entropy[item.id] || {};
                     return [item.id, {
                         count: this.parseCount(selection.count),
                         radiance: item.radiance,
                         requiredTech: [...(item.requiredTech || [])]
                     }];
-                })
-            );
+                }))
+            };
         }
+        this.refreshUtilityDevicePickers();
+        this.refreshWeaponPickers();
         this.refreshUtilityDeviceRows('radiators');
         this.refreshUtilityDeviceRows('defenses');
         this.refreshSystemsControls();
@@ -1485,7 +1496,7 @@ class OutfitWidget extends Widget {
         const arcColumn = category === 'offensive';
         return `<div class="${category}-weapons-group outfit-availability-container" data-availability-key="${category}-weapons">
             <h5>${title}</h5>
-            <button type="button" class="add-weapon-btn" data-weapon-action="add" data-category="${category}">Add Weapon</button>
+            ${this.renderWeaponPicker(category)}
             <table class="weapons-table${category === 'defensive' ? ' outfit-utility-table' : ''}">
                 <thead><tr><th>Weapon</th>${turretColumn ? '<th>Turret</th>' : ''}${arcColumn ? '<th>Arc</th>' : ''}<th>Count</th><th></th></tr></thead>
                 <tbody id="${this.id}-${category}-weapons-body">${this.renderWeaponRows(category)}</tbody>
@@ -1494,15 +1505,36 @@ class OutfitWidget extends Widget {
         </div>`;
     }
 
+    renderWeaponPicker(category) {
+        const items = category === 'offensive' ? this.getOffensiveWeapons() : this.getPDWeapons();
+        const available = this.filterByRequiredTech(items);
+        const options = available.map(weapon =>
+            `<option value="${OutfitWidget.escapeHTML(weapon.id)}">${OutfitWidget.escapeHTML(weapon.name)} (${OutfitWidget.escapeHTML(weapon.hp || weapon.categoryName)})</option>`
+        ).join('');
+        return `<div class="design-picker">
+            <select class="design-select" data-weapon-picker="${category}" aria-label="${category === 'offensive' ? 'Offensive' : 'Defensive'} weapon to add">
+                <option value="">Select weapon...</option>${options}
+            </select>
+            <button type="button" class="widget-add-action" data-weapon-action="add" data-category="${category}" ${available.length ? '' : 'disabled'}>Add Weapon</button>
+        </div>`;
+    }
+
     renderWeaponOptions(weapons, selectedId = '') {
         const available = this.filterByRequiredTech(weapons);
+        const selected = weapons.find(weapon => weapon.id === selectedId);
         if (selectedId && !available.some(weapon => weapon.id === selectedId)) {
-            const selected = weapons.find(weapon => weapon.id === selectedId);
             if (selected) available.push(selected);
+            else {
+                return `<option value="${OutfitWidget.escapeHTML(selectedId)}" selected>${OutfitWidget.escapeHTML(selectedId)} (unavailable)</option>` +
+                    available.map(weapon =>
+                        `<option value="${OutfitWidget.escapeHTML(weapon.id)}">${OutfitWidget.escapeHTML(weapon.name)} (${OutfitWidget.escapeHTML(weapon.hp || weapon.categoryName)})</option>`
+                    ).join('');
+            }
         }
-        return available.map(weapon =>
-            `<option value="${OutfitWidget.escapeHTML(weapon.id)}" ${weapon.id === selectedId ? 'selected' : ''}>${OutfitWidget.escapeHTML(weapon.name)} (${OutfitWidget.escapeHTML(weapon.hp || weapon.categoryName)})</option>`
-        ).join('');
+        return available.map(weapon => {
+            const unavailable = !this.isOptionAvailable(weapon);
+            return `<option value="${OutfitWidget.escapeHTML(weapon.id)}" ${weapon.id === selectedId ? 'selected' : ''}>${OutfitWidget.escapeHTML(weapon.name)}${unavailable ? ' (unavailable)' : ` (${OutfitWidget.escapeHTML(weapon.hp || weapon.categoryName)})`}</option>`;
+        }).join('');
     }
 
     renderWeaponRows(category) {
@@ -1515,8 +1547,8 @@ class OutfitWidget extends Widget {
 
     renderWeaponRow(category, weapon, index) {
         const all = category === 'offensive' ? this.getOffensiveWeapons() : this.getPDWeapons();
-        const weaponOptions = this.renderWeaponOptions(all, weapon.weaponId);
         const selected = all.find(item => item.id === weapon.weaponId);
+        const weaponName = selected?.name || weapon.name || weapon.weaponId || 'Unavailable weapon';
         const turretDisabled = category === 'offensive' && this.isTurretOptionDisabled(selected);
         const isTurreted = category === 'offensive' && !turretDisabled && !!weapon.isTurreted;
         const arc = this.getValidWeaponArc(weapon.arc, selected?.isMain, isTurreted);
@@ -1531,13 +1563,11 @@ class OutfitWidget extends Widget {
             ? `<td class="turret-field"><label class="turret-option${turretDisabled ? ' disabled' : ''}"><input type="checkbox" data-weapon-field="isTurreted" data-category="${category}" data-index="${index}" aria-label="Install as turret" ${isTurreted ? 'checked' : ''} ${turretDisabled ? 'disabled' : ''}> Turret</label></td>`
             : '';
         return `<tr>
-            <td><select data-weapon-field="weaponId" data-category="${category}" data-index="${index}">
-                <option value="">Select weapon...</option>${weaponOptions}
-            </select></td>
+            <td>${OutfitWidget.escapeHTML(weaponName)}</td>
             ${turretOption}
             ${arcField}
             <td><input type="number" min="0" step="1" value="${this.parseCount(weapon.count)}" data-weapon-field="count" data-category="${category}" data-index="${index}"></td>
-            <td><button type="button" class="remove-weapon-btn" data-weapon-action="remove" data-category="${category}" data-index="${index}" aria-label="Remove weapon">×</button></td>
+            <td><button type="button" class="widget-remove-action" data-weapon-action="remove" data-category="${category}" data-index="${index}" aria-label="Remove weapon">×</button></td>
         </tr>`;
     }
 
@@ -1643,8 +1673,7 @@ class OutfitWidget extends Widget {
     }
 
     onTechTreeUpdated() {
-        this.refreshWeapons();
-        this.refreshCatalogControls();
+        this.refresh();
     }
 
     onEconomyModeChanged() {
@@ -1657,7 +1686,7 @@ class OutfitWidget extends Widget {
         if (title) title.textContent = this.title;
     }
 
-    updateTitle(text) {
+    updateTitle(text = this.outfitData.name) {
         if (typeof text === 'string') this.title = text || 'New Outfit';
         this.updateWidgetTitle();
     }
@@ -1715,17 +1744,6 @@ class OutfitWidget extends Widget {
         if (selectedCore && !selectedCore.disabled) this.outfitData.coreWidgetId = selectedCore.value;
         const spinal = value('spinal-weapon');
         if (spinal) this.outfitData.weapons.spinal = spinal.value;
-        this.element.querySelectorAll('[data-utility-device-select]').forEach(select => {
-            const collection = select.dataset.utilityDeviceSelect;
-            const index = Number(select.dataset.index);
-            const current = this.outfitData.utilityDevices?.[collection]?.[index];
-            if (!current || (collection !== 'radiators' && collection !== 'defenses') ||
-                !this.utilitiesData[collection].length) return;
-            const item = this.utilitiesData[collection].find(option => option.id === select.value);
-            this.outfitData.utilityDevices[collection][index] = item
-                ? { ...item, count: this.parseCount(current.count) }
-                : { id: '', count: 0, requiredTech: [] };
-        });
         this.element.querySelectorAll('[data-utility-device-count]').forEach(input =>
             this.updateUtilityDeviceCount(input)
         );
@@ -1831,6 +1849,53 @@ class OutfitWidget extends Widget {
                 requiredTech: [...(selectedSpinal.requiredTech || [])]
             } : null
         };
+    }
+
+    getHullPlanExportDevices() {
+        const systems = [];
+        const addSystem = (name, count) => {
+            const quantity = this.parseCount(count);
+            if (name && quantity > 0) systems.push({ name, count: quantity });
+        };
+
+        for (const item of this.systemsData.general) {
+            if (item.id === 'laser-generator') {
+                const selection = this.outfitData.systems.general.laserGenerator;
+                const technology = this.laserGeneratorTechs.find(tech =>
+                    tech.id === selection.techId
+                );
+                addSystem(
+                    technology ? `${item.name} (${technology.name})` : item.name,
+                    selection.techId ? selection.count : 0
+                );
+            } else {
+                addSystem(
+                    item.name,
+                    this.outfitData.systems.general[this.getGeneralSystemField(item.id)]
+                );
+            }
+        }
+        for (const item of this.systemsData.entropy) {
+            addSystem(item.name, this.outfitData.systems.entropy[item.id]?.count);
+        }
+
+        const utilities = [];
+        for (const collection of ['radiators', 'defenses']) {
+            for (const selection of this.outfitData.utilityDevices[collection] || []) {
+                const count = this.parseCount(selection.count);
+                if (selection.name && count > 0) utilities.push({ name: selection.name, count });
+            }
+        }
+        for (const category of ['offensive', 'defensive']) {
+            for (const weapon of this.outfitData.weapons[category] || []) {
+                if (weapon.resourceType === 'utilities' && weapon.name) {
+                    const count = this.parseCount(weapon.count);
+                    if (count > 0) utilities.push({ name: weapon.name, count });
+                }
+            }
+        }
+
+        return { systems, utilities };
     }
 
     applyWeaponRequirements(weapon, category) {
@@ -1987,6 +2052,17 @@ class OutfitWidget extends Widget {
         containment.textContent = `Containment hull basis: ${this.outfitData.resources?.containmentHulls ?? '—'}`;
         summary.appendChild(containment);
         this.summaryElement.replaceChildren(name, role, summary);
+    }
+
+    refresh() {
+        if (!this.element) return;
+        this.refreshWeapons();
+        this.refreshCatalogControls();
+        this.refreshCoreOptions();
+        this.refreshResourceDisplay();
+        this.refreshSectionCostLabels();
+        this.refreshSummary();
+        this.notifyChildrenOfChange();
     }
 
     onMinimizeStateChanged(isMinimized) {

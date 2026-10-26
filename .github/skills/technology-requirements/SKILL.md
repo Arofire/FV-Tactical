@@ -26,13 +26,13 @@ Method naming: `getSelectedRequiredTech()` (collect from current selections), `T
 - `data/tech-tree.json`: each tech lists the techs it depends on.
 - `data/weapons.json`: each weapon has `requiredTech: [ids]` (`scripts/import_weapons.py` writes this shape).
 - `data/ship-cores.json`: sections `reactor`, `engine`, `manifold`; each option key is its tech ID and has `name`, `requiredTech`, plus per-option values like `stat`.
-- Craft/troop catalogue items: `requiredTech` array (none declared yet).
+- Craft/troop catalogue items (`data/Craft.json`, `data/troop.json`): `requiredTech` array. Troop weapons come from the `Troops` category, and craft weapons from the `Craft` category, of `data/weapons.json`. `DesignWidget` filters all of them with `isOptionAvailable`, which also honors the widget's Ignore Required Tech flag.
 - Widget serialized data: `requiredTech` (array) and `ignoreRequiredTech` (boolean). Selected-item widgets expose `getSelectedRequiredTech()` and write the result to their data and `getSerializedData()`. `ShipCoreWidget` derives it from the chosen reactor/engine/manifold options.
 
 ## Consumers (all read `requiredTech`)
 - `PreflightCheck.checkRequiredTech`: scans serialized widget data for `requiredTech` keys; skipped when `ignoreRequiredTech` is set on the widget or `shipData`.
 - `Widget.showRequiredTech`: shows the tech tree for the widget's `requiredTech`.
-- `ShipHullsWidget.collectTechnologies`: summary list from `requiredTech`.
+- `SummaryWidget.collectTechnologies`: summary list from `requiredTech`.
 - `Empire`/`TechTree`/`main.js` research logic: availability, tree validation and the locked-tech "Requires:" row all read `requiredTech`.
 - `Empire.getRequiredTech`: missing tech across saved designs.
 

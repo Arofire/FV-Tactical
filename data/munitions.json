@@ -1,0 +1,1236 @@
+{
+  "description": "Munition design catalogue: profiles, guidance packages, and payloads. Payload size classes are placeholders pending final definitions.",
+  "profiles": [
+    {
+      "id": "guided-missile",
+      "name": "Guided Missile",
+      "tags": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "Seek"
+        }
+      ],
+      "damage": 2,
+      "cells": 1,
+      "payloadCapacity": {
+        "missile": 1
+      },
+      "cost": 0,
+      "requiredTech": []
+    },
+    {
+      "id": "light-torpedo",
+      "name": "Light Torpedo",
+      "tags": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Durable"
+        },
+        {
+          "name": "Evasive"
+        }
+      ],
+      "damage": 4,
+      "cells": 2,
+      "payloadCapacity": {
+        "missile": 1,
+        "light": 1
+      },
+      "cost": 0,
+      "requiredTech": []
+    },
+    {
+      "id": "medium-torpedo",
+      "name": "Medium Torpedo",
+      "tags": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Durable",
+          "value": 4
+        },
+        {
+          "name": "Evasive"
+        }
+      ],
+      "damage": 7,
+      "cells": 3,
+      "payloadCapacity": {
+        "missile": 2,
+        "light": 2,
+        "medium": 1
+      },
+      "cost": 0,
+      "requiredTech": []
+    },
+    {
+      "id": "heavy-torpedo",
+      "name": "Heavy Torpedo",
+      "tags": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Durable",
+          "value": 6
+        },
+        {
+          "name": "Evasive"
+        }
+      ],
+      "damage": 12,
+      "cells": 5,
+      "payloadCapacity": {
+        "missile": 4,
+        "light": 3,
+        "medium": 2,
+        "heavy": 1
+      },
+      "cost": 0,
+      "requiredTech": []
+    },
+    {
+      "id": "bomb",
+      "name": "Bomb",
+      "tags": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "See Description"
+        }
+      ],
+      "damage": 0,
+      "cells": 4,
+      "payloadCapacity": {
+        "missile": 4,
+        "light": 3,
+        "medium": 2,
+        "heavy": 1,
+        "bomb": 1
+      },
+      "cost": 0,
+      "requiredTech": []
+    }
+  ],
+  "guidance": [
+    {
+      "id": "guidance-low",
+      "name": "Low Guidance",
+      "accuracy": 5,
+      "cost": 0,
+      "requiredTech": []
+    },
+    {
+      "id": "guidance-medium",
+      "name": "Medium Guidance",
+      "accuracy": 10,
+      "cost": 0,
+      "requiredTech": []
+    },
+    {
+      "id": "guidance-high",
+      "name": "High Guidance",
+      "accuracy": 15,
+      "cost": 0,
+      "requiredTech": []
+    }
+  ],
+  "payloads": [
+    {
+      "id": "swarmer-warhead",
+      "name": "Swarmer Warhead",
+      "ranges": [
+        {
+          "accuracy": 1,
+          "damage": 1
+        },
+        {
+          "accuracy": -2,
+          "damage": 1
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Swarm",
+          "value": 2
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Projectile, Seek, Swarm(2), Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "missile",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 5,
+      "requiredTech": [],
+      "sourceRow": 256,
+      "isMain": false
+    },
+    {
+      "id": "candle-warhead",
+      "name": "Candle Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 1
+        },
+        {
+          "accuracy": -3,
+          "damage": 1
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Safe"
+        },
+        {
+          "name": "Swarm",
+          "value": 2
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Projectile, Safe, Swarm(2), Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "missile",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 5,
+      "requiredTech": [],
+      "sourceRow": 257,
+      "isMain": false
+    },
+    {
+      "id": "antipersonnel-warhead",
+      "name": "Antipersonnel Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 1
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Antipersonnel"
+        },
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Swarm",
+          "value": 3
+        },
+        {
+          "name": "Terminal"
+        },
+        {
+          "name": "Smart"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Antipersonnel, Projectile, Swarm(3), Terminal, Smart, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "missile",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 1,
+      "requiredTech": [],
+      "sourceRow": 258,
+      "isMain": false
+    },
+    {
+      "id": "light-interceptor-warhead",
+      "name": "Light Interceptor Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 1
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Antimissile"
+        },
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Swarm",
+          "value": 2
+        },
+        {
+          "name": "Terminal"
+        },
+        {
+          "name": "Smart"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Antimissile, Projectile, Seek, Swarm(2), Terminal, Smart, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "missile",
+      "isSpinal": false,
+      "isPointDefense": true,
+      "cost": 3,
+      "requiredTech": [],
+      "sourceRow": 259,
+      "isMain": false
+    },
+    {
+      "id": "new-interceptor-warhead",
+      "name": "New Interceptor Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 3
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Antimissile"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Terminal"
+        },
+        {
+          "name": "Smart"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Antimissile, Seek, Terminal, Smart, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "light",
+      "isSpinal": false,
+      "isPointDefense": true,
+      "cost": 20,
+      "requiredTech": [],
+      "sourceRow": 260,
+      "isMain": false
+    },
+    {
+      "id": "ultralight-interceptor-warhead",
+      "name": "Ultralight Interceptor Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 1
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Antimissile"
+        },
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Swarm",
+          "value": 3
+        },
+        {
+          "name": "Smart"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Antimissile, Projectile, Seek, Swarm(3), Smart, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "missile",
+      "isSpinal": false,
+      "isPointDefense": true,
+      "cost": 2,
+      "requiredTech": [],
+      "sourceRow": 261,
+      "isMain": false
+    },
+    {
+      "id": "chemlaser-warhead",
+      "name": "ChemLASER Warhead",
+      "ranges": [
+        {
+          "accuracy": 1,
+          "damage": 3
+        },
+        {
+          "accuracy": -1,
+          "damage": 1
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Seek, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "light",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 30,
+      "requiredTech": [
+        "chemlaser-warhead"
+      ],
+      "sourceRow": 262,
+      "isMain": false
+    },
+    {
+      "id": "nuclear-interceptor-warhead",
+      "name": "Nuclear Interceptor Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 2
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Antimissile"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Smart"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Antimissile, Seek, Blast, Smart, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "light",
+      "isSpinal": false,
+      "isPointDefense": true,
+      "cost": 16,
+      "requiredTech": [],
+      "sourceRow": 263,
+      "isMain": false
+    },
+    {
+      "id": "standard-nuclear-warhead",
+      "name": "Standard Nuclear Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 4
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Seek, Blast, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "light",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 35,
+      "requiredTech": [],
+      "sourceRow": 264,
+      "isMain": false
+    },
+    {
+      "id": "sprint-nuclear-warhead",
+      "name": "Sprint Nuclear Warhead",
+      "ranges": [
+        {
+          "accuracy": 1,
+          "damage": 3
+        },
+        {
+          "accuracy": 0,
+          "damage": 3
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Projectile, Seek, Blast, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "light",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 39,
+      "requiredTech": [],
+      "sourceRow": 265,
+      "isMain": false
+    },
+    {
+      "id": "nuclear-lance-warhead",
+      "name": "Nuclear Lance Warhead",
+      "ranges": [
+        {
+          "accuracy": 2,
+          "damage": 6
+        },
+        {
+          "accuracy": -1,
+          "damage": 3
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Beam"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Blast, Beam, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "medium",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 117,
+      "requiredTech": [],
+      "sourceRow": 266,
+      "isMain": false
+    },
+    {
+      "id": "antimatter-burst-warhead",
+      "name": "Antimatter Burst Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 1
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Antimissile"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "Area"
+        },
+        {
+          "name": "See Description"
+        }
+      ],
+      "tagsDescription": "Antimissile, Expendable, Area, See Description",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "heavy",
+      "isSpinal": false,
+      "isPointDefense": true,
+      "cost": 240,
+      "requiredTech": [],
+      "sourceRow": 267,
+      "isMain": false
+    },
+    {
+      "id": "flash-mortar-warhead",
+      "name": "Flash Mortar Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 0
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Antimissile"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "See Description"
+        }
+      ],
+      "tagsDescription": "Antimissile, Expendable, See Description",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "heavy",
+      "isSpinal": false,
+      "isPointDefense": true,
+      "cost": 192,
+      "requiredTech": [],
+      "sourceRow": 268,
+      "isMain": false
+    },
+    {
+      "id": "plasma-bottle-warhead",
+      "name": "Plasma Bottle Warhead",
+      "ranges": [
+        {
+          "accuracy": 0,
+          "damage": 4
+        },
+        {
+          "accuracy": -1,
+          "damage": 4
+        },
+        {
+          "accuracy": -2,
+          "damage": 3
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Seek"
+        },
+        {
+          "name": "Durable",
+          "value": 6
+        },
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Projectile, Seek, Durable(6), Blast, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "medium",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 66,
+      "requiredTech": [
+        "plasma-bottle-warhead"
+      ],
+      "sourceRow": 269,
+      "isMain": false
+    },
+    {
+      "id": "xraser-warhead",
+      "name": "XRASER Warhead",
+      "ranges": [
+        {
+          "accuracy": 2,
+          "damage": 5
+        },
+        {
+          "accuracy": 1,
+          "damage": 3
+        },
+        {
+          "accuracy": -1,
+          "damage": 1
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Strafe"
+        },
+        {
+          "name": "Beam"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Strafe, Beam, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "medium",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 106,
+      "requiredTech": [],
+      "sourceRow": 270,
+      "isMain": false
+    },
+    {
+      "id": "graser-warhead",
+      "name": "GRASER Warhead",
+      "ranges": [
+        {
+          "accuracy": 2,
+          "damage": 6
+        },
+        {
+          "accuracy": 2,
+          "damage": 4
+        },
+        {
+          "accuracy": 0,
+          "damage": 2
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Beam"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Blast, Beam, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "heavy",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 188,
+      "requiredTech": [],
+      "sourceRow": 271,
+      "isMain": false
+    },
+    {
+      "id": "neutron-beam-warhead",
+      "name": "Neutron Beam Warhead",
+      "ranges": [
+        {
+          "accuracy": 3,
+          "damage": 10
+        },
+        {
+          "accuracy": 0,
+          "damage": 3
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Beam"
+        },
+        {
+          "name": "Cascade"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "See Description"
+        }
+      ],
+      "tagsDescription": "Blast, Beam, Cascade, Expendable, See Description",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "heavy",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 281,
+      "requiredTech": [
+        "neutron-beam-warhead"
+      ],
+      "sourceRow": 273,
+      "isMain": false
+    },
+    {
+      "id": "disruptor-warhead",
+      "name": "Disruptor Warhead",
+      "ranges": [
+        {
+          "accuracy": 2,
+          "damage": 4
+        },
+        {
+          "accuracy": 1,
+          "damage": 4
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Swarm",
+          "value": 4
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Blast, Swarm(4), Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "medium",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 104,
+      "requiredTech": [
+        "disruptor-warhead"
+      ],
+      "sourceRow": 274,
+      "isMain": false
+    },
+    {
+      "id": "nefp-warhead",
+      "name": "NEFP Warhead",
+      "ranges": [
+        {
+          "accuracy": 4,
+          "damage": 10
+        },
+        {
+          "accuracy": 1,
+          "damage": 6
+        },
+        {
+          "accuracy": -2,
+          "damage": 3
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Projectile"
+        },
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Beam"
+        },
+        {
+          "name": "Expendable"
+        }
+      ],
+      "tagsDescription": "Projectile, Blast, Beam, Expendable",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "heavy",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 232,
+      "requiredTech": [],
+      "sourceRow": 276,
+      "isMain": false
+    },
+    {
+      "id": "hyperon-warhead",
+      "name": "Hyperon Warhead",
+      "ranges": [
+        {
+          "accuracy": 4,
+          "damage": 12
+        },
+        {
+          "accuracy": 2,
+          "damage": 8
+        },
+        {
+          "accuracy": -1,
+          "damage": 4
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        },
+        {
+          "accuracy": null,
+          "damage": null
+        }
+      ],
+      "notes": [
+        {
+          "name": "Blast"
+        },
+        {
+          "name": "Beam"
+        },
+        {
+          "name": "Expendable"
+        },
+        {
+          "name": "See Description"
+        }
+      ],
+      "tagsDescription": "Blast, Beam, Expendable, See Description",
+      "implied": "",
+      "reasoning": "",
+      "tier": null,
+      "hp": null,
+      "size": "bomb",
+      "isSpinal": false,
+      "isPointDefense": false,
+      "cost": 473,
+      "requiredTech": [
+        "hyperon-warhead"
+      ],
+      "sourceRow": 277,
+      "isMain": false
+    }
+  ]
+}

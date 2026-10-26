@@ -6,7 +6,7 @@
     { "id": "solid-3", "name": "Solid 3", "type": "solid", "cost": 24, "radiance": 8, "offset": 0, "requiredTech": ["fusion"] },
     { "id": "solid-4", "name": "Solid 4", "type": "solid", "cost": 30, "radiance": 10, "offset": 0, "requiredTech": ["antimatter"] },
     { "id": "solid-5", "name": "Solid 5", "type": "solid", "cost": 36, "radiance": 12, "offset": 0, "requiredTech": ["singularity"] },
-    { "id": "active-1", "name": "Active 1", "type": "active", "cost": 9, "radiance": 3, "offset": 1, "requiredTech": ["automation"] },
+    { "id": "active-1", "name": "Active 1", "type": "active", "cost": 9, "radiance": 3, "offset": 1, "requiredTech": ["microgravity-engineering"] },
     { "id": "active-2", "name": "Active 2", "type": "active", "cost": 12, "radiance": 4, "offset": 1, "requiredTech": ["atomic-manufacturing"] },
     { "id": "active-3", "name": "Active 3", "type": "active", "cost": 15, "radiance": 5, "offset": 1, "requiredTech": ["metamaterials"] },
     { "id": "active-4", "name": "Active 4", "type": "active", "cost": 18, "radiance": 6, "offset": 1, "requiredTech": ["chronal-condensates"] },
@@ -19,7 +19,7 @@
   ],
   "defenses": [
     { "id": "active-armor-1", "name": "Active Armor 1", "type": "active-armor", "cost": 7, "efficiency": 3, "capacity": 4, "requiredTech": [] },
-    { "id": "active-armor-2", "name": "Active Armor 2", "type": "active-armor", "cost": 15, "efficiency": 5, "capacity": 9, "requiredTech": ["automation"] },
+    { "id": "active-armor-2", "name": "Active Armor 2", "type": "active-armor", "cost": 15, "efficiency": 5, "capacity": 9, "requiredTech": ["microgravity-engineering"] },
     { "id": "active-armor-3", "name": "Active Armor 3", "type": "active-armor", "cost": 34, "efficiency": 7, "capacity": 20, "requiredTech": ["metamaterials"] },
     { "id": "plasma-field-1", "name": "Plasma Field 1", "type": "plasma-field", "cost": 39, "efficiency": 2, "limit": 4, "requiredTech": ["fission"] },
     { "id": "plasma-field-2", "name": "Plasma Field 2", "type": "plasma-field", "cost": 96, "efficiency": 3, "limit": 10, "requiredTech": ["fusion"] },

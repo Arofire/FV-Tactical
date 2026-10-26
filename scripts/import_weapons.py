@@ -23,6 +23,15 @@ RESOURCE_BY_PREFIX = {
     "U": "utilities",
     "E": "emplacements",
 }
+# Troop weapons have no CSV cost; these are the costs used by the troop widget
+# (anything missing defaults to TROOP_DEFAULT_COST).
+TROOP_CATEGORY = "Troops"
+TROOP_WEAPON_COSTS = {
+    "light-weapons": 1,
+    "heavy-weapons": 1,
+    "nuclear-weapons": 2,
+}
+TROOP_DEFAULT_COST = 1
 TECH_ALIASES = {
     "main beam aperture": "heavy-ub-aperture",
     "main beam maser": "heavy-ub-aperture",
@@ -54,6 +63,13 @@ def normalize(value):
 
 def slugify(value):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", value.casefold())).strip("-")
+
+
+def get_cost(value, category_name, weapon_id):
+    cost = parse_value(value)
+    if cost is None and category_name == TROOP_CATEGORY:
+        return TROOP_WEAPON_COSTS.get(weapon_id, TROOP_DEFAULT_COST)
+    return cost
 
 
 def parse_value(value):
@@ -214,7 +230,7 @@ def build_catalogue(rows):
                 any(note["name"].casefold() == "antimissile" for note in notes)
                 or name.casefold().startswith("pd ")
             ),
-            "cost": parse_value(row[17]),
+            "cost": get_cost(row[17], current_category["name"], weapon_id),
             "requiredTech": [tech_requirement] if tech_requirement else [],
             "sourceRow": csv_row_number,
         }
@@ -225,7 +241,11 @@ def build_catalogue(rows):
             "url": SOURCE_URL,
             "description": "Imported from the published weapons CSV.",
         },
-        "categories": categories,
+        # Warheads are curated in data/munitions.json as munition payloads and
+        # are intentionally excluded from the weapons catalogue.
+        "categories": [
+            category for category in categories if category["name"] != "Warheads"
+        ],
     }
 
 

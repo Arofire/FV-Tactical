@@ -12136,7 +12136,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 1,
           "requiredTech": ["troop-light-weapons"],
           "sourceRow": 238,
           "isMain": false
@@ -12187,7 +12187,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 1,
           "requiredTech": ["troop-heavy-weapons"],
           "sourceRow": 239,
           "isMain": false
@@ -12244,7 +12244,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 1,
           "requiredTech": [],
           "sourceRow": 240,
           "isMain": false
@@ -12311,7 +12311,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 2,
           "requiredTech": ["troop-nuclear-weapons"],
           "sourceRow": 241,
           "isMain": false
@@ -12359,7 +12359,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 1,
           "requiredTech": [],
           "sourceRow": 242,
           "isMain": false
@@ -12420,7 +12420,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 1,
           "requiredTech": [],
           "sourceRow": 243,
           "isMain": false
@@ -12471,7 +12471,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 1,
           "requiredTech": ["troop-torac"],
           "sourceRow": 244,
           "isMain": false
@@ -12526,7 +12526,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 1,
           "requiredTech": ["troop-laser-weapons"],
           "sourceRow": 245,
           "isMain": false
@@ -12586,7 +12586,7 @@
           "resourceCount": null,
           "isSpinal": false,
           "isPointDefense": false,
-          "cost": null,
+          "cost": 1,
           "requiredTech": ["troop-plasma"],
           "sourceRow": 246,
           "isMain": false

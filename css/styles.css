@@ -467,6 +467,500 @@ body {
     background: #713b3b;
 }
 
+.fleet-view-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.fleet-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 22px;
+    max-width: 1440px;
+    margin: 0 auto;
+    align-items: start;
+}
+
+@media (max-width: 1000px) {
+    .fleet-panels {
+        grid-template-columns: 1fr;
+    }
+}
+
+.fleet-taskforce-panel {
+    display: grid;
+    gap: 20px;
+}
+
+.task-force-group {
+    background: #212121;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.task-force-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #3d3d3d;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+
+.task-force-header h2 {
+    font-size: 16px;
+}
+
+.task-force-name {
+    background: #1e1e1e;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 6px 9px;
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 120px;
+}
+
+.task-force-count {
+    color: #999;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.task-force-action {
+    background: #3a3a3a;
+    color: #ddd;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.task-force-action:hover:not(:disabled) {
+    background: #484848;
+}
+
+.task-force-action:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.task-force-delete {
+    background: #713b3b;
+    border-color: #8a4a4a;
+    color: #fff;
+}
+
+.task-force-delete:hover:not(:disabled) {
+    background: #8a4a4a;
+}
+
+.task-force-group .fleet-ship-list {
+    max-width: none;
+}
+
+.fleet-ship-subtitle {
+    color: #999;
+    font-size: 12px;
+    margin: -8px 0 10px;
+}
+
+.fleet-ship-missing {
+    border-color: #8a6a3b;
+}
+
+.fleet-ship-missing .fleet-ship-subtitle {
+    color: #d8a85a;
+}
+
+.fleet-ship-stores {
+    display: grid;
+    gap: 4px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #3d3d3d;
+}
+
+.fleet-store-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.fleet-store-label {
+    color: #999;
+}
+
+.fleet-store-value {
+    color: #ddd;
+    font-variant-numeric: tabular-nums;
+}
+
+.fleet-ship-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.fleet-ship-actions button {
+    background: #3a3a3a;
+    color: #ddd;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.fleet-ship-actions button:hover:not(:disabled) {
+    background: #484848;
+}
+
+.fleet-ship-actions button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.fleet-ship-export {
+    position: relative;
+}
+
+.fleet-ship-export-menu[hidden] {
+    display: none;
+}
+
+.fleet-ship-export-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+    padding: 4px;
+    border: 1px solid #65788b;
+    border-radius: 4px;
+    background: #20262d;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+.fleet-ship-export-menu button {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #f0f5fa;
+    text-align: left;
+}
+
+.fleet-ship-export-menu button:hover,
+.fleet-ship-export-menu button:focus-visible {
+    background: #345a80;
+    outline: none;
+}
+
+.fleet-ship-actions .fleet-ship-tend {
+    background: #2d4a3d;
+    border-color: #3d6a55;
+    color: #bfe3d2;
+}
+
+.fleet-ship-actions .fleet-ship-tend:hover:not(:disabled) {
+    background: #3d6a55;
+}
+
+.fleet-ship-actions .fleet-ship-remove {
+    margin-top: 0;
+}
+
+.fleet-inventory-panel {
+    background: #212121;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    padding: 14px;
+    position: sticky;
+    top: 0;
+}
+
+.fleet-inventory-panel h2 {
+    font-size: 15px;
+    border-bottom: 1px solid #3d3d3d;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+.fleet-inventory-list {
+    display: grid;
+    gap: 8px;
+}
+
+.fleet-inventory-row {
+    display: grid;
+    gap: 2px;
+    background: #292929;
+    border: 1px solid #484848;
+    border-radius: 5px;
+    padding: 8px 10px;
+}
+
+.fleet-inventory-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.fleet-inventory-details {
+    color: #999;
+    font-size: 11px;
+}
+
+/* Ship builder + contents + tending modals */
+
+.ship-builder-dialog {
+    width: min(920px, 100%);
+}
+
+.ship-builder-config {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+
+.ship-builder-field {
+    display: grid;
+    gap: 5px;
+    color: #bbb;
+    font-size: 12px;
+    flex: 1;
+    min-width: 140px;
+}
+
+.ship-builder-field input,
+.ship-builder-field select,
+.ship-builder-ship-row input,
+.ship-builder-ship-row select,
+.ship-contents-add select,
+.ship-contents-row select,
+.ship-contents-row input {
+    background: #1e1e1e;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 6px 8px;
+}
+
+.ship-builder-capacities {
+    color: #9fc2e8;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.ship-builder-batch-controls {
+    margin-bottom: 10px;
+}
+
+.ship-builder-batch-controls button,
+.ship-contents-add button {
+    background: #3a3a3a;
+    color: #ddd;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.ship-builder-batch-controls button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.ship-builder-ship-list {
+    display: grid;
+    gap: 8px;
+    max-height: 40vh;
+    overflow: auto;
+    margin-bottom: 12px;
+}
+
+.ship-builder-ship-row {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+    background: #2b2b2b;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 8px;
+}
+
+.ship-builder-contents-summary {
+    color: #999;
+    font-size: 11px;
+    min-width: 120px;
+}
+
+.ship-builder-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid #444;
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+.ship-builder-totals {
+    color: #e8d29f;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: auto;
+}
+
+.ship-builder-totals.over-capacity {
+    color: #e88a8a;
+}
+
+.ship-builder-validation {
+    color: #e88a8a;
+    font-size: 12px;
+}
+
+.ship-builder-footer button {
+    background: #4a90e2;
+    color: #fff;
+    border: 0;
+    border-radius: 4px;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.ship-builder-footer button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.ship-builder-footer button:first-of-type {
+    background: #3a3a3a;
+    border: 1px solid #555;
+}
+
+.ship-contents-sections {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.ship-contents-section {
+    background: #2b2b2b;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.ship-contents-section h3 {
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: #bbb;
+}
+
+.ship-contents-section h3.over-capacity,
+.over-capacity {
+    color: #e88a8a;
+}
+
+.ship-contents-row {
+    display: grid;
+    grid-template-columns: 1fr 80px auto auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.ship-contents-name {
+    font-size: 12px;
+    color: #ddd;
+}
+
+.ship-contents-remove {
+    background: #713b3b;
+    color: #fff;
+    border: 0;
+    border-radius: 4px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+}
+
+.ship-contents-add {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.ship-contents-add select {
+    flex: 1;
+}
+
+.ship-contents-empty,
+.ship-contents-turret {
+    color: #999;
+    font-size: 12px;
+}
+
+.tending-resource-section {
+    background: #2b2b2b;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 12px;
+}
+
+.tending-resource-section h3 {
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: #bbb;
+}
+
+.tending-row {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) 90px minmax(120px, 2fr) 60px auto;
+    gap: 10px;
+    align-items: center;
+    padding: 5px 0;
+}
+
+.tending-ship-name {
+    font-size: 12px;
+    color: #ddd;
+}
+
+.tending-current {
+    color: #999;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.tending-value {
+    color: #e8d29f;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.tending-lock {
+    color: #999;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.tending-pool {
+    color: #9fc2e8;
+    font-weight: 400;
+}
+
 .fleet-ship-card details {
     margin-top: 12px;
     color: #bbb;

@@ -2,7 +2,7 @@
   "general": [
     { "id": "berthing", "name": "Berthing", "cost": 4, "requiredTech": [] },
     { "id": "laser-generator", "name": "Laser Generator", "cost": 10, "requiredTech": [], "technologyCategory": "LASER - Generator" },
-    { "id": "craft-launcher", "name": "Craft Launcher", "cost": 15, "requiredTech": ["automation"] },
+    { "id": "craft-launcher", "name": "Craft Launcher", "cost": 15, "requiredTech": [] },
     { "id": "tending", "name": "Tending", "cost": 5, "requiredTech": ["microgravity-engineering"] }
   ],
   "entropy": [

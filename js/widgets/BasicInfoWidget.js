@@ -14,7 +14,6 @@ class BasicInfoWidget extends Widget {
         this.defaultRoles = shipWidget?.defaultRoles || [
             'corvette','frigate','destroyer','cruiser','battleship','dreadnought','carrier','fighter','bomber','scout','transport','support','custom'
         ];
-        this.layoutMode = 'three-column';
         this.init();
     }
 

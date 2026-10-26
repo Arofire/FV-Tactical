@@ -78,11 +78,20 @@
                 <header class="fleet-view-header">
                     <div>
                         <h1>Fleet</h1>
-                        <p>Assign unique ships from your designs to this fleet.</p>
+                        <p>Build ships from operational classes and organize them into task forces.</p>
                     </div>
-                    <button id="addFleetShip" type="button">Add Ship</button>
+                    <div class="fleet-view-actions">
+                        <button id="addTaskForce" type="button">New Task Force</button>
+                        <button id="addFleetShip" type="button">Build Ships</button>
+                    </div>
                 </header>
-                <div id="fleetShipList" class="fleet-ship-list"></div>
+                <div class="fleet-panels">
+                    <div id="taskForcePanel" class="fleet-taskforce-panel" aria-label="Task forces"></div>
+                    <aside id="fleetInventoryPanel" class="fleet-inventory-panel" aria-label="Empire ship inventory">
+                        <h2>Empire Inventory</h2>
+                        <div id="fleetInventoryList" class="fleet-inventory-list"></div>
+                    </aside>
+                </div>
             </section>
             <div id="canvas" class="canvas">
                 <!-- Widgets will be dynamically created here -->
@@ -112,14 +121,20 @@
     <script src="js/core/NodeSystem.js"></script>
     <script src="js/core/DataManager.js"></script>
     <script src="js/core/PreflightCheck.js"></script>
+    <script src="js/core/ShipCapacity.js"></script>
+    <script src="js/widgets/DesignWidget.js"></script>
     <script src="js/widgets/ShipWidget.js"></script>
     <script src="js/widgets/OutfitWidget.js"></script>
     <script src="js/widgets/CraftWidget.js"></script>
     <script src="js/widgets/TroopsWidget.js"></script>
-    <script src="js/widgets/RerouteWidget.js"></script>
-    <script src="js/widgets/MissilesWidget.js"></script>
+    <script src="js/widgets/MunitionsWidget.js"></script>
     <script src="js/widgets/ShipCoreWidget.js"></script>
-    <script src="js/widgets/ShipHullsWidget.js"></script>
+    <script src="js/widgets/SummaryWidget.js"></script>
+    <script src="js/widgets/HullTilesWidget.js"></script>
+    <script src="js/fleet/ShipBuilder.js"></script>
+    <script src="js/fleet/UniqueShipExporter.js"></script>
+    <script src="js/fleet/TendingDialog.js"></script>
+    <script src="js/fleet/FleetView.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

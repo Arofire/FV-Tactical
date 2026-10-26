@@ -1,8 +1,28 @@
-// Craft design widget backed by editable JSON catalogues in data/.
-class CraftWidget extends Widget {
+// Craft design. Profiles, roles, power, features, utilities and non-weapon equipment
+// come from data/Craft.json; hardpoints use the ship hardpoint options
+// (ShipCapacity.getHardpointWeaponOptions) and craft weapons come from the "Craft"
+// category of data/weapons.json.
+class CraftWidget extends DesignWidget {
+    static WEAPON_CATEGORY = 'Craft';
+    static LOADOUT_PICKERS = ['hardpoints', 'utilities', 'equipment'];
+    static CAPACITY_LABELS = {
+        fuel: 'Fuel', cohesion: 'Cohesion', troops: 'Troops', cells: 'Cells',
+        containment: 'Containment', action: 'Actions'
+    };
+
     constructor(x = 100, y = 100) {
-        super('craft', 'New Craft', x, y, null);
-        this.craftData = {
+        super('craft', 'New Craft', x, y);
+        this.craftData = CraftWidget.createDefaultData();
+        this.catalogues = { profiles: [], roles: [], power: [], features: [], utilities: [], equipment: [] };
+        this.hardpointOptions = [];
+        this.craftWeapons = [];
+        this.cataloguesLoaded = false;
+        this.init();
+        this.loadCatalogues();
+    }
+
+    static createDefaultData() {
+        return {
             name: 'New Craft',
             role: '',
             notes: '',
@@ -11,432 +31,532 @@ class CraftWidget extends Widget {
             profile: 'medium',
             roles: [],
             power: 'battery-1',
-            requiredTech: [],
-            loadout: { features: [], hardpoints: [], utilities: [], equipment: [] }
+            loadout: { features: [], hardpoints: [], utilities: [], equipment: [] },
+            baysRequired: 0,
+            cost: 0,
+            requiredTech: []
         };
-        this.catalogues = {};
-        this.layoutMode = 'three-column';
-        this.init();
-        this.loadCatalogues();
     }
 
-    static get defaults() {
-        return {
-            profiles: [
-                { id: 'heavy', name: 'Heavy', cohesion: 6, hardpoints: 6, utilities: 3, equipment: 4, burns: 2, externalQualities: 2, combatValue: 54, baysRequired: 2, roleCount: 3, facing: 'Forward', actions: ['Attack craft', 'Dock', 'Thrust'] },
-                { id: 'medium', name: 'Medium', cohesion: 4, hardpoints: 4, utilities: 2, equipment: 3, burns: 3, externalQualities: 1, combatValue: 25, baysRequired: 4, roleCount: 2, facing: 'Forward', actions: ['Attack craft', 'Dock', 'Thrust'] },
-                { id: 'light', name: 'Light', cohesion: 3, hardpoints: 2, utilities: 1, equipment: 2, burns: 4, externalQualities: 0, combatValue: 11, baysRequired: 2, roleCount: 1, facing: 'Forward', actions: ['Attack craft', 'Dock', 'Thrust'] },
-                { id: 'special', name: 'Special', cohesion: 5, hardpoints: 3, utilities: 3, equipment: 4, burns: 3, externalQualities: 3, combatValue: 5, baysRequired: 1, roleCount: 2, facing: 'Variable', actions: ['Attack craft', 'Dock', 'Thrust'] }
-            ],
-            roles: [
-                ['interceptor', 'Interceptor', ['Orbital'], ['Intercept'], 'medium', false, ['Armored'], { power: 0, fuel: 1, equipment: 0, cohesion: 1, troops: 0, cells: 0 }],
-                ['defensive', 'Defensive', ['Defend other', 'Interrupt'], ['Escort'], 'light', false, ['Armored'], { power: 1, fuel: 0, equipment: 0, cohesion: 2, troops: 0, cells: 0 }],
-                ['patrol', 'Patrol', ['Radius'], ['Patrol'], 'light', false, ['Reinforced'], { power: 1, fuel: 1, equipment: 1, cohesion: 1, troops: 0, cells: 0 }],
-                ['assault', 'Assault', ['Interrupt'], ['Board'], 'medium', false, ['Armored'], { power: 1, fuel: 0, equipment: 0, cohesion: 2, troops: 1, cells: 0 }],
-                ['transport', 'Transport', ['Orbital'], ['Deliver'], 'light', false, ['Reinforced'], { power: 1, fuel: 1, equipment: 2, cohesion: 1, troops: 0, cells: 2 }],
-                ['picket', 'Picket', ['Defend other', 'Radius'], ['Early warning'], 'special', true, ['Reinforced'], { power: 1, fuel: 1, equipment: 1, cohesion: 1, troops: 0, cells: 1 }],
-                ['strike', 'Strike', ['Orbital', 'Radius'], ['Strike target'], 'medium', false, ['Armored'], { power: 1, fuel: 0, equipment: 1, cohesion: 1, troops: 0, cells: 0 }],
-                ['attack', 'Attack', ['Defend other'], ['Ground attack'], 'special', true, ['Armored'], { power: 0, fuel: 0, equipment: 1, cohesion: 2, troops: 0, cells: 0 }],
-                ['atmospheric', 'Atmospheric', ['Orbital'], ['Atmospheric flight'], 'special', true, ['Reinforced'], { power: 1, fuel: 1, equipment: 1, cohesion: 1, troops: 0, cells: 0 }],
-                ['troop', 'Troop', ['Radius'], ['Deploy troops'], 'special', true, ['Reinforced'], { power: 1, fuel: 0, equipment: 1, cohesion: 1, troops: 2, cells: 0 }],
-                ['teleporter', 'Teleporter', ['Elite', 'Stable'], ['Teleport personnel'], 'medium', false, ['Reinforced'], { power: 2, fuel: 0, equipment: 1, cohesion: 1, troops: 1, cells: 2 }],
-                ['shuttle', 'Shuttle', ['Stable'], ['Transfer'], 'special', true, ['Reinforced'], { power: 1, fuel: 0, equipment: 1, cohesion: 1, troops: 0, cells: 1 }],
-                ['stable', 'Stable', ['Stable'], ['Hold formation'], 'special', true, ['Armored'], { power: 0, fuel: 1, equipment: 0, cohesion: 2, troops: 0, cells: 0 }]
-            ].map(([id, name, traits, actions, profile, exclusive, tags, capacities]) => ({
-                id, name, traits, actions, profile, exclusive, tags, capacities, steps: [`${name} operation`],
-                stats: { thrust: 0, defense: 0, power: capacities.power }
-            })),
-            power: [
-                { id: 'battery-1', name: 'Battery 1', power: 10 },
-                { id: 'battery-2', name: 'Battery 2', power: 11 },
-                { id: 'battery-3', name: 'Battery 3', power: 12 },
-                { id: 'battery-4', name: 'Battery 4', power: 13 },
-                { id: 'battery-5', name: 'Battery 5', power: 14 },
-                { id: 'battery-6', name: 'Battery 6', power: 15 }
-            ],
-            features: [
-                { id: 'reinforced-hull', name: 'Reinforced Hull', hardpoints: 0, utilities: 0, equipment: 0, combatValue: 1 },
-                { id: 'sensor-suite', name: 'Sensor Suite', hardpoints: 0, utilities: 1, equipment: 0, combatValue: 0 },
-                { id: 'cargo-pod', name: 'Cargo Pod', hardpoints: 0, utilities: 0, equipment: 1, combatValue: 0 }
-            ],
-            hardpoints: [
-                { id: 'light-hardpoint', name: 'Light Hardpoint', capacity: 1, combatValue: 1 },
-                { id: 'heavy-hardpoint', name: 'Heavy Hardpoint', capacity: 2, combatValue: 2 }
-            ],
-            utilities: [
-                { id: 'sensor', name: 'Sensor Utility', capacity: 1 },
-                { id: 'communications', name: 'Communications Utility', capacity: 1 }
-            ],
-            equipment: [
-                { id: 'countermeasures', name: 'Countermeasures', capacity: 1, combatValue: 1 },
-                { id: 'cargo', name: 'Cargo Equipment', capacity: 1 }
-            ]
-        };
+    get designData() {
+        return this.craftData;
+    }
+
+    get defaultTitle() {
+        return 'New Craft';
     }
 
     async loadCatalogues() {
-        const path = 'data/Craft.json';
-        try {
-            const response = await fetch(path);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const catalogues = await response.json();
-            if (!catalogues || typeof catalogues !== 'object' || Array.isArray(catalogues)) {
-                throw new Error('Invalid catalogue data');
+        const [craft, weapons] = await Promise.allSettled([
+            this.fetchJSON('data/Craft.json'),
+            this.fetchJSON('data/weapons.json')
+        ]);
+        if (craft.status === 'fulfilled' && craft.value && typeof craft.value === 'object') {
+            for (const key of Object.keys(this.catalogues)) {
+                this.catalogues[key] = Array.isArray(craft.value[key]) ? craft.value[key] : [];
             }
-            this.catalogues = catalogues;
-        } catch (error) {
-            console.error(`Failed to load Craft catalogues (${path}):`, error);
-            window.app?.showNotification(
-                'Craft catalogues failed to load; built-in data is being used.',
-                'error'
-            );
+        } else {
+            console.error('Failed to load craft catalogues (data/Craft.json):', craft.reason);
+            window.app?.showNotification('Craft catalogues failed to load.', 'error');
         }
-        this.updateControls();
+        if (weapons.status === 'fulfilled') {
+            const categories = weapons.value?.categories || [];
+            const craftCategory = categories.find(entry => entry.name === CraftWidget.WEAPON_CATEGORY);
+            this.craftWeapons = Array.isArray(craftCategory?.weapons) ? craftCategory.weapons : [];
+            this.hardpointOptions = typeof ShipCapacity !== 'undefined'
+                ? await ShipCapacity.getHardpointWeaponOptions(true)
+                : categories.flatMap(entry => (entry.weapons || []).filter(weapon => weapon.resourceType === 'hardpoints'));
+        } else {
+            console.error('Failed to load craft weapons (data/weapons.json):', weapons.reason);
+        }
+        this.cataloguesLoaded = true;
+        this.normalizeSelections();
+        this.refresh();
     }
 
     getCatalogue(key) {
-        return Array.isArray(this.catalogues[key]) ? this.catalogues[key] : CraftWidget.defaults[key];
+        return this.catalogues[key] || [];
     }
 
-    escape(value) {
-        return String(value ?? '').replace(/[&<>"']/g, character => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-        })[character]);
+    getProfile() {
+        const profiles = this.getCatalogue('profiles');
+        return profiles.find(item => item.id === this.craftData.profile) || profiles[0] || null;
     }
 
-    formatOptionCost(value, category = 'general', itemId = '') {
-        if (typeof value !== 'number' || !Number.isFinite(value)) return '';
-        try {
-            if (typeof window.app?.formatOptionCost === 'function') {
-                return window.app.formatOptionCost(value, category, itemId);
-            }
-        } catch (error) {
-            // Fall back to CV when the application economy context is unavailable.
+    getSelectedRoles() {
+        return this.getCatalogue('roles').filter(item => (this.craftData.roles || []).includes(item.id));
+    }
+
+    getPower() {
+        return this.getCatalogue('power').find(item => item.id === this.craftData.power) || null;
+    }
+
+    getSelectedFeatures() {
+        return this.getCatalogue('features').filter(item => (this.craftData.loadout.features || []).includes(item.id));
+    }
+
+    getPickerOptions(category) {
+        if (category === 'hardpoints') return this.hardpointOptions;
+        if (category === 'utilities') return this.getCatalogue('utilities');
+        return this.getCatalogue('equipment');
+    }
+
+    findLoadoutItem(category, entry) {
+        if (category === 'equipment') {
+            const gear = this.getCatalogue('equipment').find(item => item.id === entry.id);
+            const weapon = this.craftWeapons.find(item => item.id === entry.id);
+            if (entry.source === 'weapon') return weapon || null;
+            if (entry.source === 'gear') return gear || null;
+            return gear || weapon || null;
         }
-        return `${value} CV`;
+        return this.getPickerOptions(category).find(item => item.id === entry.id) || null;
     }
 
-    getOptionCostLabels(item, category = 'general') {
-        if (!item) return [];
-        const labels = [];
-        if (typeof item.combatValue === 'number' && Number.isFinite(item.combatValue)) {
-            labels.push(this.formatOptionCost(item.combatValue, category, item.id));
-        }
-        if (typeof item.cost === 'number' && Number.isFinite(item.cost)) {
-            labels.push(this.formatOptionCost(item.cost, category, item.id));
-        }
-        return labels.filter(Boolean);
+    // Resource units one item occupies.
+    getItemSize(category, item) {
+        if (!item) return 1;
+        if (category === 'hardpoints') return Math.max(1, Number(item.resourceCount) || 1);
+        return Math.max(1, Number(item.capacity) || 1);
     }
 
-    formatOptionLabel(item, category = 'general') {
-        const amounts = this.getOptionCostLabels(item, category);
-        return `${item.name}${amounts.length ? ` (${amounts.join('; ')})` : ''}`;
+    getRoleCapacity(key) {
+        return this.getSelectedRoles().reduce((sum, role) => sum + Number(role.capacities?.[key] || 0), 0);
+    }
+
+    getResourceCapacity(category) {
+        const profile = this.getProfile() || {};
+        const featureBonus = this.getSelectedFeatures().reduce((sum, item) => sum + Number(item[category] || 0), 0);
+        const roleBonus = category === 'equipment' ? this.getRoleCapacity('equipment') : 0;
+        return Math.max(0, Number(profile[category] || 0) + featureBonus + roleBonus);
+    }
+
+    getResourceUsed(category) {
+        return (this.craftData.loadout[category] || []).reduce((sum, entry) =>
+            sum + this.getItemSize(category, this.findLoadoutItem(category, entry)) * Number(entry.quantity || 1), 0);
+    }
+
+    getPowerTotal() {
+        return Math.max(0, Number(this.getPower()?.power || 0) + this.getRoleCapacity('power'));
+    }
+
+    getLoadoutCost(category) {
+        if (category === 'features') {
+            return this.getSelectedFeatures().reduce((sum, item) => sum + this.getItemCost(item), 0);
+        }
+        return (this.craftData.loadout[category] || []).reduce((sum, entry) =>
+            sum + this.getItemCost(this.findLoadoutItem(category, entry)) * Number(entry.quantity || 1), 0);
+    }
+
+    // Combined craft statistics; the Summary widget shows these when a craft is connected.
+    calculateStats() {
+        const profile = this.getProfile() || {};
+        const roles = this.getSelectedRoles();
+        const unique = values => [...new Set(values.filter(Boolean))];
+        const profileCost = this.getItemCost(profile);
+        const roleCost = roles.reduce((sum, item) => sum + this.getItemCost(item), 0);
+        const powerCost = this.getItemCost(this.getPower());
+        const loadoutCost = ['features', ...CraftWidget.LOADOUT_PICKERS]
+            .reduce((sum, category) => sum + this.getLoadoutCost(category), 0);
+        const stats = {
+            profile: profile.name || '—',
+            roles: roles.map(item => item.name),
+            roleCount: roles.length,
+            roleLimit: Number(profile.roleCount || 1),
+            cohesion: Number(profile.cohesion || 0) + this.getRoleCapacity('cohesion'),
+            burns: Number(profile.burns || 0),
+            baysRequired: Number(profile.baysRequired || 0),
+            facing: profile.facing || '—',
+            power: this.getPowerTotal(),
+            fuel: this.getRoleCapacity('fuel'),
+            troops: this.getRoleCapacity('troops'),
+            cells: this.getRoleCapacity('cells'),
+            containment: this.getRoleCapacity('containment'),
+            action: this.getRoleCapacity('action'),
+            traits: unique(roles.flatMap(item => item.traits || [])),
+            tags: unique(roles.flatMap(item => item.tags || [])),
+            actions: unique([...(profile.actions || []), ...roles.flatMap(item => item.actions || [])]),
+            profileCost,
+            roleCost,
+            powerCost,
+            loadoutCost,
+            combatValue: profileCost + roleCost + powerCost + loadoutCost
+        };
+        for (const category of CraftWidget.LOADOUT_PICKERS) {
+            stats[category] = this.getResourceCapacity(category);
+            stats[`${category}Used`] = this.getResourceUsed(category);
+        }
+        return stats;
+    }
+
+    getSelectedRequiredTech() {
+        return this.collectRequiredTech([
+            this.getProfile(),
+            ...this.getSelectedRoles(),
+            this.getPower(),
+            ...this.getSelectedFeatures(),
+            ...CraftWidget.LOADOUT_PICKERS.flatMap(category =>
+                (this.craftData.loadout[category] || []).map(entry => this.findLoadoutItem(category, entry)))
+        ]);
+    }
+
+    normalizeSelections() {
+        if (!this.cataloguesLoaded) return;
+        const profiles = this.getCatalogue('profiles');
+        if (profiles.length && !profiles.some(item => item.id === this.craftData.profile)) {
+            this.craftData.profile = profiles[0].id;
+        }
+        const power = this.getCatalogue('power');
+        if (power.length && !this.getPower()) this.craftData.power = power[0].id;
+        this.craftData.loadout.equipment = this.normalizeQuantityEntries(this.craftData.loadout.equipment);
+        this.enforceRoleLimit();
+    }
+
+    enforceRoleLimit() {
+        const limit = Number(this.getProfile()?.roleCount || 1);
+        this.craftData.roles = (this.craftData.roles || []).slice(0, limit);
+    }
+
+    subtitle(label, extra = '') {
+        return `<div class="design-subtitle"><span>${this.escape(label)}</span>${extra}</div>`;
+    }
+
+    counterMarkup(key, label) {
+        return `<span class="outfit-resource-counter" id="${this.id}-${key}" aria-label="${this.escape(label)} used / available"><span class="outfit-resource-used">0</span> / <span class="outfit-resource-capacity">0</span></span>`;
+    }
+
+    subtotalMarkup(key) {
+        return `<span class="outfit-section-subtotal outfit-section-subtotal-inline" id="${this.id}-${key}" aria-live="polite"></span>`;
+    }
+
+    pickerMarkup(category, label) {
+        return `
+            <div class="design-subsection design-loadout-group">
+                ${this.subtitle(label, this.subtotalMarkup(`${category}-subtotal`) + this.counterMarkup(`${category}-counter`, label))}
+                <div class="design-picker">
+                    <select id="${this.id}-${category}-select" class="design-select" aria-label="${this.escape(label)} to add"></select>
+                    <button type="button" class="widget-add-action" data-add-loadout="${category}">Add</button>
+                </div>
+                <div id="${this.id}-${category}-list" class="design-entry-list"></div>
+            </div>`;
     }
 
     createContent(contentElement) {
         const sections = contentElement.querySelector('.widget-sections');
-        const info = this.createSection('meta', 'Craft Information');
-        this.setSectionContent(info, `
-            <div class="input-group"><label for="${this.id}-name">Craft Name</label><input id="${this.id}-name" type="text" placeholder="Enter craft name"></div>
-            <div class="input-group"><label for="${this.id}-role">Role</label><input id="${this.id}-role" type="text" placeholder="Optional custom role"></div>
-            <div class="input-group"><label for="${this.id}-notes">Notes</label><textarea id="${this.id}-notes" rows="3" placeholder="Craft notes"></textarea></div>
-            <div class="ship-information-header">
-                <label class="ship-flag"><input id="${this.id}-operational" type="checkbox"> Operational</label>
-            </div>
-            <div class="input-group"><label><input id="${this.id}-ignore-required-tech" type="checkbox"> Ignore Required Tech</label></div>
+
+        const meta = this.createDesignSection('meta', '');
+        this.setSectionContent(meta, `
+            ${this.renderIdentityFields({ rolePlaceholder: 'Optional custom role', notesPlaceholder: 'Craft notes' })}
         `);
-        sections.appendChild(info.section);
+        sections.appendChild(meta.section);
 
-        const profile = this.createSection('profile', 'Profile');
-        this.setSectionContent(profile, `<div class="input-group"><label for="${this.id}-profile-select">Craft Profile</label><select id="${this.id}-profile-select"></select></div><div id="${this.id}-profile-stats" class="widget-stats"></div>`);
-        sections.appendChild(profile.section);
+        const configuration = this.createDesignSection('configuration', 'Configuration');
+        this.setSectionContent(configuration, `
+            <div class="design-subsection">
+                ${this.subtitle('Profile', this.subtotalMarkup('profile-subtotal'))}
+                <select id="${this.id}-profile-select" class="design-select" aria-label="Craft profile"></select>
+                <div id="${this.id}-profile-stats" class="design-chips"></div>
+            </div>
+            <div class="design-subsection">
+                ${this.subtitle('Roles', this.subtotalMarkup('roles-subtotal') + this.counterMarkup('roles-counter', 'Roles'))}
+                <div id="${this.id}-role-options" class="design-option-list"></div>
+                <div id="${this.id}-role-details" class="design-details"></div>
+            </div>
+            <div class="design-subsection">
+                ${this.subtitle('Power', `<span class="outfit-resource-counter" id="${this.id}-power-total"></span>`)}
+                <select id="${this.id}-power-select" class="design-select" aria-label="Power"></select>
+            </div>
+            <div class="design-subsection design-loadout">
+                ${this.subtitle('Loadout', this.subtotalMarkup('loadout-subtotal'))}
+                <div class="design-subsection design-loadout-group">
+                    ${this.subtitle('Features', this.subtotalMarkup('features-subtotal'))}
+                    <div id="${this.id}-features" class="design-option-list design-option-list-single"></div>
+                </div>
+                ${this.pickerMarkup('hardpoints', 'Hardpoints')}
+                ${this.pickerMarkup('utilities', 'Utilities')}
+                ${this.pickerMarkup('equipment', 'Equipment')}
+            </div>
+        `);
+        sections.appendChild(configuration.section);
 
-        const roles = this.createSection('roles', 'Role');
-        this.setSectionContent(roles, `<div class="input-group"><label>Roles (up to profile limit)</label><div id="${this.id}-role-options" class="component-list"></div></div><div id="${this.id}-role-details"></div>`);
-        sections.appendChild(roles.section);
-
-        const power = this.createSection('power', 'Power');
-        this.setSectionContent(power, `<div class="input-group"><label for="${this.id}-power-select">Power</label><select id="${this.id}-power-select"></select></div><div id="${this.id}-power-stats" class="widget-stats"></div>`);
-        sections.appendChild(power.section);
-
-        const loadout = this.createSection('loadout', 'Loadout');
-        this.setSectionContent(loadout, ['features', 'hardpoints', 'utilities', 'equipment'].map(category => `
-            <div class="input-group"><label>${category[0].toUpperCase() + category.slice(1)}</label><div id="${this.id}-${category}" class="component-list"></div></div>
-        `).join(''));
-        sections.appendChild(loadout.section);
-
-        const stats = this.createSection('stats', 'Combined Statistics');
-        this.setSectionContent(stats, `<div id="${this.id}-combined-stats" class="widget-stats"></div>`);
-        sections.appendChild(stats.section);
         this.setupCraftEventListeners();
-        this.updateControls();
-        this.updateStats();
+        this.refresh();
     }
 
     setupCraftEventListeners() {
         const root = this.element;
-        root.querySelector(`#${this.id}-name`).addEventListener('input', event => {
-            this.craftData.name = event.target.value;
-            this.updateTitle();
-            this.refreshSummary();
-        });
-        root.querySelector(`#${this.id}-role`).addEventListener('input', event => {
-            this.craftData.role = event.target.value;
-            this.refreshSummary();
-        });
-        root.querySelector(`#${this.id}-notes`).addEventListener('input', event => { this.craftData.notes = event.target.value; });
-        root.querySelector(`#${this.id}-operational`).addEventListener('change', event => {
-            this.craftData.operational = event.target.checked;
-            this.refreshSummary();
-        });
-        root.querySelector(`#${this.id}-ignore-required-tech`).addEventListener('change', event => {
-            this.craftData.ignoreRequiredTech = event.target.checked;
-            this.refreshSummary();
-        });
+        this.setupFlagListeners(() => this.refresh());
+        this.setupIdentityFieldListeners();
         root.querySelector(`#${this.id}-profile-select`).addEventListener('change', event => {
             this.craftData.profile = event.target.value;
             this.enforceRoleLimit();
-            this.updateControls();
-            this.updateStats();
+            this.refresh();
         });
         root.querySelector(`#${this.id}-power-select`).addEventListener('change', event => {
             this.craftData.power = event.target.value;
-            this.updateStats();
+            this.refresh();
         });
         root.querySelector(`#${this.id}-role-options`).addEventListener('change', event => {
             const input = event.target;
             if (input.type !== 'checkbox') return;
             const selected = new Set(this.craftData.roles || []);
             if (input.checked) {
-                const maximum = this.getProfile()?.roleCount || 1;
-                if (selected.size >= maximum) { input.checked = false; return; }
+                if (selected.size >= Number(this.getProfile()?.roleCount || 1)) {
+                    input.checked = false;
+                    return;
+                }
                 selected.add(input.value);
             } else selected.delete(input.value);
             this.craftData.roles = [...selected];
-            this.updateControls();
-            this.updateStats();
+            this.refresh();
         });
-        ['features', 'hardpoints', 'utilities', 'equipment'].forEach(category => {
-            root.querySelector(`#${this.id}-${category}`).addEventListener('change', event => {
-                const input = event.target;
-                if (input.type !== 'checkbox') return;
-                const selected = new Set(this.craftData.loadout[category] || []);
-                if (input.checked) selected.add(input.value);
-                else selected.delete(input.value);
-                this.craftData.loadout[category] = [...selected];
-                this.updateControls();
-                this.updateStats();
-            });
+        root.querySelector(`#${this.id}-features`).addEventListener('change', event => {
+            const input = event.target;
+            if (input.type !== 'checkbox') return;
+            const selected = new Set(this.craftData.loadout.features || []);
+            if (input.checked) selected.add(input.value);
+            else selected.delete(input.value);
+            this.craftData.loadout.features = [...selected];
+            this.refresh();
+        });
+        root.querySelector(`#${this.id}-configuration`).addEventListener('click', event => {
+            const add = event.target.closest('[data-add-loadout]');
+            if (add) {
+                this.addLoadoutItem(add.dataset.addLoadout);
+                return;
+            }
+            const remove = event.target.closest('[data-remove-loadout]');
+            if (remove) this.removeLoadoutItem(remove.dataset.removeLoadout);
         });
     }
 
-    getProfile() {
-        return this.getCatalogue('profiles').find(item => item.id === this.craftData.profile) || this.getCatalogue('profiles')[0];
+    addLoadoutItem(category) {
+        const select = this.element.querySelector(`#${this.id}-${category}-select`);
+        const value = String(select?.value || '');
+        if (!value) return;
+        const [source, id] = category === 'equipment' ? value.split(':') : [undefined, value];
+        const entry = source ? { id, source } : { id };
+        const item = this.findLoadoutItem(category, entry);
+        if (!item) return;
+        const size = this.getItemSize(category, item);
+        if (this.getResourceUsed(category) + size > this.getResourceCapacity(category)) return;
+        const entries = this.craftData.loadout[category];
+        const existing = entries.find(candidate => candidate.id === id && candidate.source === source);
+        if (existing) existing.quantity = Number(existing.quantity || 1) + 1;
+        else entries.push({ ...entry, quantity: 1 });
+        this.refresh();
+        const refreshed = this.element.querySelector(`#${this.id}-${category}-select`);
+        if ([...refreshed.options].some(option => option.value === value)) refreshed.value = value;
     }
 
-    getSelectedRequiredTech() {
-        const selected = [
-            this.getProfile(),
-            ...this.getCatalogue('roles').filter(item => (this.craftData.roles || []).includes(item.id)),
-            this.getCatalogue('power').find(item => item.id === this.craftData.power),
-            ...['features', 'hardpoints', 'utilities', 'equipment'].flatMap(category =>
-                this.getCatalogue(category).filter(item => (this.craftData.loadout?.[category] || []).includes(item.id)))
-        ];
-        return [...new Set(selected.flatMap(item => {
-            const requirements = item?.requiredTech;
-            return (Array.isArray(requirements) ? requirements : [requirements])
-                .filter(value => typeof value === 'string' && value.trim())
-                .map(value => value.trim());
-        }))];
+    removeLoadoutItem(key) {
+        const [category, source, id] = String(key).split('|');
+        const entries = this.craftData.loadout[category] || [];
+        const entry = entries.find(candidate => candidate.id === id && (candidate.source || '') === source);
+        if (!entry) return;
+        if (Number(entry.quantity || 1) > 1) entry.quantity -= 1;
+        else this.craftData.loadout[category] = entries.filter(candidate => candidate !== entry);
+        this.refresh();
     }
 
-    enforceRoleLimit() {
-        const max = this.getProfile()?.roleCount || 1;
-        this.craftData.roles = (this.craftData.roles || []).slice(0, max);
+    refresh() {
+        if (!this.element) return;
+        this.updateControls();
+        this.updateTotals();
+        this.refreshSummary();
+        this.notifyChildrenOfChange();
     }
 
     updateControls() {
-        if (!this.element) return;
-        const profileSelect = this.element.querySelector(`#${this.id}-profile-select`);
-        const powerSelect = this.element.querySelector(`#${this.id}-power-select`);
-        if (!profileSelect || !powerSelect) return;
-        const options = (items, selected, category = 'general') => items.map(item =>
-            `<option value="${this.escape(item.id)}" ${item.id === selected ? 'selected' : ''}>${this.escape(this.formatOptionLabel(item, category))}</option>`
-        ).join('');
-        profileSelect.innerHTML = options(this.getCatalogue('profiles'), this.craftData.profile);
-        powerSelect.innerHTML = options(this.getCatalogue('power'), this.craftData.power);
+        const root = this.element;
+        const profileSelect = root.querySelector(`#${this.id}-profile-select`);
+        if (!profileSelect) return;
+        profileSelect.innerHTML = this.buildOptions(this.getCatalogue('profiles'), this.craftData.profile);
+        root.querySelector(`#${this.id}-power-select`).innerHTML =
+            this.buildOptions(this.getCatalogue('power'), this.craftData.power);
 
         const profile = this.getProfile() || {};
-        const selectedRoles = new Set(this.craftData.roles || []);
-        const roleContainer = this.element.querySelector(`#${this.id}-role-options`);
-        roleContainer.replaceChildren();
-        this.getCatalogue('roles').forEach(item => {
-            const label = document.createElement('label');
-            label.className = 'component-item';
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.value = item.id;
-            checkbox.checked = selectedRoles.has(item.id);
-            checkbox.disabled = !checkbox.checked && selectedRoles.size >= (profile.roleCount || 1);
-            const text = document.createElement('span');
-            text.textContent = this.formatOptionLabel(item, 'roles');
-            label.append(checkbox, text);
-            roleContainer.appendChild(label);
-        });
-        const details = this.element.querySelector(`#${this.id}-role-details`);
-        details.replaceChildren();
-        const selected = this.getCatalogue('roles').filter(item => selectedRoles.has(item.id));
-        [['Traits', 'traits'], ['Actions', 'actions'], ['Steps', 'steps']].forEach(([label, field]) => {
-            const values = [...new Set(selected.flatMap(item => item[field] || []))];
-            if (values.length) {
-                const row = document.createElement('div');
-                row.className = 'stat-row';
-                const title = document.createElement('span');
-                title.className = 'stat-label';
-                title.textContent = `${label}:`;
-                const value = document.createElement('span');
-                value.className = 'stat-value';
-                value.textContent = values.join(', ');
-                row.append(title, value);
-                details.appendChild(row);
-            }
-        });
+        root.querySelector(`#${this.id}-profile-stats`).innerHTML = this.renderChips([
+            ['Cohesion', profile.cohesion],
+            ['Burns', profile.burns],
+            ['Bays', profile.baysRequired],
+            ['Facing', profile.facing],
+            ['Actions', (profile.actions || []).join(', ')]
+        ]);
 
-        ['features', 'hardpoints', 'utilities', 'equipment'].forEach(category => {
-            const container = this.element.querySelector(`#${this.id}-${category}`);
-            const chosen = new Set(this.craftData.loadout[category] || []);
-            container.replaceChildren();
-            this.getCatalogue(category).forEach(item => {
+        const selectedRoles = new Set(this.craftData.roles || []);
+        const roleLimit = Number(profile.roleCount || 1);
+        const roleContainer = root.querySelector(`#${this.id}-role-options`);
+        roleContainer.replaceChildren();
+        this.getCatalogue('roles')
+            .filter(item => selectedRoles.has(item.id) || this.isOptionAvailable(item))
+            .forEach(item => {
                 const label = document.createElement('label');
-                label.className = 'component-item';
+                label.className = 'design-option';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = item.id;
+                checkbox.checked = selectedRoles.has(item.id);
+                checkbox.disabled = !checkbox.checked && selectedRoles.size >= roleLimit;
+                const text = document.createElement('span');
+                text.textContent = `${this.formatOptionLabel(item, 'roles')}${this.isOptionAvailable(item) ? '' : ' (unavailable)'}`;
+                label.append(checkbox, text);
+                roleContainer.appendChild(label);
+            });
+        root.querySelector(`#${this.id}-role-details`).innerHTML = this.getSelectedRoles().map(role => {
+            const capacityChips = Object.entries(role.capacities || {})
+                .filter(([key, value]) => Number(value) !== 0 && CraftWidget.CAPACITY_LABELS[key])
+                .map(([key, value]) => [CraftWidget.CAPACITY_LABELS[key], `${value > 0 ? '+' : ''}${value}`]);
+            const lists = [['Traits', role.traits], ['Tags', role.tags], ['Actions', role.actions]]
+                .filter(([, values]) => Array.isArray(values) && values.length)
+                .map(([label, values]) => [label, values.join(', ')]);
+            return `<div class="design-role-detail"><strong>${this.escape(role.name)}</strong> ${this.renderChips([...lists, ...capacityChips])}</div>`;
+        }).join('');
+
+        const selectedFeatures = new Set(this.craftData.loadout.features || []);
+        const features = root.querySelector(`#${this.id}-features`);
+        features.replaceChildren();
+        this.getCatalogue('features')
+            .filter(item => selectedFeatures.has(item.id) || this.isOptionAvailable(item))
+            .forEach(item => {
+                const label = document.createElement('label');
+                label.className = 'design-option';
+                const bonuses = ['hardpoints', 'utilities', 'equipment']
+                    .filter(key => Number(item[key]))
+                    .map(key => `+${item[key]} ${key}`);
+                label.title = bonuses.join(', ');
                 const input = document.createElement('input');
                 input.type = 'checkbox';
                 input.value = item.id;
-                input.checked = chosen.has(item.id);
+                input.checked = selectedFeatures.has(item.id);
                 const name = document.createElement('span');
-                const categoryKey = category === 'features' || category === 'equipment' ? category : 'general';
-                name.textContent = this.formatOptionLabel(item, categoryKey);
+                name.textContent = `${this.formatOptionLabel(item, 'features')}${bonuses.length ? ` · ${bonuses.join(', ')}` : ''}`;
                 label.append(input, name);
-                container.appendChild(label);
+                features.appendChild(label);
             });
-        });
-        const profileStats = this.element.querySelector(`#${this.id}-profile-stats`);
-        profileStats.replaceChildren();
-        this.renderStatRows(profileStats, profile, ['cohesion', 'hardpoints', 'utilities', 'equipment', 'burns', 'externalQualities', 'combatValue', 'baysRequired', 'roleCount', 'facing']);
+
+        for (const category of CraftWidget.LOADOUT_PICKERS) this.updatePicker(category);
     }
 
-    renderStatRows(container, data, keys) {
-        keys.forEach(key => {
-            const row = document.createElement('div');
-            row.className = 'stat-row';
-            const label = document.createElement('span');
-            label.className = 'stat-label';
-            label.textContent = `${key.replace(/[A-Z]/g, letter => ` ${letter}`).replace(/^./, letter => letter.toUpperCase())}:`;
-            const value = document.createElement('span');
-            value.className = 'stat-value';
-            const rawValue = data[key] ?? 0;
-            const isCost = key === 'combatValue' || key === 'cost';
-            const source = key === 'combatValue' ? this.getProfile() : null;
-            value.textContent = isCost
-                ? this.formatOptionCost(Number(rawValue), 'general', source?.id || '')
-                : rawValue;
-            row.append(label, value);
-            container.appendChild(row);
-        });
+    updatePicker(category) {
+        const select = this.element.querySelector(`#${this.id}-${category}-select`);
+        const previous = select.value;
+        const capacity = this.getResourceCapacity(category);
+        const remaining = capacity - this.getResourceUsed(category);
+        const optionMarkup = (items, prefix, costCategory) => items
+            .filter(item => this.getItemSize(category, item) <= remaining)
+            .map(item => `<option value="${prefix}${this.escape(item.id)}">${this.escape(this.formatOptionLabel(item, costCategory))}</option>`)
+            .join('');
+        if (category === 'equipment') {
+            const gear = optionMarkup(this.filterByRequiredTech(this.getCatalogue('equipment')), 'gear:', 'equipment');
+            const weapons = optionMarkup(this.filterByRequiredTech(this.craftWeapons), 'weapon:', 'munitions');
+            select.innerHTML = (gear ? `<optgroup label="Equipment">${gear}</optgroup>` : '')
+                + (weapons ? `<optgroup label="Weapons">${weapons}</optgroup>` : '');
+        } else {
+            select.innerHTML = optionMarkup(this.filterByRequiredTech(this.getPickerOptions(category)), '', category === 'hardpoints' ? 'munitions' : 'general');
+        }
+        if ([...select.options].some(option => option.value === previous)) select.value = previous;
+        select.disabled = select.options.length === 0;
+        this.element.querySelector(`[data-add-loadout="${category}"]`).disabled = select.disabled;
+        this.renderEntryRows(
+            this.element.querySelector(`#${this.id}-${category}-list`),
+            (this.craftData.loadout[category] || []).map(entry => {
+                const item = this.findLoadoutItem(category, entry);
+                const quantity = Number(entry.quantity || 1);
+                return {
+                    key: `${category}|${entry.source || ''}|${entry.id}`,
+                    name: item?.name || entry.id,
+                    quantity,
+                    cost: this.getItemCost(item) * quantity,
+                    category: category === 'utilities' ? 'general' : (entry.source === 'gear' ? 'equipment' : 'munitions'),
+                    unavailable: !item || !this.isOptionAvailable(item)
+                };
+            }),
+            'removeLoadout'
+        );
     }
 
-    calculateStats() {
-        const profile = this.getProfile() || {};
-        const roles = this.getCatalogue('roles').filter(item => (this.craftData.roles || []).includes(item.id));
-        const power = this.getCatalogue('power').find(item => item.id === this.craftData.power) || { power: 0 };
-        const output = { ...profile };
-        ['thrust', 'defense', 'power'].forEach(key => {
-            output[key] = roles.reduce((sum, role) => sum + Number(role.stats?.[key] || 0), 0);
-        });
-        output.power = Math.max(0, output.power + Number(power.power || 0));
-        const loadout = this.craftData.loadout || {};
-        ['features', 'hardpoints', 'utilities', 'equipment'].forEach(category => {
-            const entries = this.getCatalogue(category).filter(item => (loadout[category] || []).includes(item.id));
-            entries.forEach(item => {
-                if (category === 'features') {
-                    output.hardpoints += Number(item.hardpoints || 0);
-                    output.utilities += Number(item.utilities || 0);
-                    output.equipment += Number(item.equipment || 0);
-                    output.combatValue += Number(item.combatValue || 0);
-                } else if (category === 'hardpoints') {
-                    output.hardpoints -= Number(item.capacity || 1);
-                    output.combatValue += Number(item.combatValue || 0);
-                } else if (category === 'utilities') output.utilities -= Number(item.capacity || 1);
-                else output.equipment -= Number(item.capacity || 1);
-            });
-        });
-        return output;
-    }
-
-    updateStats() {
-        if (!this.element) return;
-        this.craftData.requiredTech = this.getSelectedRequiredTech();
+    updateTotals() {
         const stats = this.calculateStats();
+        this.craftData.cost = stats.combatValue;
+        this.craftData.baysRequired = stats.baysRequired;
+        this.craftData.requiredTech = this.getSelectedRequiredTech();
         this.setHeaderMetric('cost', '', this.formatOptionCost(stats.combatValue, 'general', this.getProfile()?.id || ''));
-        const statsContainer = this.element.querySelector(`#${this.id}-combined-stats`);
-        const powerContainer = this.element.querySelector(`#${this.id}-power-stats`);
-        if (!statsContainer || !powerContainer) return;
-        statsContainer.replaceChildren();
-        this.renderStatRows(statsContainer, stats, ['cohesion', 'hardpoints', 'utilities', 'equipment', 'burns', 'externalQualities', 'combatValue', 'baysRequired', 'roleCount', 'facing', 'thrust', 'defense', 'power']);
-        powerContainer.replaceChildren();
-        this.renderStatRows(powerContainer, stats, ['power']);
+        this.setSubtotal('profile-subtotal', stats.profileCost);
+        this.setSubtotal('roles-subtotal', stats.roleCost, 'roles');
+        this.setSubtotal('loadout-subtotal', stats.loadoutCost);
+        this.setSubtotal('features-subtotal', this.getLoadoutCost('features'), 'features');
+        this.setCounter('roles-counter', stats.roleCount, stats.roleLimit);
+        for (const category of CraftWidget.LOADOUT_PICKERS) {
+            this.setSubtotal(`${category}-subtotal`, this.getLoadoutCost(category), category === 'equipment' ? 'equipment' : 'general');
+            this.setCounter(`${category}-counter`, stats[`${category}Used`], stats[category]);
+        }
+        const power = this.element?.querySelector(`#${this.id}-power-total`);
+        if (power) power.textContent = `${stats.power} power`;
+    }
+
+    onTechTreeUpdated() {
+        if (this.element) this.refresh();
+    }
+
+    onEconomyModeChanged() {
+        if (!this.element) return;
+        this.updateControls();
+        this.updateTotals();
         this.refreshSummary();
     }
 
     createNodes() {
         this.clearNodes();
         this.addNode('input', 'Core', 'Core', 0, 0.3, { sectionId: 'meta', anchorId: `${this.id}-meta` });
-        this.addNode('output', 'Craft', 'Craft', 1, 0.4, { sectionId: 'profile', anchorId: `${this.id}-profile` });
+        this.addNode('output', 'Craft', 'Craft', 1, 0.4, { sectionId: 'meta', anchorId: `${this.id}-meta` });
         this.reflowNodes();
     }
 
-    updateTitle() {
-        this.title = this.craftData.name || 'New Craft';
-        const title = this.element?.querySelector('.widget-title');
-        if (title) title.textContent = this.title;
-    }
-
     getSerializedData() {
-        this.craftData.requiredTech = this.getSelectedRequiredTech();
+        if (this.cataloguesLoaded) {
+            const stats = this.calculateStats();
+            this.craftData.cost = stats.combatValue;
+            this.craftData.baysRequired = stats.baysRequired;
+            this.craftData.requiredTech = this.getSelectedRequiredTech();
+        }
         return this.craftData;
     }
 
     loadSerializedData(data = {}) {
-        const source = data;
+        const defaults = CraftWidget.createDefaultData();
+        const loadout = data.loadout || {};
+        const hardpoints = this.normalizeQuantityEntries(loadout.hardpoints);
+        const equipment = this.normalizeQuantityEntries(loadout.equipment);
+        if (equipment.some(entry => entry.source !== 'gear' && entry.source !== 'weapon')) {
+            throw new Error('Craft equipment selections must identify their gear or weapon source.');
+        }
         this.craftData = {
-            name: source.name ?? 'New Craft',
-            role: source.role ?? '',
-            notes: source.notes ?? '',
-            operational: Boolean(source.operational),
-            ignoreRequiredTech: Boolean(source.ignoreRequiredTech),
-            profile: source.profile || 'medium',
-            roles: Array.isArray(source.roles) ? source.roles.slice() : [],
-            power: this.getCatalogue('power').some(item => item.id === source.power)
-                ? source.power
-                : 'battery-1',
-            requiredTech: Array.isArray(source.requiredTech) ? source.requiredTech.slice() : [],
+            ...defaults,
+            name: data.name || defaults.name,
+            role: data.role ?? '',
+            notes: data.notes ?? '',
+            operational: Boolean(data.operational),
+            ignoreRequiredTech: Boolean(data.ignoreRequiredTech),
+            profile: data.profile || defaults.profile,
+            roles: Array.isArray(data.roles) ? [...new Set(data.roles)] : [],
+            power: data.power || defaults.power,
             loadout: {
-                features: Array.isArray(source.loadout?.features) ? source.loadout.features.slice() : [],
-                hardpoints: Array.isArray(source.loadout?.hardpoints) ? source.loadout.hardpoints.slice() : [],
-                utilities: Array.isArray(source.loadout?.utilities) ? source.loadout.utilities.slice() : [],
-                equipment: Array.isArray(source.loadout?.equipment) ? source.loadout.equipment.slice() : []
-            }
+                features: Array.isArray(loadout.features) ? [...new Set(loadout.features.filter(id => typeof id === 'string'))] : [],
+                hardpoints: hardpoints.map(({ id, quantity }) => ({ id, quantity })),
+                utilities: this.normalizeQuantityEntries(loadout.utilities).map(({ id, quantity }) => ({ id, quantity })),
+                equipment
+            },
+            baysRequired: Number(data.baysRequired) || 0,
+            cost: Number(data.cost) || 0,
+            requiredTech: Array.isArray(data.requiredTech) ? data.requiredTech.slice() : []
         };
-        this.enforceRoleLimit();
         this.updateTitle();
+        this.normalizeSelections();
         if (this.element) {
-            this.element.querySelector(`#${this.id}-name`).value = this.craftData.name;
+            this.syncFlagInputs();
             this.element.querySelector(`#${this.id}-role`).value = this.craftData.role;
             this.element.querySelector(`#${this.id}-notes`).value = this.craftData.notes;
-            this.element.querySelector(`#${this.id}-operational`).checked = this.craftData.operational;
-            this.element.querySelector(`#${this.id}-ignore-required-tech`).checked = this.craftData.ignoreRequiredTech;
-            this.updateControls();
-            this.updateStats();
+            if (this.cataloguesLoaded) this.refresh();
         }
     }
 
@@ -445,51 +565,24 @@ class CraftWidget extends Widget {
         container.replaceChildren();
         const title = document.createElement('div');
         title.className = 'summary-title';
-        title.textContent = this.craftData.name || 'New Craft';
+        title.textContent = this.craftData.name || this.defaultTitle;
         container.appendChild(title);
         const badges = document.createElement('div');
         badges.className = 'summary-badges';
-        [this.getProfile()?.name, ...(this.craftData.roles || []).map(id => this.getCatalogue('roles').find(role => role.id === id)?.name).filter(Boolean)]
-            .filter(Boolean).forEach(value => badges.appendChild(this.createBadge(value, 'info')));
+        const profile = this.getProfile();
+        if (profile) badges.appendChild(this.createBadge(profile.name, 'info'));
         if (this.craftData.operational) badges.appendChild(this.createBadge('Operational', 'success'));
         if (this.craftData.ignoreRequiredTech) badges.appendChild(this.createBadge('Required Tech Ignored', 'warning'));
         container.appendChild(badges);
         const grid = document.createElement('div');
         grid.className = 'summary-grid';
         const stats = this.calculateStats();
-        [['Role', this.craftData.role || '—'], ['Combat Value', this.formatOptionCost(stats.combatValue, 'general', this.getProfile()?.id || '')], ['Power', stats.power], ['Loadout Items', Object.values(this.craftData.loadout).reduce((sum, list) => sum + list.length, 0)]]
-            .forEach(([label, value]) => this.addSummaryField(grid, label, String(value)));
+        [
+            ['Role', this.craftData.role || stats.roles.join(', ') || '—'],
+            ['Cost', this.formatOptionCost(stats.combatValue, 'general', profile?.id || '')],
+            ['Bays', stats.baysRequired],
+            ['Hardpoints', `${stats.hardpointsUsed}/${stats.hardpoints}`]
+        ].forEach(([label, value]) => this.addSummaryField(grid, label, String(value)));
         container.appendChild(grid);
-    }
-
-    refreshSummary() {
-        const summary = this.element?.querySelector('.widget-summary');
-        if (summary && this.element.classList.contains('minimized')) this.renderSummary(summary);
-    }
-
-    onEconomyModeChanged() {
-        if (!this.element) return;
-        this.updateControls();
-        this.updateStats();
-        this.refreshSummary();
-    }
-
-    onMinimizeStateChanged(isMinimized) { if (isMinimized) this.refreshSummary(); }
-
-    addSummaryField(container, label, value) {
-        const name = document.createElement('div');
-        name.className = 'summary-label';
-        name.textContent = label;
-        const text = document.createElement('div');
-        text.className = 'summary-value';
-        text.textContent = value;
-        container.append(name, text);
-    }
-
-    createBadge(text, variant = '') {
-        const badge = document.createElement('span');
-        badge.className = variant ? `summary-badge badge-${variant}` : 'summary-badge';
-        badge.textContent = text;
-        return badge;
     }
 }

@@ -1,5 +1,8 @@
 // Base Widget class for all draggable/resizable widgets
 class Widget {
+    // Whitespace kept between snapped widgets so connections can be routed between them
+    static WIDGET_GAP = 12;
+
     constructor(type, title, x = 100, y = 100, width = 300, height = 200) {
         this.type = type;
         this.title = title;
@@ -29,9 +32,6 @@ class Widget {
     this.children = new Set();
     // Feature flags
     this.enableCascadeDrag = window.app?.cascadeDragEnabled || false;
-        // Layout mode
-        this.layoutMode = 'legacy';
-        
         // Cache for preflight indicator to avoid unnecessary DOM updates
         this.lastPreflightState = {
             warnings: -1,
@@ -167,60 +167,39 @@ class Widget {
         content.className = 'widget-content';
         this.contentElement = content;
 
-        let sectionsContainer;
+        this.element.classList.add('widget-three-column');
 
-        if (this.usesThreeColumnLayout()) {
-            this.element.classList.add('widget-three-column');
+        const columnsWrapper = document.createElement('div');
+        columnsWrapper.className = 'widget-columns';
 
-            const columnsWrapper = document.createElement('div');
-            columnsWrapper.className = 'widget-columns';
+        const inputColumn = document.createElement('div');
+        inputColumn.className = 'widget-node-column inputs';
 
-            const inputColumn = document.createElement('div');
-            inputColumn.className = 'widget-node-column inputs';
+        const sectionsContainer = document.createElement('div');
+        sectionsContainer.className = 'widget-sections';
 
-            sectionsContainer = document.createElement('div');
-            sectionsContainer.className = 'widget-sections';
+        const summaryContainer = document.createElement('div');
+        summaryContainer.className = 'widget-summary';
+        summaryContainer.setAttribute('aria-live', 'polite');
+        summaryContainer.hidden = true;
+        this.summaryElement = summaryContainer;
 
-            const summaryContainer = document.createElement('div');
-            summaryContainer.className = 'widget-summary';
-            summaryContainer.setAttribute('aria-live', 'polite');
-            summaryContainer.hidden = true;
-            this.summaryElement = summaryContainer;
+        const outputColumn = document.createElement('div');
+        outputColumn.className = 'widget-node-column outputs';
 
-            const outputColumn = document.createElement('div');
-            outputColumn.className = 'widget-node-column outputs';
+        columnsWrapper.append(inputColumn, sectionsContainer, outputColumn);
+        content.appendChild(columnsWrapper);
 
-            columnsWrapper.appendChild(inputColumn);
-            columnsWrapper.appendChild(sectionsContainer);
-            columnsWrapper.appendChild(outputColumn);
-
-            content.appendChild(columnsWrapper);
-
-            this.nodeColumnElements = {
-                input: inputColumn,
-                output: outputColumn
-            };
-        } else {
-            sectionsContainer = document.createElement('div');
-            sectionsContainer.className = 'widget-sections';
-            content.appendChild(sectionsContainer);
-
-            const nodesContainer = document.createElement('div');
-            nodesContainer.className = 'widget-nodes';
-            this.nodesContainer = nodesContainer;
-            this._legacyNodesContainer = nodesContainer;
-        }
+        this.nodeColumnElements = {
+            input: inputColumn,
+            output: outputColumn
+        };
 
         this.sectionsContainer = sectionsContainer;
         sectionsContainer.prepend(metrics);
         this.element.appendChild(header);
         this.element.appendChild(content);
 
-        if (this._legacyNodesContainer) {
-            this.element.appendChild(this._legacyNodesContainer);
-            delete this._legacyNodesContainer;
-        }
-        
         // Populate content (to be overridden by subclasses)
         this.createContent(content);
 
@@ -347,10 +326,6 @@ class Widget {
 
         input.replaceWith(this.titleElement);
         this.titleElement.textContent = this.title;
-    }
-
-    usesThreeColumnLayout() {
-        return this.layoutMode === 'three-column';
     }
 
     // Called when the tech tree changes - widgets can override to refresh tech-dependent elements
@@ -493,11 +468,7 @@ class Widget {
     // Helper method to create a section
     createSection(sectionId, sectionTitle, options = {}) {
         const section = document.createElement('div');
-        const isSingleColumnLayout = this.usesThreeColumnLayout();
         section.className = 'widget-section';
-        if (!isSingleColumnLayout) {
-            section.classList.add('with-columns');
-        }
         section.id = `${this.id}-${sectionId}`;
         
         if (options.errorState) {
@@ -508,51 +479,16 @@ class Widget {
 
         let titleElement = null;
 
-        if (isSingleColumnLayout) {
-            if (sectionTitle) {
-                titleElement = document.createElement('h4');
-                titleElement.className = 'section-title';
-                titleElement.textContent = sectionTitle;
-                section.appendChild(titleElement);
-            }
-
-            return {
-                section,
-                leftColumn: null,
-                bodyColumn: section,
-                rightColumn: null,
-                contentContainer: section,
-                titleElement
-            };
-        }
-
-        // Legacy three-column section structure
-        const leftColumn = document.createElement('div');
-        leftColumn.className = 'section-left-column';
-
-        const bodyColumn = document.createElement('div');
-        bodyColumn.className = 'section-body-column';
-
-        const rightColumn = document.createElement('div');
-        rightColumn.className = 'section-right-column';
-
         if (sectionTitle) {
             titleElement = document.createElement('h4');
             titleElement.className = 'section-title';
             titleElement.textContent = sectionTitle;
-            bodyColumn.appendChild(titleElement);
+            section.appendChild(titleElement);
         }
-
-        section.appendChild(leftColumn);
-        section.appendChild(bodyColumn);
-        section.appendChild(rightColumn);
 
         return {
             section,
-            leftColumn,
-            bodyColumn,
-            rightColumn,
-            contentContainer: bodyColumn,
+            contentContainer: section,
             titleElement
         };
     }
@@ -713,33 +649,10 @@ class Widget {
         labelElement.textContent = node.label;
         labelElement.setAttribute('data-node-id', node.id);
         
-    const useThreeColumn = this.usesThreeColumnLayout() && this.nodeColumnElements;
-
-        // Find the appropriate column for this node
-        let targetColumn;
-        if (useThreeColumn) {
-            targetColumn = node.type === 'input'
-                ? this.nodeColumnElements.input
-                : this.nodeColumnElements.output;
-        } else if (node.sectionId) {
-            // Place in specific section's column (legacy layout)
-            const section = this.element.querySelector(`#${this.id}-${node.sectionId}`);
-            if (section) {
-                targetColumn = node.type === 'input'
-                    ? section.querySelector('.section-left-column')
-                    : section.querySelector('.section-right-column');
-            }
-        }
-        
-        // Fallback to legacy widget-nodes container if no section specified or found
-        if (!targetColumn && this.nodesContainer) {
-            targetColumn = this.nodesContainer;
-        }
-        
-        if (targetColumn) {
-            targetColumn.appendChild(nodeElement);
-            targetColumn.appendChild(labelElement);
-        }
+        const targetColumn = node.type === 'input'
+            ? this.nodeColumnElements.input
+            : this.nodeColumnElements.output;
+        targetColumn.append(nodeElement, labelElement);
         
         this.updateNodePosition(node.id);
         
@@ -766,8 +679,6 @@ class Widget {
             else if (node.type === 'output') outputs.push(node);
         }
 
-        const useThreeColumn = this.usesThreeColumnLayout() && this.nodeColumnElements;
-
         const layoutNodes = (arr, relativeX) => {
             const count = arr.length;
             if (count === 0) return;
@@ -779,38 +690,18 @@ class Widget {
             });
             entries.sort((a, b) => a.targetY - b.targetY);
 
-            if (useThreeColumn) {
-                let currentY = metrics.contentTop;
-                for (const entry of entries) {
-                    const node = entry.node;
-                    this.positionNode(node, currentY, metrics);
-                    currentY += entry.minSpacing;
-                }
-            } else {
-                let lastY = metrics.contentTop - 999;
-                for (const entry of entries) {
-                    const node = entry.node;
-                    let desiredY = entry.targetY;
-                    const spacing = entry.minSpacing;
-                    if (desiredY - lastY < spacing) {
-                        desiredY = lastY + spacing;
-                    }
-                    if (desiredY < metrics.contentTop) {
-                        desiredY = metrics.contentTop;
-                    }
-                    if (desiredY > metrics.contentBottom) {
-                        desiredY = metrics.contentBottom;
-                    }
-                    this.positionNode(node, desiredY, metrics);
-                    lastY = desiredY;
-                }
+            let currentY = metrics.contentTop;
+            for (const entry of entries) {
+                const node = entry.node;
+                this.positionNode(node, currentY, metrics);
+                currentY += entry.minSpacing;
             }
         };
 
         layoutNodes(inputs, 0);
         layoutNodes(outputs, 1);
 
-        if (useThreeColumn && this.nodeColumnElements) {
+        if (this.nodeColumnElements) {
             ['input', 'output'].forEach(type => {
                 const column = this.nodeColumnElements[type];
                 if (!column) return;
@@ -1066,13 +957,12 @@ class Widget {
     getNodeLayoutMetrics() {
     const headerHeight = this.element?.querySelector('.widget-header')?.offsetHeight || 40;
     const elementHeight = this.element?.offsetHeight || this.height || headerHeight + 100;
-    const isThreeColumn = this.usesThreeColumnLayout();
-    const topPadding = isThreeColumn ? 6 : 10;
-    const bottomPadding = isThreeColumn ? 12 : 20;
+    const topPadding = 6;
+    const bottomPadding = 12;
         const availableHeight = Math.max(60, elementHeight - headerHeight - topPadding - bottomPadding);
         const contentTop = headerHeight + topPadding;
         const contentBottom = contentTop + availableHeight;
-        this.height = elementHeight; // keep cached height in sync for legacy code paths
+        this.height = elementHeight;
         return { headerHeight, topPadding, bottomPadding, availableHeight, contentTop, contentBottom };
     }
 
@@ -1098,83 +988,31 @@ class Widget {
     }
 
     positionNode(node, targetY, metrics = null) {
-    const nodeElement = this.getNodeDomElement(node.id);
+        const nodeElement = this.getNodeDomElement(node.id);
         if (!nodeElement) return;
 
         const labelElement = this.element?.querySelector(`.node-label[data-node-id="${node.id}"]`) || nodeElement.nextElementSibling;
         const layout = metrics || this.getNodeLayoutMetrics();
         const clampedY = Math.max(layout.contentTop, Math.min(layout.contentBottom, targetY));
 
-        const nodeWidth = nodeElement.offsetWidth || 12;
         const isInput = node.type === 'input';
-        const isOutput = node.type === 'output';
-    const useThreeColumn = this.usesThreeColumnLayout() && this.nodeColumnElements;
-
-        if (useThreeColumn) {
-            const column = isInput ? this.nodeColumnElements.input : this.nodeColumnElements.output;
-            if (column) {
-                const computed = getComputedStyle(column);
-                if (computed.position === 'static') {
-                    column.style.position = 'relative';
-                }
-
-                const fallbackWidth = this.element?.offsetWidth || this.width || 240;
-                const columnWidth = column.offsetWidth || fallbackWidth / 4;
-                const inputLabelGap = 0;
-                const outputLabelGap = 8;
-                const defaultLabelGap = 8;
-                const nodeHeight = nodeElement.offsetHeight || 12;
-
-                const columnRect = column.getBoundingClientRect();
-                const widgetRect = this.element.getBoundingClientRect();
-                const columnOffsetTop = columnRect.top - widgetRect.top;
-                const fallbackHeight = layout.availableHeight || nodeHeight;
-                const columnHeight = column.offsetHeight || column.scrollHeight || fallbackHeight;
-                const clampedColumnHeight = Math.max(nodeHeight, columnHeight);
-                const relativeTop = Math.max(0, Math.min(clampedColumnHeight - nodeHeight, clampedY - columnOffsetTop));
-
-                if (labelElement) {
-                    labelElement.classList.remove('node-label-inward');
-                    const measuredWidth = labelElement.offsetWidth || labelElement.getBoundingClientRect?.().width || 0;
-                    const labelWidth = measuredWidth || 60;
-                    const nodeCenterY = relativeTop + nodeHeight / 2;
-                    labelElement.style.top = nodeCenterY + 'px';
-                }
-
-                node.relativeY = (clampedY - layout.contentTop) / layout.availableHeight;
-            }
-            return;
+        const column = isInput ? this.nodeColumnElements.input : this.nodeColumnElements.output;
+        if (!column) return;
+        if (getComputedStyle(column).position === 'static') {
+            column.style.position = 'relative';
         }
 
-        const elementWidth = this.element?.offsetWidth || this.width || 0;
-        const baseX = elementWidth * node.relativeX;
-        const edgeOffset = 12;
-        const labelSpacing = 10;
-        const labelInsideOffset = 14;
-
-        let nodeX = baseX;
-        if (isInput) {
-            nodeX = baseX - nodeWidth - edgeOffset;
-        } else if (isOutput) {
-            nodeX = baseX + edgeOffset;
-        }
-
-        nodeElement.style.left = nodeX + 'px';
-        nodeElement.style.top = clampedY + 'px';
-
+        const nodeHeight = nodeElement.offsetHeight || 12;
+        const columnRect = column.getBoundingClientRect();
+        const widgetRect = this.element.getBoundingClientRect();
+        const columnOffsetTop = columnRect.top - widgetRect.top;
+        const columnHeight = column.offsetHeight || column.scrollHeight || layout.availableHeight;
+        const clampedColumnHeight = Math.max(nodeHeight, columnHeight);
+        const relativeTop = Math.max(0, Math.min(clampedColumnHeight - nodeHeight, clampedY - columnOffsetTop));
         if (labelElement) {
-            const measuredWidth = labelElement.offsetWidth || labelElement.getBoundingClientRect?.().width || 0;
-            const labelWidth = measuredWidth || 60;
-            let labelX = baseX;
-            labelElement.style.top = clampedY + 'px';
-            if (isInput) {
-                labelX = baseX + labelInsideOffset + labelWidth;
-            } else if (isOutput) {
-                labelX = nodeX - labelSpacing;
-            }
-            labelElement.style.left = labelX + 'px';
+            labelElement.classList.remove('node-label-inward');
+            labelElement.style.top = relativeTop + nodeHeight / 2 + 'px';
         }
-
         node.relativeY = (clampedY - layout.contentTop) / layout.availableHeight;
     }
 
@@ -1270,98 +1108,69 @@ class Widget {
 
     applyMagneticSnapping() {
         if (!window.widgetManager) return;
-        
+
         const snapThreshold = 15; // pixels within which snapping occurs
+        const gap = Widget.WIDGET_GAP;
         const myWidth = this.element?.offsetWidth || this.width || 300;
         const myHeight = this.element?.offsetHeight || this.height || 200;
         const myLeft = this.x;
         const myRight = this.x + myWidth;
         const myTop = this.y;
         const myBottom = this.y + myHeight;
-        
+
         let snapX = null;
         let snapY = null;
-        
-        // Check all other widgets for snapping opportunities
+        let bestDx = snapThreshold;
+        let bestDy = snapThreshold;
+
         for (const otherWidget of window.widgetManager.widgets.values()) {
             if (otherWidget === this || !otherWidget.element) continue;
-            
+
             const otherWidth = otherWidget.element.offsetWidth || otherWidget.width || 300;
             const otherHeight = otherWidget.element.offsetHeight || otherWidget.height || 200;
             const otherLeft = otherWidget.x;
             const otherRight = otherWidget.x + otherWidth;
             const otherTop = otherWidget.y;
             const otherBottom = otherWidget.y + otherHeight;
-            
-            // Check for vertical overlap (for horizontal snapping to make sense)
-            const verticalOverlap = !(myBottom < otherTop || myTop > otherBottom);
-            
-            // Check for horizontal overlap (for vertical snapping to make sense)
-            const horizontalOverlap = !(myRight < otherLeft || myLeft > otherRight);
-            
-            // Only apply horizontal snapping if there's vertical overlap or near-overlap
-            const verticalProximity = Math.min(
-                Math.abs(myTop - otherBottom),
-                Math.abs(myBottom - otherTop),
-                Math.abs(myTop - otherTop),
-                Math.abs(myBottom - otherBottom)
-            );
-            
-            if (snapX === null && (verticalOverlap || verticalProximity < snapThreshold)) {
-                // Check for horizontal alignment opportunities (left/right edges)
-                // Snap my left edge to other's left edge
-                if (Math.abs(myLeft - otherLeft) < snapThreshold) {
-                    snapX = otherLeft;
-                }
-                // Snap my left edge to other's right edge
-                else if (Math.abs(myLeft - otherRight) < snapThreshold) {
-                    snapX = otherRight;
-                }
-                // Snap my right edge to other's left edge
-                else if (Math.abs(myRight - otherLeft) < snapThreshold) {
-                    snapX = otherLeft - myWidth;
-                }
-                // Snap my right edge to other's right edge
-                else if (Math.abs(myRight - otherRight) < snapThreshold) {
-                    snapX = otherRight - myWidth;
+
+            // Horizontal snapping only makes sense when the widgets share (or nearly share) a vertical band
+            const nearVertically = myBottom + gap + snapThreshold > otherTop &&
+                myTop - gap - snapThreshold < otherBottom;
+            if (nearVertically) {
+                const candidates = [
+                    otherLeft,                      // left edges aligned
+                    otherRight - myWidth,           // right edges aligned
+                    otherRight + gap,               // sit to the right with a gap
+                    otherLeft - gap - myWidth       // sit to the left with a gap
+                ];
+                for (const candidate of candidates) {
+                    const delta = Math.abs(myLeft - candidate);
+                    if (delta < bestDx) {
+                        bestDx = delta;
+                        snapX = candidate;
+                    }
                 }
             }
-            
-            // Only apply vertical snapping if there's horizontal overlap or near-overlap
-            const horizontalProximity = Math.min(
-                Math.abs(myLeft - otherRight),
-                Math.abs(myRight - otherLeft),
-                Math.abs(myLeft - otherLeft),
-                Math.abs(myRight - otherRight)
-            );
-            
-            if (snapY === null && (horizontalOverlap || horizontalProximity < snapThreshold)) {
-                // Check for vertical alignment opportunities (top/bottom edges)
-                // Snap my top edge to other's top edge
-                if (Math.abs(myTop - otherTop) < snapThreshold) {
-                    snapY = otherTop;
+
+            const nearHorizontally = myRight + gap + snapThreshold > otherLeft &&
+                myLeft - gap - snapThreshold < otherRight;
+            if (nearHorizontally) {
+                const candidates = [
+                    otherTop,                       // top edges aligned
+                    otherBottom - myHeight,         // bottom edges aligned
+                    otherBottom + gap,              // sit below with a gap
+                    otherTop - gap - myHeight       // sit above with a gap
+                ];
+                for (const candidate of candidates) {
+                    const delta = Math.abs(myTop - candidate);
+                    if (delta < bestDy) {
+                        bestDy = delta;
+                        snapY = candidate;
+                    }
                 }
-                // Snap my top edge to other's bottom edge
-                else if (Math.abs(myTop - otherBottom) < snapThreshold) {
-                    snapY = otherBottom;
-                }
-                // Snap my bottom edge to other's top edge
-                else if (Math.abs(myBottom - otherTop) < snapThreshold) {
-                    snapY = otherTop - myHeight;
-                }
-                // Snap my bottom edge to other's bottom edge
-                else if (Math.abs(myBottom - otherBottom) < snapThreshold) {
-                    snapY = otherBottom - myHeight;
-                }
-            }
-            
-            // If we found both snap positions, we can stop checking
-            if (snapX !== null && snapY !== null) {
-                break;
             }
         }
-        
-        // Apply the snap positions
+
         if (snapX !== null) this.x = snapX;
         if (snapY !== null) this.y = snapY;
     }
@@ -1797,22 +1606,58 @@ class Widget {
         return {};
     }
 
+    restoreSerializedId(id) {
+        if (id === this.id) return;
+
+        const previousId = this.id;
+        this.clearNodes();
+        this.id = id;
+        if (this.element) {
+            this.element.id = id;
+            this.element.querySelectorAll('[id]').forEach(element => {
+                if (element.id.startsWith(`${previousId}-`)) {
+                    element.id = `${id}${element.id.slice(previousId.length)}`;
+                }
+            });
+            this.element.querySelectorAll('[for], [aria-controls], [aria-describedby], [aria-labelledby]').forEach(element => {
+                for (const attribute of ['for', 'aria-controls', 'aria-describedby', 'aria-labelledby']) {
+                    const value = element.getAttribute(attribute);
+                    if (!value) continue;
+                    const updated = value.split(/\s+/).map(reference =>
+                        reference === previousId || reference.startsWith(`${previousId}-`)
+                            ? `${id}${reference.slice(previousId.length)}`
+                            : reference
+                    ).join(' ');
+                    element.setAttribute(attribute, updated);
+                }
+            });
+        }
+
+        const widgets = window.widgetManager?.widgets;
+        if (widgets?.get(previousId) === this) {
+            widgets.delete(previousId);
+            widgets.set(id, this);
+        }
+
+        this.resetLayoutAnchors();
+        this.registerLayoutAnchors();
+        this.createNodes();
+        this.reflowNodes();
+    }
+
     // Deserialization
     fromJSON(data, skipConnectionSync = false) {
-        this.x = data.x || this.x;
-        this.y = data.y || this.y;
-    const hasExplicitWidth = data.explicitWidth ?? true;
-    const hasExplicitHeight = data.explicitHeight ?? false;
-    if (typeof data.width === 'number') {
+        this.restoreSerializedId(data.id);
+        this.x = data.x;
+        this.y = data.y;
+        const hasExplicitWidth = data.explicitWidth;
+        const hasExplicitHeight = data.explicitHeight;
         this.width = data.width;
-    }
-    if (typeof data.height === 'number') {
         this.height = data.height;
-    }
-    this.minimized = data.minimized || false;
-    this.manualPosition = true;
-        if (data.parents) this.parents = new Set(data.parents);
-        if (data.children) this.children = new Set(data.children);
+        this.minimized = data.minimized;
+        this.manualPosition = true;
+        this.parents = new Set(data.parents);
+        this.children = new Set(data.children);
         
         this.clampToCanvasBounds();
 
@@ -1839,7 +1684,7 @@ class Widget {
             console.log(`[Widget.fromJSON] Setting skipConnectionSync=true for ${this.id}`);
         }
         this.skipConnectionSync = skipConnectionSync;
-        this.loadSerializedData(data.data || {});
+        this.loadSerializedData(data.data);
         this.skipConnectionSync = false;
 
         if (this.minimizeButton) {

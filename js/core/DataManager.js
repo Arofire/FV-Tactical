@@ -2,7 +2,7 @@
 class DataManager {
     constructor() {
         this.storageKey = 'fv-tactical-empire';
-        this.fileVersion = '1.0';
+        this.fileVersion = '2.0';
     }
 
     // Save empire data to localStorage
@@ -19,15 +19,8 @@ class DataManager {
 
     // Load empire data from localStorage
     loadFromLocalStorage() {
-        try {
-            const data = localStorage.getItem(this.storageKey);
-            if (data) {
-                return this.deserializeEmpireData(JSON.parse(data));
-            }
-        } catch (error) {
-            console.error('Failed to load from localStorage:', error);
-        }
-        return null;
+        const data = localStorage.getItem(this.storageKey);
+        return data ? this.deserializeEmpireData(JSON.parse(data)) : null;
     }
 
     // Export empire data as JSON file
@@ -71,16 +64,10 @@ class DataManager {
                 try {
                     const jsonData = JSON.parse(e.target.result);
                     
-                    // Validate data structure
-                    if (!this.validateImportData(jsonData)) {
-                        reject(new Error('Invalid file format. This does not appear to be a valid FV-Tactical empire file.'));
-                        return;
-                    }
-                    
                     const data = this.deserializeEmpireData(jsonData);
                     resolve(data);
                 } catch (error) {
-                    reject(new Error('Failed to parse JSON file: ' + error.message));
+                    reject(new Error(`Failed to process import file: ${error.message}`));
                 }
             };
             
@@ -112,16 +99,20 @@ class DataManager {
 
     // Deserialize empire data
     deserializeEmpireData(data) {
-        // Version checking
-        if (data.fileVersion && data.fileVersion !== this.fileVersion) {
-            console.warn(`File version mismatch. Expected ${this.fileVersion}, got ${data.fileVersion}`);
-            // Could implement version migration here
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error('Invalid empire file: expected a JSON object.');
+        }
+        if (data.fileVersion !== this.fileVersion) {
+            throw new Error(`Unsupported empire file version "${data.fileVersion ?? 'missing'}". Expected ${this.fileVersion}.`);
+        }
+        if (!this.validateImportData(data)) {
+            throw new Error('Invalid empire file structure.');
         }
 
         return {
             empire: data.empire,
-            widgets: data.widgets || [],
-            connections: data.connections || [],
+            widgets: data.widgets,
+            connections: data.connections,
             timestamp: data.timestamp
         };
     }
@@ -144,17 +135,43 @@ class DataManager {
             typeof empire.techPoints !== 'number' ||
             !Array.isArray(empire.researchedTech) ||
             !Array.isArray(empire.availableTech) ||
-            typeof empire.designs !== 'object') {
+            !empire.designs || typeof empire.designs !== 'object' || Array.isArray(empire.designs)) {
             return false;
         }
 
         // Check widgets array
-        if (data.widgets && !Array.isArray(data.widgets)) {
+        if (!Array.isArray(data.widgets)) {
             return false;
         }
 
         // Check connections array
-        if (data.connections && !Array.isArray(data.connections)) {
+        if (!Array.isArray(data.connections)) {
+            return false;
+        }
+
+        const supportedWidgetTypes = new Set([
+            'ship', 'craft', 'troops', 'munitions', 'outfit', 'shipCore', 'summary', 'hullTiles'
+        ]);
+        const widgetIds = new Set();
+        for (const widget of data.widgets) {
+            if (!widget || typeof widget !== 'object' ||
+                !supportedWidgetTypes.has(widget.type) || typeof widget.id !== 'string' || !widget.id ||
+                typeof widget.title !== 'string' || !Number.isFinite(widget.x) || !Number.isFinite(widget.y) ||
+                !Number.isFinite(widget.width) || widget.width <= 0 ||
+                !Number.isFinite(widget.height) || widget.height <= 0 ||
+                typeof widget.explicitWidth !== 'boolean' || typeof widget.explicitHeight !== 'boolean' ||
+                typeof widget.minimized !== 'boolean' || !Array.isArray(widget.parents) ||
+                !Array.isArray(widget.children) ||
+                !widget.data || typeof widget.data !== 'object' || Array.isArray(widget.data) ||
+                widgetIds.has(widget.id)) {
+                return false;
+            }
+            widgetIds.add(widget.id);
+        }
+        if (typeof data.timestamp !== 'string' ||
+            data.connections.some(connection => !connection || typeof connection !== 'object' ||
+                typeof connection.sourceNodeId !== 'string' || !connection.sourceNodeId ||
+                typeof connection.targetNodeId !== 'string' || !connection.targetNodeId)) {
             return false;
         }
 
@@ -324,14 +341,7 @@ class DataManager {
     }
 
     restoreFromBackup(backupKey) {
-        try {
-            const data = localStorage.getItem(backupKey);
-            if (data) {
-                return this.deserializeEmpireData(JSON.parse(data));
-            }
-        } catch (error) {
-            console.error('Failed to restore from backup:', error);
-        }
-        return null;
+        const data = localStorage.getItem(backupKey);
+        return data ? this.deserializeEmpireData(JSON.parse(data)) : null;
     }
 }

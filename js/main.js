@@ -8,6 +8,7 @@ class FVTacticalApp {
         this.preflightCheck = null;
         this.cascadeDragEnabled = false;
         this.activeEmpireView = 'design';
+        this.fleetView = new FleetView(this);
         
     // Tech tree filter states
     this.hideUnavailableTech = false; // hides locked techs
@@ -60,36 +61,23 @@ class FVTacticalApp {
 
             console.log('Loading saved data...');
             
-            // Restore empire data
-            if (savedData.empire) {
-                Object.assign(this.empire, savedData.empire);
-                this.updateEmpireDisplay();
-                console.log('Empire data restored');
-            }
+            this.empire.fromJSON(savedData.empire);
+            this.updateEmpireDisplay();
+            console.log('Empire data restored');
 
-            // Restore widgets
-            if (savedData.widgets && Array.isArray(savedData.widgets)) {
-                console.log(`Restoring ${savedData.widgets.length} widgets...`);
-                for (const widgetData of savedData.widgets) {
-                    try {
-                        const widget = this.createWidget(widgetData.type, widgetData.x, widgetData.y);
-                        if (widget && widgetData.data) {
-                            // Load serialized data (position, internal state, etc.)
-                            widget.fromJSON(widgetData);
-                        }
-                    } catch (error) {
-                        console.error(`Failed to restore widget of type ${widgetData.type}:`, error);
-                    }
+            console.log(`Restoring ${savedData.widgets.length} widgets...`);
+            for (const widgetData of savedData.widgets) {
+                const widget = this.createWidget(widgetData.type, widgetData.x, widgetData.y);
+                if (!widget) {
+                    throw new Error(`Failed to create saved widget of type "${widgetData.type}".`);
                 }
-                console.log('Widgets restored');
+                widget.fromJSON(widgetData);
             }
+            console.log('Widgets restored');
 
-            // Restore connections
-            if (savedData.connections && Array.isArray(savedData.connections)) {
-                console.log(`Restoring ${savedData.connections.length} connections...`);
-                this.nodeSystem.fromJSON(savedData.connections);
-                console.log('Connections restored');
-            }
+            console.log(`Restoring ${savedData.connections.length} connections...`);
+            this.nodeSystem.fromJSON(savedData.connections);
+            console.log('Connections restored');
 
             // Update UI
             if (this.updateMinimap) {
@@ -98,6 +86,7 @@ class FVTacticalApp {
             console.log('Saved data loaded successfully');
         } catch (error) {
             console.error('Error loading saved data:', error);
+            this.showNotification(`Saved empire could not be loaded: ${error.message}`, 'error');
         }
     }
 
@@ -264,6 +253,7 @@ class FVTacticalApp {
         const designViewBtn = document.getElementById('designViewBtn');
         const fleetViewBtn = document.getElementById('fleetViewBtn');
         const addFleetShipBtn = document.getElementById('addFleetShip');
+        const addTaskForceBtn = document.getElementById('addTaskForce');
 
         if (saveBtn) saveBtn.addEventListener('click', () => this.saveEmpire());
         if (loadBtn) loadBtn.addEventListener('click', () => this.loadEmpire());
@@ -292,7 +282,8 @@ class FVTacticalApp {
         }
         if (designViewBtn) designViewBtn.addEventListener('click', () => this.setEmpireView('design'));
         if (fleetViewBtn) fleetViewBtn.addEventListener('click', () => this.setEmpireView('fleet'));
-        if (addFleetShipBtn) addFleetShipBtn.addEventListener('click', () => this.addFleetShip());
+        if (addFleetShipBtn) addFleetShipBtn.addEventListener('click', () => ShipBuilder.open(this));
+        if (addTaskForceBtn) addTaskForceBtn.addEventListener('click', () => this.fleetView.addTaskForce());
     }
 
     setEmpireView(view) {
@@ -324,113 +315,8 @@ class FVTacticalApp {
         if (isFleet) this.updateFleetView();
     }
 
-    addFleetShip() {
-        const shipDesigns = this.widgetManager.getAllWidgets().filter(widget => widget.type === 'ship');
-        if (shipDesigns.length === 0) {
-            this.showNotification('Create a ship class in Design before adding it to the Fleet.', 'warning');
-            return;
-        }
-
-        const fleetShip = {
-            id: `fleet-ship-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            designWidgetId: shipDesigns[0].id,
-            name: `${shipDesigns[0].shipData?.name || shipDesigns[0].title} ${this.empire.fleetShips.length + 1}`,
-            role: shipDesigns[0].shipData?.role || '',
-            berths: 0,
-            loadout: ''
-        };
-        this.empire.fleetShips.push(fleetShip);
-        this.updateFleetView();
-        this.saveEmpire();
-    }
-
     updateFleetView() {
-        const list = document.getElementById('fleetShipList');
-        if (!list) return;
-        list.replaceChildren();
-        const designs = this.widgetManager.getAllWidgets().filter(widget => widget.type === 'ship');
-
-        if (this.empire.fleetShips.length === 0) {
-            const empty = document.createElement('p');
-            empty.className = 'fleet-empty-state';
-            empty.textContent = 'No ships in the fleet yet.';
-            list.appendChild(empty);
-            return;
-        }
-
-        for (const fleetShip of this.empire.fleetShips) {
-            const card = document.createElement('article');
-            card.className = 'fleet-ship-card';
-            const heading = document.createElement('h2');
-            heading.textContent = fleetShip.name || 'Unnamed Ship';
-            card.appendChild(heading);
-
-            const form = document.createElement('div');
-            form.className = 'fleet-ship-fields';
-            const nameField = this.createFleetField('Ship name', 'text', fleetShip.name || '');
-            const roleField = this.createFleetField('Role', 'text', fleetShip.role || '');
-            const designField = document.createElement('label');
-            designField.textContent = 'Ship design';
-            const designSelect = document.createElement('select');
-            for (const design of designs) {
-                const option = document.createElement('option');
-                option.value = design.id;
-                option.textContent = design.shipData?.name || design.title;
-                option.selected = design.id === fleetShip.designWidgetId;
-                designSelect.appendChild(option);
-            }
-            designField.appendChild(designSelect);
-            const berthField = this.createFleetField('Berthings assigned', 'number', fleetShip.berths ?? 0);
-            berthField.querySelector('input').min = '0';
-            berthField.querySelector('input').step = '1';
-            const loadoutField = this.createFleetField('Loadout notes', 'text', fleetShip.loadout || '');
-
-            const saveFields = () => {
-                const oldName = fleetShip.name;
-                fleetShip.name = nameField.querySelector('input').value;
-                fleetShip.role = roleField.querySelector('input').value;
-                fleetShip.designWidgetId = designSelect.value;
-                fleetShip.berths = Math.max(0, Number(berthField.querySelector('input').value) || 0);
-                fleetShip.loadout = loadoutField.querySelector('input').value;
-                heading.textContent = fleetShip.name || 'Unnamed Ship';
-                if (oldName !== fleetShip.name || fleetShip.role) this.saveEmpire();
-            };
-            [nameField, roleField, berthField, loadoutField].forEach(field => {
-                field.querySelector('input').addEventListener('change', saveFields);
-            });
-            designSelect.addEventListener('change', () => {
-                const selectedDesign = designs.find(design => design.id === designSelect.value);
-                if (selectedDesign && !fleetShip.name) {
-                    fleetShip.name = selectedDesign.shipData?.name || selectedDesign.title;
-                    nameField.querySelector('input').value = fleetShip.name;
-                }
-                saveFields();
-            });
-            form.append(nameField, roleField, designField, berthField, loadoutField);
-
-            const removeButton = document.createElement('button');
-            removeButton.type = 'button';
-            removeButton.className = 'fleet-ship-remove';
-            removeButton.textContent = 'Remove ship';
-            removeButton.addEventListener('click', () => {
-                this.empire.fleetShips = this.empire.fleetShips.filter(ship => ship.id !== fleetShip.id);
-                this.updateFleetView();
-                this.saveEmpire();
-            });
-
-            card.append(form, removeButton);
-            list.appendChild(card);
-        }
-    }
-
-    createFleetField(labelText, type, value) {
-        const label = document.createElement('label');
-        label.textContent = labelText;
-        const input = document.createElement('input');
-        input.type = type;
-        input.value = String(value);
-        label.appendChild(input);
-        return label;
+        this.fleetView.render();
     }
 
     formatOptionCost(value, category = 'general', itemId = '') {
@@ -606,20 +492,20 @@ class FVTacticalApp {
                 case 'troops':
                     widget = new TroopsWidget(x, y);
                     break;
-                case 'missiles':
-                    widget = new MissilesWidget(x, y);
+                case 'munitions':
+                    widget = new MunitionsWidget(x, y);
                     break;
                 case 'outfit':
                     widget = new OutfitWidget(x, y);
                     break;
-                case 'reroute':
-                    widget = new RerouteWidget(x, y);
-                    break;
                 case 'shipCore':
                     widget = new ShipCoreWidget(x, y);
                     break;
-                case 'shipHulls':
-                    widget = new ShipHullsWidget(x, y);
+                case 'summary':
+                    widget = new SummaryWidget(x, y);
+                    break;
+                case 'hullTiles':
+                    widget = new HullTilesWidget(x, y);
                     break;
                 default:
                     console.warn('Unknown widget type:', type);
@@ -965,12 +851,16 @@ class FVTacticalApp {
     }
 
     async loadEmpire() {
-        const data = this.dataManager.loadFromLocalStorage();
-        if (data) {
-            await this.loadEmpireData(data);
-            this.showNotification('Empire loaded successfully', 'success');
-        } else {
-            this.showNotification('No saved empire found', 'warning');
+        try {
+            const data = this.dataManager.loadFromLocalStorage();
+            if (data) {
+                await this.loadEmpireData(data);
+                this.showNotification('Empire loaded successfully', 'success');
+            } else {
+                this.showNotification('No saved empire found', 'warning');
+            }
+        } catch (error) {
+            this.showNotification(`Saved empire could not be loaded: ${error.message}`, 'error');
         }
     }
 
@@ -1003,7 +893,7 @@ class FVTacticalApp {
         
         // Phase 1: Create all widgets and nodes
         const widgets = [];
-        for (const widgetData of data.widgets || []) {
+        for (const widgetData of data.widgets) {
             let widget;
             switch (widgetData.type) {
                 case 'ship':
@@ -1011,59 +901,27 @@ class FVTacticalApp {
                     break;
                 case 'craft': widget = new CraftWidget(); break;
                 case 'troops': widget = new TroopsWidget(); break;
-                case 'missiles': widget = new MissilesWidget(); break;
+                case 'munitions': widget = new MunitionsWidget(); break;
                 case 'outfit': widget = new OutfitWidget(); break;
                 case 'shipCore': widget = new ShipCoreWidget(); break;
-                case 'shipHulls': widget = new ShipHullsWidget(); break;
-                case 'reroute': widget = new RerouteWidget(); break;
+                case 'summary': widget = new SummaryWidget(); break;
+                case 'hullTiles': widget = new HullTilesWidget(); break;
                 default:
-                    console.warn(`Skipping unsupported saved widget type "${widgetData.type}"`);
+                    throw new Error(`Unsupported saved widget type "${widgetData.type}".`);
             }
             
-            if (widget) {
-                // CRITICAL: Restore widget ID BEFORE init() so nodes are created with correct ID
-                if (widgetData.id) {
-                    widget.id = widgetData.id;
-                }
-                
-                // Initialize widget FIRST to create DOM elements and nodes
-                if (!widget.element) {
-                    widget.init();
-                }
-                
-                // Load basic data (position, size) but skip connection-dependent syncs
-                // Pass true to skip connection syncs - these will happen in Phase 3
-                widget.fromJSON(widgetData, true);
-                
-                // FIX: After loading data, recreate nodes with the correct ID
-                // This must happen AFTER fromJSON so form elements are properly initialized
-                if (widgetData.id && widget.nodes) {
-                    widget.clearNodes();
-                    widget.createNodes();
-                    widget.reflowNodes();
-                }
-                
-                // Add to manager
-                this.widgetManager.addWidget(widget);
-                widgets.push({ widget, data: widgetData });
+            if (!widget) {
+                throw new Error(`Failed to create saved widget of type "${widgetData.type}".`);
             }
+
+            if (!widget.element) widget.init();
+            widget.fromJSON(widgetData, true);
+            this.widgetManager.addWidget(widget);
+            widgets.push({ widget, data: widgetData });
         }
         
         // Phase 2: Restore connections between nodes
-        if (data.connections) {
-            const widgetIds = new Set(widgets.map(({ widget }) => widget.id));
-            const connectionReferencesLoadedWidget = (connection, direction) => {
-                const widgetId = connection[`${direction}WidgetId`];
-                if (widgetId) return widgetIds.has(widgetId);
-                const nodeId = connection[`${direction}NodeId`];
-                return Array.from(widgetIds).some(id => nodeId?.startsWith(`${id}-`));
-            };
-            const retainedConnections = data.connections.filter(connection =>
-                connectionReferencesLoadedWidget(connection, 'source') &&
-                connectionReferencesLoadedWidget(connection, 'target')
-            );
-            this.nodeSystem.fromJSON(retainedConnections);
-        }
+        this.nodeSystem.fromJSON(data.connections);
 
         // Phase 3: Re-sync connection-dependent data now that connections exist
         for (const { widget } of widgets) {
@@ -1151,10 +1009,11 @@ class FVTacticalApp {
             { type: 'ship', label: 'Ship Design' },
             { type: 'craft', label: 'Craft Design' },
             { type: 'troops', label: 'Troop Unit' },
-            { type: 'missiles', label: 'Missile Design' },
+            { type: 'munitions', label: 'Munition Design' },
             { type: 'outfit', label: 'Ship Outfit' },
             { type: 'shipCore', label: 'Ship Core' },
-            { type: 'shipHulls', label: 'Hull Plan' }
+            { type: 'summary', label: 'Summary' },
+            { type: 'hullTiles', label: 'Hull Tiles' }
         ];
         
         widgetTypes.forEach(({ type, label }) => {

@@ -89,12 +89,9 @@ class NodeSystem {
                 this.isDragging = true;
                 this.dragStartNode = anchorNode.id;
                 
-                const anchorPos = this.getNodeAbsolutePosition(anchorNode.id);
-                
                 this.tempConnection = {
                     element: connectionElement,  // Reuse the original connection element
                     startNodeId: anchorNode.id,
-                    startPos: anchorPos,
                     startNodeType: anchorNode.type,
                     isPickedUpConnection: true  // Flag to indicate this is a picked-up connection
                 };
@@ -121,8 +118,7 @@ class NodeSystem {
 
     createTempConnection(startNodeId, event) {
         const startNode = this.getNodeById(startNodeId);
-        const startPos = this.getNodeAbsolutePosition(startNodeId);
-        if (!startPos || !startNode) return;
+        if (!startNode) return;
         
         // Create SVG line element
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -131,7 +127,6 @@ class NodeSystem {
         this.tempConnection = {
             element: line,
             startNodeId: startNodeId,
-            startPos: startPos,
             startNodeType: startNode.type  // Store whether it's input or output
         };
         
@@ -200,28 +195,11 @@ class NodeSystem {
             this.lastSnapTargetElement = null;
         }
 
-        // For input nodes, we want the path to go from node (left) to cursor (right)
-        // but with control points that curve as if expecting a connection from the right
-        let path;
-        if (this.tempConnection.startNodeType === 'input') {
-            path = this.createBezierPath(
-                this.tempConnection.startPos.x,
-                this.tempConnection.startPos.y,
-                endX,
-                endY,
-                true  // isInputNode flag - reverses control points
-            );
-        } else {
-            path = this.createBezierPath(
-                this.tempConnection.startPos.x,
-                this.tempConnection.startPos.y,
-                endX,
-                endY,
-                false
-            );
-        }
-        
-        this.tempConnection.element.setAttribute('d', path);
+        this.tempConnection.endPoint = { x: endX, y: endY };
+        this.tempConnection.snapNodeId = snapNode ? snapNode.id : null;
+        // Route synchronously so the ghost tracks the cursor; it is routed with the same
+        // pipeline as real connections so it previews the final shape.
+        this.routeAllConnections();
     }
 
     endConnection(event) {
@@ -387,214 +365,492 @@ class NodeSystem {
     }
 
     updateConnectionElement(connection) {
-        const element = document.getElementById(connection.id);
-        if (!element) return;
-        
-        const sourcePos = this.getNodeAbsolutePosition(connection.sourceNodeId);
-        const targetPos = this.getNodeAbsolutePosition(connection.targetNodeId);
-        
-        if (!sourcePos || !targetPos) return;
-        
-        const path = this.createRoutedPath(connection, sourcePos, targetPos);
-        element.setAttribute('d', path);
-    }
-
-    createRoutedPath(connection, start, end) {
-        const source = this.getNodeById(connection.sourceNodeId);
-        const target = this.getNodeById(connection.targetNodeId);
-        const linkedWidgetIds = new Set([source?.widgetId, target?.widgetId]);
-        const obstacles = Array.from(window.widgetManager?.widgets.values() || [])
-            .filter(widget => !linkedWidgetIds.has(widget.id) && widget.element?.isConnected)
-            .map(widget => {
-                const width = widget.element.offsetWidth || widget.width;
-                const height = widget.element.offsetHeight || widget.height;
-                const padding = 16;
-                return {
-                    left: widget.x - padding,
-                    right: widget.x + width + padding,
-                    top: widget.y - padding,
-                    bottom: widget.y + height + padding
-                };
-            });
-
-        if (obstacles.length === 0) {
-            return this.createBezierPath(start.x, start.y, end.x, end.y);
-        }
-
-        const xCoordinates = new Set([start.x, end.x]);
-        const yCoordinates = new Set([start.y, end.y]);
-        obstacles.forEach(rect => {
-            xCoordinates.add(rect.left);
-            xCoordinates.add(rect.right);
-            yCoordinates.add(rect.top);
-            yCoordinates.add(rect.bottom);
-        });
-
-        const insideObstacle = (point) => obstacles.some(rect =>
-            point.x > rect.left && point.x < rect.right &&
-            point.y > rect.top && point.y < rect.bottom
-        );
-        const segmentClear = (a, b) => obstacles.every(rect => {
-            if (a.x === b.x) {
-                if (a.x <= rect.left || a.x >= rect.right) return true;
-                return Math.max(Math.min(a.y, b.y), rect.top) >=
-                    Math.min(Math.max(a.y, b.y), rect.bottom);
-            }
-            if (a.y === b.y) {
-                if (a.y <= rect.top || a.y >= rect.bottom) return true;
-                return Math.max(Math.min(a.x, b.x), rect.left) >=
-                    Math.min(Math.max(a.x, b.x), rect.right);
-            }
-            return false;
-        });
-
-        const sortedX = Array.from(xCoordinates).sort((a, b) => a - b);
-        const sortedY = Array.from(yCoordinates).sort((a, b) => a - b);
-        const points = [];
-        const pointIndices = new Map();
-        for (const x of sortedX) {
-            for (const y of sortedY) {
-                const point = { x, y };
-                if (insideObstacle(point)) continue;
-                const index = points.push(point) - 1;
-                pointIndices.set(`${x},${y}`, index);
-            }
-        }
-        const neighbors = points.map(() => []);
-        const connectVisibleNeighbors = indices => {
-            for (let i = 1; i < indices.length; i++) {
-                const previousIndex = indices[i - 1];
-                const currentIndex = indices[i];
-                if (previousIndex === undefined || currentIndex === undefined) continue;
-                const a = points[previousIndex];
-                const b = points[currentIndex];
-                if (!segmentClear(a, b)) continue;
-                const cost = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-                neighbors[previousIndex].push({ index: currentIndex, cost });
-                neighbors[currentIndex].push({ index: previousIndex, cost });
-            }
-        };
-        for (const y of sortedY) {
-            connectVisibleNeighbors(sortedX.map(x => pointIndices.get(`${x},${y}`))
-                .filter(index => index !== undefined));
-        }
-        for (const x of sortedX) {
-            connectVisibleNeighbors(sortedY.map(y => pointIndices.get(`${x},${y}`))
-                .filter(index => index !== undefined));
-        }
-        const startIndex = points.findIndex(point => point.x === start.x && point.y === start.y);
-        const endIndex = points.findIndex(point => point.x === end.x && point.y === end.y);
-        if (startIndex < 0 || endIndex < 0) {
-            return this.createBezierPath(start.x, start.y, end.x, end.y);
-        }
-
-        const distances = new Array(points.length).fill(Infinity);
-        const previous = new Array(points.length).fill(-1);
-        const openSet = [];
-        const pushOpen = (index, priority) => {
-            openSet.push({ index, priority });
-            let child = openSet.length - 1;
-            while (child > 0) {
-                const parent = Math.floor((child - 1) / 2);
-                if (openSet[parent].priority <= priority) break;
-                openSet[child] = openSet[parent];
-                child = parent;
-            }
-            openSet[child] = { index, priority };
-        };
-        const popOpen = () => {
-            const first = openSet[0];
-            const last = openSet.pop();
-            if (openSet.length > 0 && last) {
-                let parent = 0;
-                while (true) {
-                    const left = parent * 2 + 1;
-                    const right = left + 1;
-                    if (left >= openSet.length) break;
-                    const smaller = right < openSet.length &&
-                        openSet[right].priority < openSet[left].priority ? right : left;
-                    if (openSet[smaller].priority >= last.priority) break;
-                    openSet[parent] = openSet[smaller];
-                    parent = smaller;
-                }
-                openSet[parent] = last;
-            }
-            return first;
-        };
-        distances[startIndex] = 0;
-        pushOpen(startIndex, Math.abs(start.x - end.x) + Math.abs(start.y - end.y));
-
-        while (openSet.length > 0) {
-            const currentEntry = popOpen();
-            if (!currentEntry) continue;
-            const current = currentEntry.index;
-            const currentPoint = points[current];
-            const expectedPriority = distances[current] +
-                Math.abs(currentPoint.x - end.x) + Math.abs(currentPoint.y - end.y);
-            if (currentEntry.priority > expectedPriority) continue;
-            if (current === endIndex) break;
-            for (const neighbor of neighbors[current]) {
-                const distance = distances[current] + neighbor.cost;
-                if (distance < distances[neighbor.index]) {
-                    distances[neighbor.index] = distance;
-                    previous[neighbor.index] = current;
-                    const point = points[neighbor.index];
-                    const heuristic = Math.abs(point.x - end.x) + Math.abs(point.y - end.y);
-                    pushOpen(neighbor.index, distance + heuristic);
-                }
-            }
-        }
-
-        if (!Number.isFinite(distances[endIndex])) {
-            return this.createBezierPath(start.x, start.y, end.x, end.y);
-        }
-        const route = [];
-        for (let current = endIndex; current >= 0; current = previous[current]) {
-            route.push(points[current]);
-            if (current === startIndex) break;
-        }
-        route.reverse();
-
-        const simplified = route.filter((point, index) => {
-            if (index === 0 || index === route.length - 1) return true;
-            const before = route[index - 1];
-            const after = route[index + 1];
-            return !((before.x === point.x && point.x === after.x) ||
-                (before.y === point.y && point.y === after.y));
-        });
-        return `M ${simplified.map(point => `${point.x} ${point.y}`).join(' L ')}`;
-    }
-
-    createBezierPath(x1, y1, x2, y2, isInputNode = false) {
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const curvature = Math.min(distance * 0.3, 100);
-        
-        // For input nodes: the path goes node (left) -> cursor (right)
-        // Control points should curve LEFT from node, and RIGHT to cursor (opposite of output)
-        let cpx1, cpy1, cpx2, cpy2;
-        if (isInputNode) {
-            cpx1 = x1 - curvature;  // Extend LEFT from the input node
-            cpy1 = y1;
-            cpx2 = x2 + curvature;  // Approach from RIGHT to the cursor
-            cpy2 = y2;
-        } else {
-            // For output nodes: the path goes node (left) -> cursor (right)
-            // Control points curve RIGHT from node, and LEFT to cursor
-            cpx1 = x1 + curvature;  // Extend RIGHT from the output node
-            cpy1 = y1;
-            cpx2 = x2 - curvature;  // Approach from LEFT to the cursor
-            cpy2 = y2;
-        }
-        
-        return `M ${x1} ${y1} C ${cpx1} ${cpy1}, ${cpx2} ${cpy2}, ${x2} ${y2}`;
+        if (!connection) return;
+        // Routes are separated from each other, so any change re-routes every connection together
+        this.updateConnections();
     }
 
     updateConnections() {
-        for (const connection of this.connections.values()) {
-            this.updateConnectionElement(connection);
+        if (this._routeFrame) return;
+        this._routeFrame = requestAnimationFrame(() => {
+            this._routeFrame = null;
+            this.routeAllConnections();
+        });
+    }
+
+    getRoutingGap() {
+        return Widget.WIDGET_GAP;
+    }
+
+    collectWidgetRects() {
+        const rects = new Map();
+        for (const widget of window.widgetManager?.widgets.values() || []) {
+            const element = widget.element;
+            if (!element?.isConnected) continue;
+            const width = element.offsetWidth;
+            const height = element.offsetHeight;
+            if (!width && !height) continue; // hidden
+            rects.set(widget.id, {
+                left: widget.x,
+                top: widget.y,
+                right: widget.x + width,
+                bottom: widget.y + height
+            });
         }
+        return rects;
+    }
+
+    routeAllConnections() {
+        const gap = this.getRoutingGap();
+        const rects = this.collectWidgetRects();
+        const usage = { h: new Map(), v: new Map() };
+        const routes = [];
+
+        for (const connection of this.connections.values()) {
+            const element = document.getElementById(connection.id);
+            if (!element || element.classList.contains('dragging')) continue;
+            const points = this.computeConnectionRoute(connection, rects, gap, usage);
+            if (points) routes.push({ element, route: { points } });
+        }
+
+        // The pending connection is routed last, matching where a new connection lands in the map
+        const ghost = this.getGhostPorts(rects, gap);
+        if (ghost) {
+            const points = this.routeBetweenPorts(ghost.a, ghost.b, rects, gap, usage, ghost.nodeIds);
+            routes.push({ element: this.tempConnection.element, route: { points } });
+        }
+
+        this.separateParallelRoutes(routes.map(entry => entry.route), rects);
+
+        for (const { element, route } of routes) {
+            element.setAttribute('d', this.createSmoothPath(route.points));
+        }
+    }
+
+    // Port = node position, the widget side it exits from, and the stub point just outside the widget
+    getConnectionPort(nodeId, rects, gap) {
+        const node = this.getNodeById(nodeId);
+        const pos = this.getNodeAbsolutePosition(nodeId);
+        if (!node || !pos) return null;
+        const rect = rects.get(node.widgetId);
+        const pad = gap / 2;
+        let dir;
+        if (rect) {
+            dir = (pos.x - rect.left) <= (rect.right - pos.x) ? -1 : 1;
+        } else {
+            dir = node.type === 'input' ? -1 : 1;
+        }
+        const stubX = rect
+            ? (dir < 0 ? Math.min(rect.left - pad, pos.x) : Math.max(rect.right + pad, pos.x))
+            : pos.x + dir * pad;
+        return {
+            widgetId: node.widgetId,
+            node: { x: pos.x, y: pos.y },
+            stub: { x: stubX, y: pos.y },
+            dir
+        };
+    }
+
+    // Ports for the connection being dragged out. Off a node, the cursor stands in for the node of
+    // the widget that will be created there, which is placed with that node under the cursor.
+    getGhostPorts(rects, gap) {
+        const temp = this.tempConnection;
+        if (!this.isDragging || !temp?.endPoint) return null;
+        const start = this.getConnectionPort(temp.startNodeId, rects, gap);
+        if (!start) return null;
+        const startIsOutput = temp.startNodeType === 'output';
+        let end;
+        if (temp.snapNodeId) {
+            end = this.getConnectionPort(temp.snapNodeId, rects, gap);
+            if (!end) return null;
+        } else {
+            const dir = startIsOutput ? -1 : 1;
+            const inset = this.getNodeEdgeInset(startIsOutput ? 'input' : 'output', rects, gap);
+            const { x, y } = temp.endPoint;
+            end = { widgetId: null, node: { x, y }, stub: { x: x + dir * (inset + gap / 2), y }, dir };
+        }
+        const nodeIds = [temp.startNodeId, temp.snapNodeId];
+        return startIsOutput ? { a: start, b: end, nodeIds } : { a: end, b: start, nodeIds };
+    }
+
+    // How far nodes of a direction sit inside their widget's edge, measured from an existing node
+    getNodeEdgeInset(nodeType, rects, gap) {
+        for (const widget of window.widgetManager.widgets.values()) {
+            for (const [nodeId, node] of widget.nodes) {
+                if (node.type !== nodeType || !rects.has(widget.id)) continue;
+                const port = this.getConnectionPort(nodeId, rects, gap);
+                if (port) return Math.abs(port.stub.x - port.node.x) - gap / 2;
+            }
+        }
+        return 0;
+    }
+
+    computeConnectionRoute(connection, rects, gap, usage = null) {
+        const a = this.getConnectionPort(connection.sourceNodeId, rects, gap);
+        const b = this.getConnectionPort(connection.targetNodeId, rects, gap);
+        if (!a || !b) return null;
+        const nodeIds = [connection.sourceNodeId, connection.targetNodeId];
+        return this.routeBetweenPorts(a, b, rects, gap, usage, nodeIds);
+    }
+
+    routeBetweenPorts(a, b, rects, gap, usage, nodeIds) {
+        const pad = gap / 2;
+        const obstacles = Array.from(rects.values(), rect => ({
+            left: rect.left - pad,
+            right: rect.right + pad,
+            top: rect.top - pad,
+            bottom: rect.bottom + pad
+        }));
+
+        const interior = this.findOrthogonalRoute(a, b, obstacles, gap, usage, nodeIds);
+        if (usage) this.recordRouteUsage(usage, interior, nodeIds);
+        return this.simplifyPolyline([a.node, ...interior, b.node]);
+    }
+
+    // Orthogonal visibility-graph A* between the two stub points, penalising bends.
+    // Crossing an obstacle is allowed but very expensive, so a route always exists and only
+    // passes through widgets that are placed closer together than the routing gap.
+    findOrthogonalRoute(a, b, obstacles, gap, usage = null, nodeIds = []) {
+        const start = a.stub;
+        const end = b.stub;
+        const xs = new Set([start.x, end.x]);
+        const ys = new Set([start.y, end.y]);
+        let minX = Math.min(start.x, end.x);
+        let maxX = Math.max(start.x, end.x);
+        let minY = Math.min(start.y, end.y);
+        let maxY = Math.max(start.y, end.y);
+        for (const rect of obstacles) {
+            xs.add(rect.left); xs.add(rect.right);
+            ys.add(rect.top); ys.add(rect.bottom);
+            minX = Math.min(minX, rect.left); maxX = Math.max(maxX, rect.right);
+            minY = Math.min(minY, rect.top); maxY = Math.max(maxY, rect.bottom);
+        }
+        // Outer ring guarantees a way around everything
+        xs.add(minX - gap); xs.add(maxX + gap);
+        ys.add(minY - gap); ys.add(maxY + gap);
+
+        const sortedX = Array.from(xs).sort((p, q) => p - q);
+        const sortedY = Array.from(ys).sort((p, q) => p - q);
+        const cols = sortedX.length;
+        const rows = sortedY.length;
+        const inside = (x, y) => obstacles.some(rect =>
+            x > rect.left && x < rect.right && y > rect.top && y < rect.bottom);
+
+        // Every obstacle edge is a grid line, so a segment between adjacent grid lines lies inside
+        // an obstacle exactly when its midpoint does.
+        const hBlocked = new Uint8Array(cols * rows); // edge from (xi, yi) to (xi + 1, yi)
+        const vBlocked = new Uint8Array(cols * rows); // edge from (xi, yi) to (xi, yi + 1)
+        for (let yi = 0; yi < rows; yi++) {
+            for (let xi = 0; xi < cols; xi++) {
+                const index = yi * cols + xi;
+                if (xi + 1 < cols && inside((sortedX[xi] + sortedX[xi + 1]) / 2, sortedY[yi])) {
+                    hBlocked[index] = 1;
+                }
+                if (yi + 1 < rows && inside(sortedX[xi], (sortedY[yi] + sortedY[yi + 1]) / 2)) {
+                    vBlocked[index] = 1;
+                }
+            }
+        }
+        const crossingCost = 1000;
+
+        const startIndex = sortedY.indexOf(start.y) * cols + sortedX.indexOf(start.x);
+        const endIndex = sortedY.indexOf(end.y) * cols + sortedX.indexOf(end.x);
+        if (startIndex === endIndex) return [start];
+
+        // Directions: 0 = +x, 1 = -x, 2 = +y, 3 = -y
+        const bendCost = gap * 3;
+        const startDir = a.dir > 0 ? 0 : 1;
+        // The route must arrive heading into the target widget, i.e. opposite to its exit direction
+        const endDir = b.dir > 0 ? 1 : 0;
+
+        const stateCount = cols * rows * 4;
+        const dist = new Float64Array(stateCount).fill(Infinity);
+        const prev = new Int32Array(stateCount).fill(-1);
+        const heap = [];
+        const push = (state, priority) => {
+            heap.push({ state, priority });
+            let child = heap.length - 1;
+            const item = heap[child];
+            while (child > 0) {
+                const parent = (child - 1) >> 1;
+                if (heap[parent].priority <= priority) break;
+                heap[child] = heap[parent];
+                child = parent;
+            }
+            heap[child] = item;
+        };
+        const pop = () => {
+            const top = heap[0];
+            const last = heap.pop();
+            if (heap.length > 0) {
+                let parent = 0;
+                while (true) {
+                    const left = parent * 2 + 1;
+                    if (left >= heap.length) break;
+                    const right = left + 1;
+                    const smaller = right < heap.length && heap[right].priority < heap[left].priority ? right : left;
+                    if (heap[smaller].priority >= last.priority) break;
+                    heap[parent] = heap[smaller];
+                    parent = smaller;
+                }
+                heap[parent] = last;
+            }
+            return top;
+        };
+        const heuristic = index => {
+            const x = sortedX[index % cols];
+            const y = sortedY[Math.floor(index / cols)];
+            return Math.abs(x - end.x) + Math.abs(y - end.y);
+        };
+
+        const startState = startIndex * 4 + startDir;
+        dist[startState] = 0;
+        push(startState, heuristic(startIndex));
+        let bestEndState = -1;
+        let bestEndCost = Infinity;
+
+        while (heap.length > 0) {
+            const { state, priority } = pop();
+            const cost = dist[state];
+            if (priority > cost + heuristic(state >> 2) + 1e-9) continue;
+            if (cost >= bestEndCost) break;
+            const index = state >> 2;
+            const dir = state & 3;
+            if (index === endIndex) {
+                const total = cost + (dir === endDir ? 0 : bendCost * 2);
+                if (total < bestEndCost) {
+                    bestEndCost = total;
+                    bestEndState = state;
+                }
+                continue;
+            }
+            const xi = index % cols;
+            const yi = (index - xi) / cols;
+            for (let nd = 0; nd < 4; nd++) {
+                // Never double back on ourselves
+                if ((nd ^ 1) === dir) continue;
+                let nextIndex;
+                let crosses;
+                if (nd === 0) { if (xi + 1 >= cols) continue; nextIndex = index + 1; crosses = hBlocked[index]; }
+                else if (nd === 1) { if (xi === 0) continue; nextIndex = index - 1; crosses = hBlocked[index - 1]; }
+                else if (nd === 2) { if (yi + 1 >= rows) continue; nextIndex = index + cols; crosses = vBlocked[index]; }
+                else { if (yi === 0) continue; nextIndex = index - cols; crosses = vBlocked[index - cols]; }
+                const nxi = nextIndex % cols;
+                const nyi = (nextIndex - nxi) / cols;
+                const length = Math.abs(sortedX[nxi] - sortedX[xi]) + Math.abs(sortedY[nyi] - sortedY[yi]);
+                const nextCost = cost + length * (crosses ? crossingCost : 1) + (nd === dir ? 0 : bendCost) +
+                    this.getCongestionCost(usage, nd < 2 ? 'h' : 'v',
+                        nd < 2 ? sortedY[yi] : sortedX[xi],
+                        nd < 2 ? sortedX[xi] : sortedY[yi],
+                        nd < 2 ? sortedX[nxi] : sortedY[nyi],
+                        nodeIds);
+                const nextState = nextIndex * 4 + nd;
+                if (nextCost < dist[nextState]) {
+                    dist[nextState] = nextCost;
+                    prev[nextState] = state;
+                    push(nextState, nextCost + heuristic(nextIndex));
+                }
+            }
+        }
+
+        const path = [];
+        for (let state = bestEndState; state >= 0; state = prev[state]) {
+            const index = state >> 2;
+            path.push({ x: sortedX[index % cols], y: sortedY[Math.floor(index / cols)] });
+            if (state === startState) break;
+        }
+        path.reverse();
+        return path;
+    }
+
+    // Channel usage by already-routed connections, so later routes prefer free channels
+    getCongestionCost(usage, axis, coord, from, to, nodeIds) {
+        if (!usage) return 0;
+        const intervals = usage[axis].get(Math.round(coord * 2) / 2);
+        if (!intervals) return 0;
+        const min = Math.min(from, to);
+        const max = Math.max(from, to);
+        let cost = 0;
+        for (const interval of intervals) {
+            // Routes sharing a node are expected to run together near it
+            if (nodeIds.some(id => interval.nodeIds.includes(id))) continue;
+            const overlap = Math.min(max, interval.max) - Math.max(min, interval.min);
+            if (overlap > 0) cost += overlap;
+        }
+        return cost;
+    }
+
+    recordRouteUsage(usage, points, nodeIds) {
+        for (let i = 0; i < points.length - 1; i++) {
+            const p = points[i];
+            const q = points[i + 1];
+            let axis;
+            let coord;
+            let min;
+            let max;
+            if (p.y === q.y && p.x !== q.x) {
+                axis = 'h'; coord = p.y; min = Math.min(p.x, q.x); max = Math.max(p.x, q.x);
+            } else if (p.x === q.x && p.y !== q.y) {
+                axis = 'v'; coord = p.x; min = Math.min(p.y, q.y); max = Math.max(p.y, q.y);
+            } else {
+                continue;
+            }
+            const key = Math.round(coord * 2) / 2;
+            if (!usage[axis].has(key)) usage[axis].set(key, []);
+            usage[axis].get(key).push({ min, max, nodeIds });
+        }
+    }
+
+    simplifyPolyline(points) {
+        const result = [];
+        for (const point of points) {
+            const last = result[result.length - 1];
+            if (last && Math.abs(last.x - point.x) < 0.01 && Math.abs(last.y - point.y) < 0.01) continue;
+            result.push({ x: point.x, y: point.y });
+            while (result.length >= 3) {
+                const p0 = result[result.length - 3];
+                const p1 = result[result.length - 2];
+                const p2 = result[result.length - 1];
+                const collinear = (Math.abs(p0.x - p1.x) < 0.01 && Math.abs(p1.x - p2.x) < 0.01) ||
+                    (Math.abs(p0.y - p1.y) < 0.01 && Math.abs(p1.y - p2.y) < 0.01);
+                if (!collinear) break;
+                result.splice(result.length - 2, 1);
+            }
+        }
+        return result;
+    }
+
+    // Offset overlapping collinear segments of different routes so they run side by side
+    separateParallelRoutes(routes, rects = new Map(), spacing = 3) {
+        const segments = { h: [], v: [] };
+        routes.forEach((route, routeIndex) => {
+            const points = route.points;
+            // The first and last segments end on a node; routes sharing a node legitimately converge there
+            for (let i = 1; i < points.length - 2; i++) {
+                const p = points[i];
+                const q = points[i + 1];
+                if (Math.abs(p.y - q.y) < 0.01 && Math.abs(p.x - q.x) > 0.01) {
+                    segments.h.push({
+                        routeIndex, i, coord: p.y, min: Math.min(p.x, q.x), max: Math.max(p.x, q.x),
+                        before: points[i - 1].y - p.y, after: points[i + 2].y - p.y
+                    });
+                } else if (Math.abs(p.x - q.x) < 0.01 && Math.abs(p.y - q.y) > 0.01) {
+                    segments.v.push({
+                        routeIndex, i, coord: p.x, min: Math.min(p.y, q.y), max: Math.max(p.y, q.y),
+                        before: points[i - 1].x - p.x, after: points[i + 2].x - p.x
+                    });
+                }
+            }
+        });
+
+        const offsets = routes.map(route => route.points.map(() => ({ x: 0, y: 0 })));
+        const processAxis = (list, axis) => {
+            const byCoord = new Map();
+            for (const segment of list) {
+                const key = Math.round(segment.coord * 2) / 2;
+                if (!byCoord.has(key)) byCoord.set(key, []);
+                byCoord.get(key).push(segment);
+            }
+            for (const group of byCoord.values()) {
+                if (group.length < 2) continue;
+                group.sort((p, q) => p.min - q.min);
+                let cluster = [];
+                let clusterMax = -Infinity;
+                const flush = () => {
+                    const routeIds = new Set(cluster.map(segment => segment.routeIndex));
+                    if (routeIds.size > 1) this.assignTracks(cluster, offsets, axis, spacing, rects);
+                    cluster = [];
+                    clusterMax = -Infinity;
+                };
+                for (const segment of group) {
+                    if (cluster.length && segment.min >= clusterMax - 0.5) flush();
+                    cluster.push(segment);
+                    clusterMax = Math.max(clusterMax, segment.max);
+                }
+                if (cluster.length) flush();
+            }
+        };
+        processAxis(segments.h, 'y');
+        processAxis(segments.v, 'x');
+
+        routes.forEach((route, routeIndex) => {
+            route.points.forEach((point, pointIndex) => {
+                point.x += offsets[routeIndex][pointIndex].x;
+                point.y += offsets[routeIndex][pointIndex].y;
+            });
+        });
+    }
+
+    assignTracks(cluster, offsets, axis, spacing, rects = new Map()) {
+        // Routes that turn towards the negative side sit on the negative side, reducing crossings
+        const side = segment => Math.sign(segment.before) + Math.sign(segment.after);
+        cluster.sort((p, q) => {
+            const diff = side(p) - side(q);
+            if (diff !== 0) return diff;
+            // Among routes bending the same way, the shorter one sits on the inside of the bend
+            const lengthDiff = (p.max - p.min) - (q.max - q.min);
+            return side(p) < 0 ? lengthDiff : -lengthDiff;
+        });
+        // Keep the bundle inside the free channel, squeezing the spacing if the channel is narrow
+        const coord = cluster[0].coord;
+        const spanMin = Math.min(...cluster.map(segment => segment.min));
+        const spanMax = Math.max(...cluster.map(segment => segment.max));
+        let low = -Infinity;
+        let high = Infinity;
+        for (const rect of rects.values()) {
+            const [near, far, alongMin, alongMax] = axis === 'x'
+                ? [rect.left, rect.right, rect.top, rect.bottom]
+                : [rect.top, rect.bottom, rect.left, rect.right];
+            if (alongMax <= spanMin || alongMin >= spanMax) continue;
+            if (far <= coord) low = Math.max(low, far);
+            else if (near >= coord) high = Math.min(high, near);
+        }
+        const clearance = 1.5;
+        const minOffset = low - coord + clearance;
+        const maxOffset = high - coord - clearance;
+        const count = cluster.length;
+        let trackSpacing = spacing;
+        if (count > 1 && Number.isFinite(minOffset) && Number.isFinite(maxOffset) && maxOffset > minOffset) {
+            trackSpacing = Math.min(spacing, Math.max(1, (maxOffset - minOffset) / (count - 1)));
+        }
+        const width = (count - 1) * trackSpacing;
+        let first = -width / 2;
+        if (first + width > maxOffset) first = maxOffset - width;
+        if (first < minOffset) first = minOffset;
+        cluster.forEach((segment, track) => {
+            const offset = first + track * trackSpacing;
+            const routeOffsets = offsets[segment.routeIndex];
+            routeOffsets[segment.i][axis] = offset;
+            routeOffsets[segment.i + 1][axis] = offset;
+        });
+    }
+
+    // Polyline -> path with rounded corners
+    createSmoothPath(points, maxRadius = 10) {
+        if (!points || points.length === 0) return '';
+        if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+        const fmt = value => Math.round(value * 100) / 100;
+        let d = `M ${fmt(points[0].x)} ${fmt(points[0].y)}`;
+        const lastIndex = points.length - 1;
+        for (let i = 1; i < lastIndex; i++) {
+            const p0 = points[i - 1];
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const inLength = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+            const outLength = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+            if (inLength < 0.01 || outLength < 0.01) continue;
+            // Segments touching the ends can give their full length to a single corner
+            const inAvailable = i - 1 === 0 ? inLength : inLength / 2;
+            const outAvailable = i + 1 === lastIndex ? outLength : outLength / 2;
+            const radius = Math.min(maxRadius, inAvailable, outAvailable);
+            const ax = p1.x - ((p1.x - p0.x) / inLength) * radius;
+            const ay = p1.y - ((p1.y - p0.y) / inLength) * radius;
+            const bx = p1.x + ((p2.x - p1.x) / outLength) * radius;
+            const by = p1.y + ((p2.y - p1.y) / outLength) * radius;
+            d += ` L ${fmt(ax)} ${fmt(ay)} Q ${fmt(p1.x)} ${fmt(p1.y)} ${fmt(bx)} ${fmt(by)}`;
+        }
+        d += ` L ${fmt(points[lastIndex].x)} ${fmt(points[lastIndex].y)}`;
+        return d;
     }
 
     removeConnection(connectionId) {
@@ -843,11 +1099,11 @@ class NodeSystem {
             ship: 'Ship Design',
             craft: 'Craft Design',
             troops: 'Troop Unit',
-            missiles: 'Missile Design',
+            munitions: 'Munition Design',
             outfit: 'Ship Outfit',
             shipCore: 'Ship Core',
-            shipHulls: 'Hull Plan',
-            reroute: 'Reroute Node'
+            summary: 'Summary',
+            hullTiles: 'Hull Tiles'
         };
 
         compatibleWidgets.forEach((widgetType) => {
@@ -890,10 +1146,6 @@ class NodeSystem {
         // Create widget at initial position (with offset so it doesn't cover the cursor)
         const newWidget = window.app.createWidget(widgetType, initialPos.x, initialPos.y);
         if (!newWidget) return;
-
-        if (widgetType === 'reroute' && typeof newWidget.configureForNodeType === 'function') {
-            newWidget.configureForNodeType(sourceNode.nodeType);
-        }
 
         // Get the source widget and mark it as manually positioned to prevent auto-arrange
         const sourceWidget = window.widgetManager?.getWidget(sourceNode.widgetId);
@@ -1011,20 +1263,20 @@ class NodeSystem {
                 inputs: [],
                 outputs: ['Troop']
             },
-            'missiles': {
+            'munitions': {
                 inputs: [],
-                outputs: ['Weapon']
+                outputs: []
             },
             'shipCore': {
                 inputs: ['Class'],
                 outputs: ['Core']
             },
-            'shipHulls': {
-                inputs: ['Outfit'],
+            'summary': {
+                inputs: ['Outfit', 'Craft'],
                 outputs: []
             },
-            'reroute': {
-                inputs: [],
+            'hullTiles': {
+                inputs: ['Outfit'],
                 outputs: []
             }
         };
@@ -1037,11 +1289,6 @@ class NodeSystem {
             if (nodesToCheck.includes(nodeType)) {
                 compatibleWidgets.push(widgetType);
             }
-        }
-        
-        // Always include reroute as an option
-        if (!compatibleWidgets.includes('reroute')) {
-            compatibleWidgets.push('reroute');
         }
         
         return compatibleWidgets;
@@ -1101,17 +1348,9 @@ class NodeSystem {
     toJSON() {
         const connectionsData = [];
         for (const connection of this.connections.values()) {
-            const sourceNode = this.getNodeById(connection.sourceNodeId);
-            const targetNode = this.getNodeById(connection.targetNodeId);
             connectionsData.push({
                 sourceNodeId: connection.sourceNodeId,
-                targetNodeId: connection.targetNodeId,
-                sourceWidgetId: sourceNode?.widgetId || null,
-                targetWidgetId: targetNode?.widgetId || null,
-                sourceNodeType: sourceNode?.nodeType || null,
-                targetNodeType: targetNode?.nodeType || null,
-                sourceDirection: sourceNode?.type || null,
-                targetDirection: targetNode?.type || null
+                targetNodeId: connection.targetNodeId
             });
         }
         return connectionsData;
@@ -1123,68 +1362,11 @@ class NodeSystem {
         
         // Recreate connections
         for (const connectionData of connectionsData) {
-            let sourceId = connectionData.sourceNodeId;
-            let targetId = connectionData.targetNodeId;
-
-            // Try direct node ID first
-            let sourceNode = this.getNodeById(sourceId);
-            let targetNode = this.getNodeById(targetId);
-
-            const isCore = sourceId.includes('node-output-Core') || targetId.includes('node-output-Core');
-            if (isCore) {
-                console.log(`[NodeSystem.fromJSON] CORE NODE CONNECTION: ${sourceId} -> ${targetId}`);
-            }
-            console.log(`[NodeSystem.fromJSON] Looking for connection: ${sourceId} -> ${targetId}`);
-            console.log(`  Source found: ${!!sourceNode}, Target found: ${!!targetNode}`);
-
-            // If direct IDs don't work, fall back to metadata-based lookup
-            if (!sourceNode && connectionData.sourceWidgetId && connectionData.sourceNodeType) {
-                const fallbackSource = this.findNodeByMetadata(
-                    connectionData.sourceWidgetId,
-                    connectionData.sourceNodeType,
-                    connectionData.sourceDirection
-                );
-                if (fallbackSource) {
-                    console.log(`  Source fallback found: ${fallbackSource}`);
-                    sourceId = fallbackSource;
-                    sourceNode = this.getNodeById(sourceId);
-                } else {
-                    console.warn('Failed to find source node for connection:', {
-                        widgetId: connectionData.sourceWidgetId,
-                        nodeType: connectionData.sourceNodeType,
-                        direction: connectionData.sourceDirection
-                    });
-                }
-            }
-
-            if (!targetNode && connectionData.targetWidgetId && connectionData.targetNodeType) {
-                const fallbackTarget = this.findNodeByMetadata(
-                    connectionData.targetWidgetId,
-                    connectionData.targetNodeType,
-                    connectionData.targetDirection
-                );
-                if (fallbackTarget) {
-                    console.log(`  Target fallback found: ${fallbackTarget}`);
-                    targetId = fallbackTarget;
-                    targetNode = this.getNodeById(targetId);
-                } else {
-                    console.warn('Failed to find target node for connection:', {
-                        widgetId: connectionData.targetWidgetId,
-                        nodeType: connectionData.targetNodeType,
-                        direction: connectionData.targetDirection
-                    });
-                }
-            }
-
-            if (sourceId && targetId && this.canConnect(sourceId, targetId)) {
-                console.log(`[NodeSystem.fromJSON] Creating connection: ${sourceId} -> ${targetId}`);
-                this.createConnection(sourceId, targetId);
-            } else if (!sourceId || !targetId) {
-                console.warn('Skipping connection - missing source or target:', {
-                    hasSource: !!sourceId,
-                    hasTarget: !!targetId,
-                    connectionData
-                });
+            const { sourceNodeId, targetNodeId } = connectionData;
+            if (sourceNodeId && targetNodeId && this.canConnect(sourceNodeId, targetNodeId)) {
+                this.createConnection(sourceNodeId, targetNodeId);
+            } else {
+                console.warn('Skipping invalid connection:', connectionData);
             }
         }
     }
@@ -1193,17 +1375,5 @@ class NodeSystem {
         for (const connectionId of Array.from(this.connections.keys())) {
             this.removeConnection(connectionId);
         }
-    }
-
-    findNodeByMetadata(widgetId, nodeType, direction) {
-        if (!widgetId || !nodeType) return null;
-        const widget = window.widgetManager?.getWidget(widgetId);
-        if (!widget) return null;
-        for (const [nodeId, node] of widget.nodes.entries()) {
-            if (node.nodeType === nodeType && (!direction || node.type === direction)) {
-                return nodeId;
-            }
-        }
-        return null;
     }
 }

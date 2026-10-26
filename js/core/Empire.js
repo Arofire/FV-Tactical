@@ -21,15 +21,15 @@ class Empire {
             items: {}
         };
         this.fleetShips = [];
+        this.taskForces = [];
 
         this.designs = {
             ships: [],
             craft: [],
             troops: [],
-            missiles: [],
+            munitions: [],
             powerplants: []
         };
-        
         // Initialize available technologies asynchronously
         this.initialized = this.initialize();
     }
@@ -144,6 +144,58 @@ class Empire {
         return `${type}-${id}`;
     }
 
+    // --- Fleet management --------------------------------------------------
+
+    addTaskForce(name = '') {
+        const taskForce = {
+            id: `task-force-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name: name || `Task Force ${this.taskForces.length + 1}`
+        };
+        this.taskForces.push(taskForce);
+        return taskForce;
+    }
+
+    removeTaskForce(taskForceId) {
+        const index = this.taskForces.findIndex(force => force.id === taskForceId);
+        if (index === -1) return null;
+        const removed = this.taskForces.splice(index, 1)[0];
+        for (const ship of this.fleetShips) {
+            if (ship.taskForceId === taskForceId) ship.taskForceId = null;
+        }
+        return removed;
+    }
+
+    getTaskForceShips(taskForceId) {
+        return this.fleetShips.filter(ship => ship.taskForceId === taskForceId);
+    }
+
+    addFleetShip(ship) {
+        this.fleetShips.push({
+            id: ship.id || `fleet-ship-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            classWidgetId: ship.classWidgetId ?? '',
+            outfitWidgetId: ship.outfitWidgetId ?? '',
+            name: ship.name ?? '',
+            role: ship.role ?? '',
+            taskForceId: ship.taskForceId ?? null,
+            contents: {
+                berths: ship.contents?.berths ?? [],
+                magazine: ship.contents?.magazine ?? [],
+                hangar: ship.contents?.hangar ?? [],
+                hardpoints: ship.contents?.hardpoints ?? []
+            },
+            stores: {
+                cargo: Math.max(0, Number(ship.stores?.cargo) || 0),
+                remass: Math.max(0, Number(ship.stores?.remass) || 0)
+            }
+        });
+        return this.fleetShips[this.fleetShips.length - 1];
+    }
+
+    removeFleetShip(shipId) {
+        const index = this.fleetShips.findIndex(ship => ship.id === shipId);
+        return index === -1 ? null : this.fleetShips.splice(index, 1)[0];
+    }
+
     // Event handlers
     async onTechResearched(techId) {
         // Update UI
@@ -176,6 +228,7 @@ class Empire {
             economyMode: this.economyMode,
             campaignCostRules: this.campaignCostRules,
             fleetShips: this.fleetShips,
+            taskForces: this.taskForces,
             designs: this.designs
         };
     }
@@ -194,16 +247,41 @@ class Empire {
             },
             items: { ...(data.campaignCostRules?.items || {}) }
         };
+        this.taskForces = Array.isArray(data.taskForces)
+            ? data.taskForces
+                .filter(force => force && typeof force === 'object')
+                .map(force => ({
+                    id: force.id || `task-force-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    name: force.name ?? 'Task Force'
+                }))
+            : [];
+
+        const normalizeContentEntries = entries => Array.isArray(entries)
+            ? entries
+                .filter(entry => entry && typeof entry === 'object')
+                .map(entry => ({ ...entry, count: Math.max(0, Number(entry.count) || 0) }))
+            : [];
+
         this.fleetShips = Array.isArray(data.fleetShips)
             ? data.fleetShips
                 .filter(ship => ship && typeof ship === 'object')
                 .map(ship => ({
                     id: ship.id,
-                    designWidgetId: ship.designWidgetId,
+                    classWidgetId: ship.classWidgetId ?? '',
+                    outfitWidgetId: ship.outfitWidgetId ?? '',
                     name: ship.name ?? '',
                     role: ship.role ?? '',
-                    berths: ship.berths ?? 0,
-                    loadout: ship.loadout ?? ''
+                    taskForceId: ship.taskForceId ?? null,
+                    contents: {
+                        berths: normalizeContentEntries(ship.contents?.berths),
+                        magazine: normalizeContentEntries(ship.contents?.magazine),
+                        hangar: normalizeContentEntries(ship.contents?.hangar),
+                        hardpoints: normalizeContentEntries(ship.contents?.hardpoints)
+                    },
+                    stores: {
+                        cargo: Math.max(0, Number(ship.stores?.cargo) || 0),
+                        remass: Math.max(0, Number(ship.stores?.remass) || 0)
+                    }
                 }))
             : [];
 
@@ -211,12 +289,9 @@ class Empire {
             ships: [],
             craft: [],
             troops: [],
-            missiles: [],
+            munitions: [],
             powerplants: []
         };
-        for (const removedType of ['loadouts', 'factories', 'shipyards']) {
-            delete this.designs[removedType];
-        }
     }
 
     // Get missing required tech for all designs

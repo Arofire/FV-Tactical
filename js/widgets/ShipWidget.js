@@ -1,7 +1,7 @@
 // Ship design widget
-class ShipWidget extends Widget {
+class ShipWidget extends DesignWidget {
     constructor(x = 100, y = 100) {
-        super('ship', 'New Ship Class', x, y, null);
+        super('ship', 'New Ship Class', x, y);
         
         this.defaultRoles = [
             'corvette', 'frigate', 'destroyer', 'cruiser', 'battleship', 
@@ -60,12 +60,6 @@ class ShipWidget extends Widget {
                 remass: 0
             }
         };
-        this.titleEditHandler = name => {
-            this.shipData.name = name;
-            this.updateTitle(name);
-            this.queuePreflightCheck();
-        };
-
         this.roleMode = 'dropdown';
         this.availableRoles = ShipWidget.loadStoredRoles(this.defaultRoles);
         this.ensureRoleAvailable(this.shipData.role);
@@ -114,8 +108,20 @@ class ShipWidget extends Widget {
         this.isSubclass = false;
         this._preflightTimer = null;
 
-        this.layoutMode = 'three-column';
         this.init();
+    }
+
+    get designData() {
+        return this.shipData;
+    }
+
+    get defaultTitle() {
+        return 'New Ship Class';
+    }
+
+    rename(name) {
+        super.rename(name);
+        this.queuePreflightCheck();
     }
 
     static getRoleStorageKey() {
@@ -412,14 +418,13 @@ class ShipWidget extends Widget {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         
         // Create Information section (merged meta and role)
-        const informationSection = this.createSection('information', '');
+        const informationSection = this.createDesignSection('information', '');
         const roleOptions = this.generateRoleOptionsHTML(this.shipData.role);
         const roleInputValue = this.getRoleInputValue();
         
         this.setSectionContent(informationSection, `
             <div class="ship-information-header" id="${this.id}-information-header">
-                <label class="ship-flag"><input type="checkbox" id="${this.id}-operational" ${this.shipData.operational ? 'checked' : ''}> Operational</label>
-                <label class="ship-flag"><input type="checkbox" id="${this.id}-ignore-required-tech" ${this.shipData.ignoreRequiredTech ? 'checked' : ''}> Ignore Required Tech</label>
+                ${this.renderFlags()}
             </div>
             <div class="input-group information-group" id="${this.id}-role-group">
                 <label>Role</label>
@@ -435,14 +440,14 @@ class ShipWidget extends Widget {
         sectionsContainer.appendChild(informationSection.section);
         
         // Create Foundations section
-        const foundationsSection = this.createSection('foundations', 'Foundations');
+        const foundationsSection = this.createDesignSection('foundations', 'Foundations');
         const foundationsContent = foundationsSection.contentContainer;
         foundationsContent.classList.add('foundations-section');
         foundationsContent.id = `${this.id}-foundations-section`;
         this.setSectionContent(foundationsSection, `
-            <div class="foundations-grid">
+            <div class="design-option-list">
                 ${this.foundationKeys.map(key => `
-                    <label class="foundation-item">
+                    <label class="foundation-item design-option">
                         <input type="checkbox" id="${this.id}-foundation-${key}" ${this.shipData.foundations[key] ? 'checked' : ''}>
                         ${this.foundationLabels[key]}
                     </label>
@@ -452,7 +457,7 @@ class ShipWidget extends Widget {
         sectionsContainer.appendChild(foundationsSection.section);
         
         // Create Composition section
-        const compositionSection = this.createSection('composition', 'Composition');
+        const compositionSection = this.createDesignSection('composition', 'Composition');
         const compositionContent = compositionSection.contentContainer;
         compositionContent.classList.add('composition-section');
         compositionContent.id = `${this.id}-composition-section`;
@@ -557,28 +562,23 @@ class ShipWidget extends Widget {
         // This is more reliable than document.getElementById
         const getElement = (id) => this.element?.querySelector(`#${id}`);
         
-        const ignoreRequiredTechCheckbox = getElement(`${this.id}-ignore-required-tech`);
         const operationalCheckbox = getElement(`${this.id}-operational`);
-    const roleSelect = getElement(`${this.id}-role-select`);
-    const customRoleInput = getElement(`${this.id}-role-custom`);
-    const roleToggleBtn = getElement(`${this.id}-role-toggle`);
-    this.roleSelectElement = roleSelect;
-    this.roleCustomInput = customRoleInput;
-    this.roleToggleButton = roleToggleBtn;
+        const roleSelect = getElement(`${this.id}-role-select`);
+        const customRoleInput = getElement(`${this.id}-role-custom`);
+        const roleToggleBtn = getElement(`${this.id}-role-toggle`);
+        this.roleSelectElement = roleSelect;
+        this.roleCustomInput = customRoleInput;
+        this.roleToggleButton = roleToggleBtn;
 
-        if (ignoreRequiredTechCheckbox) {
-            ignoreRequiredTechCheckbox.addEventListener('change', (e) => {
-                this.shipData.ignoreRequiredTech = e.target.checked;
-                this.queuePreflightCheck();
-                this.notifyShipDataChanged();
-            });
-        }
         if (operationalCheckbox) {
-            operationalCheckbox.addEventListener('change', (e) => {
-                this.shipData.operational = e.target.checked;
+            operationalCheckbox.addEventListener('change', () => {
                 this.queuePreflightCheck();
             });
         }
+        this.setupFlagListeners(() => {
+            this.queuePreflightCheck();
+            this.notifyShipDataChanged();
+        });
 
         this.applyRoleMode = (mode) => {
             this.roleMode = mode;
@@ -894,6 +894,14 @@ class ShipWidget extends Widget {
         this.updateHullDisplay();
         this.updateClassCostDisplay();
         this.queuePreflightCheck();
+    }
+
+    refresh() {
+        if (!this.element) return;
+        this.syncFormFromData();
+        this.updateStats();
+        this.refreshSummary();
+        this.notifyShipChildrenToRefresh();
     }
 
     syncFormFromData() {
@@ -1240,7 +1248,7 @@ class ShipWidget extends Widget {
     }
 
     updateTitle(text = this.shipData.name) {
-        this.title = text || 'New Ship Class';
+        this.title = text || this.defaultTitle;
         if (this.titleElement && !this.titleEditor) {
             this.titleElement.textContent = this.title;
         }
