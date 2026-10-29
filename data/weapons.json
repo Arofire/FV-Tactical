@@ -1402,26 +1402,6 @@
       "description": "Kinetic weapons have consistent damage over range and attempt to oversaturate point defence. Slightly less accurate than particles, moderate accuracy falloff ,and middling range per tech. Partially mitigate displacement via steer but are almost all interceptable.",
       "weapons": [
         {
-          "id": "wierdlittleweapon",
-          "name": "wierdlittleweapon",
-          "accuracy": [10, 10, 10, 10, 10],
-          "damage": [1, 1, 1, 1, 1],
-          "hp": "E01",
-          "cost": 68,
-          "requiredTech": [],
-          "sourceRow": 111
-        },
-        {
-          "id": "wierdlittleweaponscaledforrange",
-          "name": "wierdlittleweaponScaledForRange",
-          "accuracy": [10, 10, 10, 10, 10],
-          "damage": [1.953125, 1.5625, 1.5, 1.25, 1],
-          "hp": "E01",
-          "cost": 103,
-          "requiredTech": [],
-          "sourceRow": 112
-        },
-        {
           "id": "light-chemrail",
           "name": "Light Chemrail",
           "accuracy": ["7: -2", "5: -4", null, null, null],
