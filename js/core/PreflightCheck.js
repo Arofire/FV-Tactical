@@ -98,6 +98,9 @@ class PreflightCheck {
             case 'outfit':
                 this.checkOutfitWidget(widget);
                 break;
+            case 'shipLoadout':
+                this.checkShipLoadoutWidget(widget);
+                break;
             case 'shipCore':
                 this.checkShipCoreWidget(widget);
                 break;
@@ -297,6 +300,13 @@ class PreflightCheck {
         }
 
         // Outfit receives Core input from ShipCore widgets
+        // TODO: Warn when this Outfit has laser apertures but no installed laser generator.
+    }
+
+    checkShipLoadoutWidget(widget) {
+        for (const issue of widget.getValidationIssues?.() || []) {
+            this.addWarning(`Ship Loadout "${widget.title}" ${issue}`, widget.id);
+        }
     }
 
     checkShipCoreWidget(widget) {

@@ -12,9 +12,155 @@ class BasicInfoWidget extends Widget {
             text2imgPrompt: shipWidget?.shipData?.text2imgPrompt || ''
         };
         this.defaultRoles = shipWidget?.defaultRoles || [
-            'corvette','frigate','destroyer','cruiser','battleship','dreadnought','carrier','fighter','bomber','scout','transport','support','custom'
+            'corvette', 'frigate', 'destroyer', 'cruiser', 'battleship',
+            'dreadnought', 'carrier', 'fighter', 'bomber', 'scout',
+            'transport', 'support'
         ];
+        this.availableRoles = shipWidget?.availableRoles ||
+            (typeof ShipWidget !== 'undefined' ? ShipWidget.loadStoredRoles(this.defaultRoles) : [...this.defaultRoles]);
+        if (this.basicData.role === 'custom' && this.basicData.customRole) {
+            this.basicData.role = this.basicData.customRole;
+        }
+        this.roleMode = this.basicData.customRole ? 'custom' : 'dropdown';
+        this.ensureRoleAvailable(this.basicData.role);
         this.init();
+    }
+
+    static escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[character]);
+    }
+
+    ensureRoleAvailable(role) {
+        const normalized = typeof role === 'string' ? role.trim() : '';
+        if (!normalized) return;
+        if (this.shipWidget?.ensureRoleAvailable) {
+            this.shipWidget.ensureRoleAvailable(normalized);
+            this.availableRoles = this.shipWidget.availableRoles;
+        } else if (!this.availableRoles.includes(normalized)) {
+            this.availableRoles.push(normalized);
+            this.availableRoles.sort((a, b) => a.localeCompare(b));
+            if (typeof ShipWidget !== 'undefined') {
+                ShipWidget.saveStoredRoles(this.availableRoles);
+            }
+        }
+    }
+
+    getRoleInputValue() {
+        return this.roleMode === 'custom'
+            ? this.basicData.customRole || this.basicData.role || ''
+            : this.basicData.role || '';
+    }
+
+    getRoleOptionsHTML(selectedRole = this.basicData.role) {
+        return this.availableRoles
+            .slice()
+            .sort((a, b) => a.localeCompare(b))
+            .map(role => {
+                const safeRole = BasicInfoWidget.escapeHTML(role);
+                const selected = role === selectedRole ? ' selected' : '';
+                const label = role.charAt(0).toUpperCase() + role.slice(1);
+                return `<option value="${safeRole}"${selected}>${BasicInfoWidget.escapeHTML(label)}</option>`;
+            })
+            .join('');
+    }
+
+    applyRoleMode(mode) {
+        this.roleMode = mode;
+        const roleSelect = this.element?.querySelector(`#${this.id}-role`);
+        const customRoleInput = this.element?.querySelector(`#${this.id}-custom-role`);
+        const roleToggleButton = this.element?.querySelector(`#${this.id}-role-toggle`);
+        if (roleSelect) {
+            roleSelect.style.display = mode === 'dropdown' ? '' : 'none';
+            if (mode === 'dropdown') {
+                roleSelect.innerHTML = this.getRoleOptionsHTML();
+                roleSelect.value = this.basicData.role;
+            }
+        }
+        if (customRoleInput) {
+            customRoleInput.style.display = mode === 'custom' ? '' : 'none';
+            if (mode === 'custom') {
+                customRoleInput.value = this.getRoleInputValue();
+                customRoleInput.focus();
+            }
+        }
+        if (roleToggleButton) {
+            roleToggleButton.textContent = mode === 'dropdown' ? '🖉' : '🌳';
+            roleToggleButton.title = mode === 'dropdown' ? 'Use custom role' : 'Use role list';
+        }
+    }
+
+    toggleRoleMode() {
+        if (this.roleMode === 'dropdown') {
+            this.applyRoleMode('custom');
+            return;
+        }
+
+        const customValue = this.element?.querySelector(`#${this.id}-custom-role`)?.value.trim() || '';
+        if (customValue) {
+            this.ensureRoleAvailable(customValue);
+            this.basicData.role = customValue;
+        }
+        this.basicData.customRole = '';
+        this.applyRoleMode('dropdown');
+    }
+
+    removeRolePreset(role) {
+        const removedRole = typeof role === 'string' ? role.trim() : '';
+        if (!removedRole || !this.availableRoles.includes(removedRole)) return;
+        if (this.shipWidget?.removeRolePreset) {
+            this.shipWidget.removeRolePreset(removedRole);
+            this.availableRoles = [...this.shipWidget.availableRoles];
+        } else {
+            this.availableRoles = this.availableRoles.filter(availableRole => availableRole !== removedRole);
+            if (typeof ShipWidget !== 'undefined') {
+                ShipWidget.saveStoredRoles(this.availableRoles);
+            }
+        }
+        const activeRole = this.roleMode === 'custom'
+            ? this.element?.querySelector(`#${this.id}-custom-role`)?.value.trim() ||
+                this.basicData.customRole || this.basicData.role
+            : this.basicData.role;
+        if (activeRole === removedRole) {
+            this.basicData.role = this.availableRoles[0] || '';
+            this.basicData.customRole = '';
+            this.roleMode = 'dropdown';
+        }
+        this.applyRoleMode(this.roleMode);
+        this.syncToShip(true);
+        this.refreshSummary();
+    }
+
+    syncShipRoleControls() {
+        if (!this.shipWidget) return;
+        this.shipWidget.roleMode = this.roleMode;
+        const roleSelect = this.shipWidget.roleSelectElement ||
+            this.shipWidget.element?.querySelector(`#${this.shipWidget.id}-role-select`);
+        const customRoleInput = this.shipWidget.roleCustomInput ||
+            this.shipWidget.element?.querySelector(`#${this.shipWidget.id}-role-custom`);
+        const roleToggleButton = this.shipWidget.roleToggleButton ||
+            this.shipWidget.element?.querySelector(`#${this.shipWidget.id}-role-toggle`);
+        if (roleSelect) {
+            roleSelect.style.display = this.roleMode === 'dropdown' ? '' : 'none';
+            if (this.roleMode === 'dropdown') {
+                this.shipWidget.populateRoleSelect?.(roleSelect, this.basicData.role);
+                roleSelect.value = this.basicData.role;
+            }
+        }
+        if (customRoleInput) {
+            customRoleInput.style.display = this.roleMode === 'custom' ? '' : 'none';
+            const value = this.basicData.customRole || this.basicData.role || '';
+            if (customRoleInput.value !== value) customRoleInput.value = value;
+        }
+        if (roleToggleButton) {
+            roleToggleButton.textContent = this.roleMode === 'dropdown' ? '🖉' : '🌳';
+            roleToggleButton.title = this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list';
+        }
     }
 
     createContent(contentElement) {
@@ -27,12 +173,16 @@ class BasicInfoWidget extends Widget {
                 <label>Ship Class Name</label>
                 <input type="text" id="${this.id}-name" value="${this.basicData.name}" placeholder="Enter ship class name">
             </div>
-            <div class="input-group">
+            <div class="input-group role-group">
                 <label>Role</label>
-                <select id="${this.id}-role">
-                    ${this.defaultRoles.map(role => `<option value="${role}" ${this.basicData.role === role ? 'selected' : ''}>${role.charAt(0).toUpperCase() + role.slice(1)}</option>`).join('')}
-                </select>
-                <input type="text" id="${this.id}-custom-role" placeholder="Enter custom role" style="display: ${this.basicData.role === 'custom' ? 'block' : 'none'}; margin-top:4px;" value="${this.basicData.customRole}">
+                <div class="role-controls">
+                    <select id="${this.id}-role" class="role-select" ${this.roleMode === 'custom' ? 'style="display:none;"' : ''}>
+                        ${this.getRoleOptionsHTML()}
+                    </select>
+                    <input type="text" id="${this.id}-custom-role" class="role-input" placeholder="Enter custom role" value="${BasicInfoWidget.escapeHTML(this.getRoleInputValue())}" ${this.roleMode === 'dropdown' ? 'style="display:none;"' : ''}>
+                    <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '🖉' : '🌳'}</button>
+                    <button type="button" class="widget-remove-action" id="${this.id}-role-remove" title="Remove current role preset" aria-label="Remove current role preset">−</button>
+                </div>
             </div>
         `);
         sectionsContainer.appendChild(basicSection.section);
@@ -70,6 +220,8 @@ class BasicInfoWidget extends Widget {
         const descriptionTextarea = document.getElementById(`${this.id}-description`);
         const designNotesTextarea = document.getElementById(`${this.id}-design-notes`);
         const appearanceTextarea = document.getElementById(`${this.id}-appearance`);
+        const roleToggleButton = document.getElementById(`${this.id}-role-toggle`);
+        const roleRemoveButton = document.getElementById(`${this.id}-role-remove`);
 
         if (nameInput) nameInput.addEventListener('input', e => {
             this.basicData.name = e.target.value;
@@ -79,14 +231,30 @@ class BasicInfoWidget extends Widget {
         });
         if (roleSelect) roleSelect.addEventListener('change', e => {
             this.basicData.role = e.target.value;
-            if (customRoleInput) customRoleInput.style.display = e.target.value === 'custom' ? 'block' : 'none';
+            this.basicData.customRole = '';
+            this.applyRoleMode('dropdown');
             this.syncToShip(true);
             this.refreshSummary();
         });
         if (customRoleInput) customRoleInput.addEventListener('input', e => {
             this.basicData.customRole = e.target.value;
+            this.basicData.role = e.target.value;
             this.syncToShip(true);
             this.refreshSummary();
+        });
+        if (customRoleInput) customRoleInput.addEventListener('change', e => {
+            this.ensureRoleAvailable(e.target.value);
+        });
+        if (roleToggleButton) roleToggleButton.addEventListener('click', () => {
+            this.toggleRoleMode();
+            this.syncToShip(true);
+            this.refreshSummary();
+        });
+        if (roleRemoveButton) roleRemoveButton.addEventListener('click', () => {
+            const role = this.roleMode === 'custom'
+                ? customRoleInput?.value.trim() || this.basicData.customRole || this.basicData.role
+                : roleSelect?.value || this.basicData.role;
+            this.removeRolePreset(role);
         });
         if (descriptionTextarea) descriptionTextarea.addEventListener('input', e => {
             this.basicData.description = e.target.value;
@@ -115,6 +283,7 @@ class BasicInfoWidget extends Widget {
             designNotes: this.basicData.designNotes,
             appearance: this.basicData.appearance
         });
+        this.syncShipRoleControls();
         if (updatePrompt && this.shipWidget.updateText2ImgPrompt) {
             this.shipWidget.updateText2ImgPrompt();
             this.basicData.text2imgPrompt = this.shipWidget.shipData.text2imgPrompt;
@@ -127,34 +296,33 @@ class BasicInfoWidget extends Widget {
         // Sync form values to basicData
         const fields = {
             'name': { id: 'name', type: 'text' },
-            'role': { id: 'role', type: 'select' },
-            'customRole': { id: 'custom-role', type: 'text' },
             'description': { id: 'description', type: 'text' },
             'designNotes': { id: 'design-notes', type: 'text' },
             'appearance': { id: 'appearance', type: 'text' },
             'text2imgPrompt': { id: 'text2img', type: 'text' }
         };
         this.syncFieldsToData(this.basicData, fields);
+        if (this.roleMode === 'custom') {
+            this.basicData.customRole = this.element?.querySelector(`#${this.id}-custom-role`)?.value || '';
+            this.basicData.role = this.basicData.customRole;
+        } else {
+            this.basicData.role = this.element?.querySelector(`#${this.id}-role`)?.value || this.basicData.role;
+            this.basicData.customRole = '';
+        }
     }
 
     syncFormFromData() {
         // Sync basicData values to form
         const fields = {
             'name': { id: 'name', type: 'text' },
-            'role': { id: 'role', type: 'select' },
-            'customRole': { id: 'custom-role', type: 'text' },
             'description': { id: 'description', type: 'text' },
             'designNotes': { id: 'design-notes', type: 'text' },
             'appearance': { id: 'appearance', type: 'text' },
             'text2imgPrompt': { id: 'text2img', type: 'text' }
         };
         this.syncDataToFields(this.basicData, fields);
-        
-        // Handle custom role visibility
-        const customRoleInput = document.getElementById(`${this.id}-custom-role`);
-        if (customRoleInput) {
-            customRoleInput.style.display = this.basicData.role === 'custom' ? 'block' : 'none';
-        }
+        this.ensureRoleAvailable(this.basicData.role);
+        this.applyRoleMode(this.basicData.customRole ? 'custom' : 'dropdown');
     }
 
     getSerializedData() {
@@ -176,6 +344,10 @@ class BasicInfoWidget extends Widget {
             appearance: incoming.appearance ?? this.basicData.appearance,
             text2imgPrompt: incoming.text2imgPrompt ?? this.basicData.text2imgPrompt
         };
+        if (this.basicData.role === 'custom' && this.basicData.customRole) {
+            this.basicData.role = this.basicData.customRole;
+        }
+        this.roleMode = this.basicData.customRole ? 'custom' : 'dropdown';
         this.syncFormFromData();
     }
 
@@ -191,9 +363,7 @@ class BasicInfoWidget extends Widget {
         const badgesDiv = document.createElement('div');
         badgesDiv.className = 'summary-badges';
         
-        const displayRole = this.basicData.role === 'custom' 
-            ? this.basicData.customRole 
-            : this.basicData.role;
+        const displayRole = this.basicData.customRole || this.basicData.role;
         if (displayRole) {
             badgesDiv.appendChild(this.createBadge(displayRole, 'role'));
         }

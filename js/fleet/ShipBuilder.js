@@ -21,11 +21,21 @@ class ShipBuilder {
     }
 
     static emptyContents() {
-        return { berths: [], magazine: [], hangar: [], hardpoints: [] };
+        return {
+            berths: [],
+            magazine: [],
+            hangar: [],
+            hardpoints: [],
+            hardpointLoadout: { devices: [], weapons: [] }
+        };
     }
 
     static open(app) {
-        new ShipBuilder(app).openBuildModal();
+        const builder = new ShipBuilder(app);
+        builder.openBuildModal().catch(error => {
+            console.error('Unable to open ship builder:', error);
+            app.showNotification(`Unable to open ship builder: ${error.message}`, 'error');
+        });
     }
 
     // --- Build mode ----------------------------------------------------------
@@ -41,6 +51,7 @@ class ShipBuilder {
         }
 
         this.options = ShipCapacity.getContentOptions();
+        await ShipLoadoutWidget.loadDeviceCatalogue();
         this.hardpointWeapons = await ShipCapacity.getHardpointWeaponOptions();
 
         const { backdrop, dialog, close } = ShipBuilder.createModal('Build Ships');
@@ -63,6 +74,9 @@ class ShipBuilder {
         const outfitSelect = document.createElement('select');
         outfitSelect.setAttribute('aria-label', 'Outfit');
 
+        const loadoutSelect = document.createElement('select');
+        loadoutSelect.setAttribute('aria-label', 'Default ship loadout');
+
         const quantityInput = document.createElement('input');
         quantityInput.type = 'number';
         quantityInput.min = '1';
@@ -74,6 +88,7 @@ class ShipBuilder {
         configSection.append(
             this.labeledControl('Class', classSelect),
             this.labeledControl('Outfit', outfitSelect),
+            this.labeledControl('Loadout', loadoutSelect),
             this.labeledControl('Quantity', quantityInput)
         );
 
@@ -112,6 +127,7 @@ class ShipBuilder {
         const selectedConfiguration = () => configurations.find(config =>
             config.classWidget.id === classSelect.value && config.outfitWidget.id === outfitSelect.value
         );
+        const selectedLoadout = () => window.widgetManager?.getWidget(loadoutSelect.value) || null;
 
         const refreshOutfits = () => {
             outfitSelect.replaceChildren();
@@ -121,6 +137,22 @@ class ShipBuilder {
                 option.textContent = config.outfitWidget.outfitData?.name || 'Unnamed Outfit';
                 outfitSelect.appendChild(option);
             }
+        };
+
+        const refreshLoadouts = () => {
+            const config = selectedConfiguration();
+            loadoutSelect.replaceChildren();
+            const none = document.createElement('option');
+            none.value = '';
+            none.textContent = 'None';
+            loadoutSelect.appendChild(none);
+            for (const loadout of ShipCapacity.getLoadoutsForOutfit(config?.outfitWidget)) {
+                const option = document.createElement('option');
+                option.value = loadout.id;
+                option.textContent = loadout.loadoutData?.name || loadout.title || 'Ship Loadout';
+                loadoutSelect.appendChild(option);
+            }
+            loadoutSelect.value = '';
         };
 
         const refreshCapacities = () => {
@@ -137,7 +169,7 @@ class ShipBuilder {
             const quantity = Math.max(1, Math.min(100, Number(quantityInput.value) || 1));
             quantityInput.value = String(quantity);
             while (this.pendingShips.length < quantity) {
-                this.pendingShips.push(this.createPendingShip(classSelect.value));
+                this.pendingShips.push(this.createPendingShip(classSelect.value, selectedLoadout()));
             }
             this.pendingShips.length = quantity;
             this.renderShipRows(shipList, configureSelected);
@@ -146,13 +178,26 @@ class ShipBuilder {
 
         classSelect.addEventListener('change', () => {
             refreshOutfits();
+            refreshLoadouts();
             refreshCapacities();
             this.pendingShips = [];
             resizeShips();
         });
         outfitSelect.addEventListener('change', () => {
+            refreshLoadouts();
             refreshCapacities();
-            for (const ship of this.pendingShips) ship.contents = ShipBuilder.emptyContents();
+            for (const ship of this.pendingShips) {
+                ship.contents = ShipCapacity.createFleetContents(selectedLoadout());
+                ship.loadoutWidgetId = selectedLoadout()?.id || '';
+            }
+            this.renderShipRows(shipList, configureSelected);
+            this.refreshTotals(totals, validation, confirmButton);
+        });
+        loadoutSelect.addEventListener('change', () => {
+            for (const ship of this.pendingShips) {
+                ship.contents = ShipCapacity.createFleetContents(selectedLoadout());
+                ship.loadoutWidgetId = selectedLoadout()?.id || '';
+            }
             this.renderShipRows(shipList, configureSelected);
             this.refreshTotals(totals, validation, confirmButton);
         });
@@ -166,6 +211,7 @@ class ShipBuilder {
                 this.empire.addFleetShip({
                     classWidgetId: config.classWidget.id,
                     outfitWidgetId: config.outfitWidget.id,
+                    loadoutWidgetId: pending.loadoutWidgetId || '',
                     name: pending.name,
                     role: pending.role,
                     contents: pending.contents,
@@ -183,11 +229,12 @@ class ShipBuilder {
 
         this.renderShipRowsImpl = { shipList, configureSelected };
         refreshOutfits();
+        refreshLoadouts();
         refreshCapacities();
         resizeShips();
     }
 
-    createPendingShip(classWidgetId) {
+    createPendingShip(classWidgetId, loadoutWidget = null) {
         const classWidget = window.widgetManager?.getWidget(classWidgetId);
         const baseName = classWidget?.shipData?.name || 'Ship';
         const existingNames = new Set([
@@ -204,7 +251,8 @@ class ShipBuilder {
             selected: false,
             name,
             role: classWidget?.shipData?.role || '',
-            contents: ShipBuilder.emptyContents()
+            loadoutWidgetId: loadoutWidget?.id || '',
+            contents: ShipCapacity.createFleetContents(loadoutWidget)
         };
     }
 
@@ -287,7 +335,14 @@ class ShipBuilder {
             berths: (contents.berths || []).map(entry => ({ ...entry })),
             magazine: (contents.magazine || []).map(entry => ({ ...entry })),
             hangar: (contents.hangar || []).map(entry => ({ ...entry })),
-            hardpoints: (contents.hardpoints || []).map(entry => ({ ...entry }))
+            hardpoints: (contents.hardpoints || []).map(entry => ({ ...entry })),
+            hardpointLoadout: {
+                devices: (contents.hardpointLoadout?.devices || []).map(entry => ({
+                    ...entry,
+                    contents: (entry.contents || []).map(content => ({ ...content }))
+                })),
+                weapons: (contents.hardpointLoadout?.weapons || []).map(entry => ({ ...entry }))
+            }
         };
     }
 
@@ -296,7 +351,10 @@ class ShipBuilder {
             (contents.berths || []).length,
             (contents.magazine || []).length,
             (contents.hangar || []).length,
-            (contents.hardpoints || []).length
+            (contents.hardpoints || []).length,
+            (contents.hardpointLoadout?.devices || []).length,
+            (contents.hardpointLoadout?.weapons || []).reduce((sum, entry) =>
+                sum + ShipCapacity.num(entry.count), 0)
         ];
         const total = counts.reduce((sum, value) => sum + value, 0);
         if (total === 0) return 'No contents configured';
@@ -305,6 +363,8 @@ class ShipBuilder {
         if (counts[1]) parts.push(`${counts[1]} munition`);
         if (counts[2]) parts.push(`${counts[2]} craft`);
         if (counts[3]) parts.push(`${counts[3]} hardpoint`);
+        if (counts[4]) parts.push(`${counts[4]} hardpoint device${counts[4] === 1 ? '' : 's'}`);
+        if (counts[5]) parts.push(`${counts[5]} mounted weapon${counts[5] === 1 ? '' : 's'}`);
         return parts.join(' · ');
     }
 
@@ -360,7 +420,8 @@ class ShipBuilder {
         builder.capacities = ShipCapacity.getCapacities(classWidget, outfitWidget);
         Promise.all([
             Promise.resolve(ShipCapacity.getContentOptions()),
-            ShipCapacity.getHardpointWeaponOptions()
+            ShipCapacity.getHardpointWeaponOptions(),
+            ShipLoadoutWidget.loadDeviceCatalogue()
         ]).then(([options, hardpointWeapons]) => {
             builder.options = options;
             builder.hardpointWeapons = hardpointWeapons;
@@ -373,19 +434,24 @@ class ShipBuilder {
                     );
                     if (!fits) {
                         app.showNotification('Contents exceed this ship\'s capacities.', 'error');
-                        return;
+                        return false;
                     }
                     ship.contents = contents;
                     app.saveEmpire();
                     app.updateFleetView();
+                    return true;
                 }
             });
+        }).catch(error => {
+            console.error('Unable to load Fleet content options:', error);
+            app.showNotification(`Unable to configure ship contents: ${error.message}`, 'error');
         });
     }
 
     // --- Contents editor dialog ----------------------------------------------
 
     async openContentsEditorDialog({ title, contents, onApply }) {
+        await ShipLoadoutWidget.loadDeviceCatalogue();
         if (this.hardpointWeapons.length === 0) {
             this.hardpointWeapons = await ShipCapacity.getHardpointWeaponOptions();
         }
@@ -415,6 +481,14 @@ class ShipBuilder {
             const summary = ShipCapacity.summarizeContents(
                 working, this.options, this.hardpointWeapons
             );
+            const legacyHardpointsUsed = (working.hardpoints || []).reduce((used, entry) => {
+                const weapon = this.hardpointWeapons.find(item => item.id === entry.weaponId);
+                if (!weapon) return used;
+                const count = ShipCapacity.num(entry.count);
+                const arcs = String(entry.arc || 'F').length;
+                const surcharge = entry.turreted && arcs > 1 ? 1 : 0;
+                return used + (ShipCapacity.num(WeaponCatalogue.getMount(weapon).resourceCount) + surcharge) * count;
+            }, 0);
             sectionsContainer.append(
                 this.createContentsSection(working, 'berths', 'Berths (troops)',
                     this.capacities.berths, summary.used.berths,
@@ -428,19 +502,21 @@ class ShipBuilder {
                     this.capacities.hangarBays, summary.used.hangarBays,
                     this.options.craft, option => `${option.name} (${option.baysRequired} bays, ${option.cost} CV)`,
                     refresh),
-                this.createHardpointSection(working, this.capacities.hardpoints, summary.used.hardpoints, refresh)
+                this.createShipLoadoutSection(working, summary, refresh),
+                this.createHardpointSection(
+                    working, this.capacities.hardpoints, legacyHardpointsUsed, refresh
+                )
             );
             const materiel = ShipCapacity.getContentsMateriel(summary);
             totals.textContent = `Total: ${materiel} Material (${summary.cost} CV)`;
-            const fits = summary.used.berths <= this.capacities.berths &&
-                summary.used.magazineCells <= this.capacities.magazineCells &&
-                summary.used.hangarBays <= this.capacities.hangarBays &&
-                summary.used.hardpoints <= this.capacities.hardpoints;
+            const { fits } = ShipCapacity.contentsFit(
+                working, this.capacities, this.options, this.hardpointWeapons
+            );
             totals.classList.toggle('over-capacity', !fits);
         };
 
         applyButton.addEventListener('click', () => {
-            onApply(ShipBuilder.cloneContents(working));
+            if (onApply(ShipBuilder.cloneContents(working)) === false) return;
             const { shipList, configureSelected } = this.renderShipRowsImpl || {};
             if (shipList) {
                 this.renderShipRows(shipList, configureSelected);
@@ -538,7 +614,7 @@ class ShipBuilder {
         section.className = 'ship-contents-section';
 
         const header = document.createElement('h3');
-        header.textContent = `Hardpoints (weapons) — ${used} / ${capacity}`;
+        header.textContent = `Legacy direct hardpoint weapons — ${used} / ${capacity}`;
         if (used > capacity) header.classList.add('over-capacity');
         section.appendChild(header);
 
@@ -551,7 +627,7 @@ class ShipBuilder {
             const name = document.createElement('span');
             name.className = 'ship-contents-name';
             name.textContent = weapon
-                ? `${weapon.name} (${weapon.resourceCount ?? 1} hp, ${weapon.cost ?? 0} CV)`
+                ? `${weapon.name} (${WeaponCatalogue.getMount(weapon).resourceCount ?? 1} hp, ${weapon.cost ?? 0} CV)`
                 : (entry.weaponId || 'Unknown');
 
             const countInput = document.createElement('input');
@@ -597,33 +673,289 @@ class ShipBuilder {
             section.appendChild(row);
         });
 
-        if (this.hardpointWeapons.length > 0) {
-            const addRow = document.createElement('div');
-            addRow.className = 'ship-contents-add';
-            const select = document.createElement('select');
-            for (const weapon of this.hardpointWeapons) {
-                const element = document.createElement('option');
-                element.value = weapon.id;
-                element.textContent = `${weapon.name} (${weapon.resourceCount ?? 1} hp, ${weapon.cost ?? 0} CV)`;
-                select.appendChild(element);
-            }
-            const addButton = document.createElement('button');
-            addButton.type = 'button';
-            addButton.textContent = 'Add';
-            addButton.addEventListener('click', () => {
-                const existing = entries.find(entry => entry.weaponId === select.value && !entry.turreted);
-                if (existing) existing.count += 1;
-                else entries.push({ weaponId: select.value, count: 1, arc: 'F', turreted: false });
+        const note = document.createElement('p');
+        note.className = 'ship-contents-empty';
+        note.textContent = entries.length
+            ? 'Install new weapons through a Fixture; this section is retained for existing direct installations.'
+            : 'Install weapons through a Fixture in Hardpoint devices.';
+        section.appendChild(note);
+        return section;
+    }
+
+    createShipLoadoutSection(working, summary, refresh) {
+        const section = document.createElement('section');
+        section.className = 'ship-contents-section';
+
+        const devices = working.hardpointLoadout.devices;
+        const deviceDefinitions = ShipLoadoutWidget.getDeviceCatalogue();
+        const deviceHeader = document.createElement('h3');
+        deviceHeader.textContent =
+            `Hardpoint devices — ${summary.used.hardpoints} / ${this.capacities.hardpoints}`;
+        if (summary.used.hardpoints > this.capacities.hardpoints) {
+            deviceHeader.classList.add('over-capacity');
+        }
+        section.appendChild(deviceHeader);
+
+        const devicePicker = document.createElement('div');
+        devicePicker.className = 'ship-contents-add';
+        const deviceSelect = document.createElement('select');
+        deviceSelect.setAttribute('aria-label', 'Hardpoint device');
+        const deviceOptions = ShipCapacity.getHardpointDeviceOptions();
+        for (const device of deviceOptions) {
+            const option = document.createElement('option');
+            option.value = device.id;
+            option.textContent = `${device.name} (${this.app.formatOptionCost?.(device.cost, 'weapons', device.id) || `${device.cost} CV`})`;
+            deviceSelect.appendChild(option);
+        }
+        const addDevice = document.createElement('button');
+        addDevice.type = 'button';
+        addDevice.textContent = 'Add';
+        addDevice.disabled = summary.used.hardpoints >= this.capacities.hardpoints ||
+            deviceOptions.length === 0;
+        addDevice.addEventListener('click', () => {
+            const device = deviceOptions.find(item => item.id === deviceSelect.value);
+            if (!device || summary.used.hardpoints >= this.capacities.hardpoints) return;
+            let index = 1;
+            const instanceIds = new Set(devices.map(entry => entry.instanceId));
+            while (instanceIds.has(`device-${index}`)) index++;
+            devices.push({ instanceId: `device-${index}`, deviceId: device.id, contents: [] });
+            refresh();
+        });
+        devicePicker.append(deviceSelect, addDevice);
+        section.appendChild(devicePicker);
+
+        const groupedDevices = new Map();
+        for (const entry of devices) {
+            if (['adapter', 'clamp'].includes(entry.deviceId)) continue;
+            const group = groupedDevices.get(entry.deviceId) || [];
+            group.push(entry);
+            groupedDevices.set(entry.deviceId, group);
+        }
+        for (const [deviceId, entries] of groupedDevices) {
+            const device = deviceDefinitions.find(item => item.id === deviceId);
+            const row = document.createElement('div');
+            row.className = 'ship-contents-row';
+            const name = document.createElement('span');
+            name.className = 'ship-contents-name';
+            const attribute = device?.jumpium ? `${device.jumpium} jumpium` :
+                device?.mounts ? `${device.mounts} mount` :
+                device?.grapple ? `${device.grapple} grapple` : '';
+            name.textContent = `${device?.name || deviceId} ×${entries.length}${attribute ? ` — ${attribute}` : ''}`;
+            const cost = document.createElement('span');
+            cost.className = 'ship-contents-cost';
+            cost.textContent = device
+                ? (this.app.formatOptionCost?.(device.cost * entries.length, 'weapons', device.id) ||
+                    `${device.cost * entries.length} CV`)
+                : 'Unavailable';
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'ship-contents-remove';
+            remove.textContent = '−';
+            remove.setAttribute('aria-label', `Remove one ${device?.name || deviceId}`);
+            remove.addEventListener('click', () => {
+                const index = devices.findIndex(entry => entry.deviceId === deviceId);
+                if (index >= 0) devices.splice(index, 1);
                 refresh();
             });
-            addRow.append(select, addButton);
-            section.appendChild(addRow);
-        } else {
-            const note = document.createElement('p');
-            note.className = 'ship-contents-empty';
-            note.textContent = 'No hardpoint weapons available (research required technology).';
-            section.appendChild(note);
+            row.append(name, cost, remove);
+            section.appendChild(row);
         }
+
+        devices.forEach((entry, index) => {
+            if (!['adapter', 'clamp'].includes(entry.deviceId)) return;
+            const device = deviceDefinitions.find(item => item.id === entry.deviceId);
+            const row = document.createElement('div');
+            row.className = 'ship-contents-row';
+            const name = document.createElement('span');
+            name.className = 'ship-contents-name';
+            const attributes = device?.cells ? `${device.cells} cells` :
+                device?.bays ? `${device.bays} bays` :
+                device?.jumpium ? `${device.jumpium} jumpium` :
+                device?.mounts ? `${device.mounts} mount` :
+                device?.grapple ? `${device.grapple} grapple` : '1 hardpoint';
+            name.textContent = `${device?.name || entry.deviceId} — ${attributes}`;
+            const cost = document.createElement('span');
+            cost.className = 'ship-contents-cost';
+            cost.textContent = device
+                ? (this.app.formatOptionCost?.(device.cost, 'weapons', device.id) || `${device.cost} CV`)
+                : 'Unavailable';
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'ship-contents-remove';
+            remove.textContent = '×';
+            remove.setAttribute('aria-label', `Remove ${device?.name || entry.deviceId}`);
+            remove.addEventListener('click', () => {
+                devices.splice(index, 1);
+                refresh();
+            });
+            row.append(name, cost, remove);
+            section.appendChild(row);
+
+            if (!device || !['adapter', 'clamp'].includes(device.id)) return;
+            const isAdapter = device.id === 'adapter';
+            const contentType = isAdapter ? 'munitions' : 'craft';
+            const contents = entry.contents || (entry.contents = []);
+            const contentSection = document.createElement('section');
+            contentSection.className = 'ship-contents-section';
+            const used = contents.reduce((total, content) => {
+                const option = (isAdapter ? this.options.munitions : this.options.craft)
+                    .find(item => item.id === content.id);
+                return total + (isAdapter ? option?.magazineCells || 0 : option?.baysRequired || 0) *
+                    ShipCapacity.num(content.count);
+            }, 0);
+            const limit = Number(isAdapter ? device.cells : device.bays) || 0;
+            const heading = document.createElement('h4');
+            heading.textContent = `${device.name} ${index + 1} contents — ${used} / ${limit} ${isAdapter ? 'cells' : 'bays'}`;
+            if (used > limit) heading.classList.add('over-capacity');
+            contentSection.appendChild(heading);
+
+            const contentPicker = document.createElement('div');
+            contentPicker.className = 'ship-contents-add';
+            const contentSelect = document.createElement('select');
+            contentSelect.setAttribute('aria-label', `${device.name} contents`);
+            const candidates = (isAdapter ? this.options.munitions : this.options.craft)
+                .filter(item => !isAdapter || !contents.length ||
+                    item.profile === this.options.munitions.find(munition => munition.id === contents[0].id)?.profile);
+            for (const item of candidates) {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = isAdapter
+                    ? `${item.name} (${item.magazineCells} cells, ${item.cost} CV)`
+                    : `${item.name} (${item.baysRequired} bays, ${item.cost} CV)`;
+                contentSelect.appendChild(option);
+            }
+            const addContent = document.createElement('button');
+            addContent.type = 'button';
+            addContent.textContent = 'Add';
+            addContent.disabled = candidates.length === 0;
+            addContent.addEventListener('click', () => {
+                const item = candidates.find(candidate => candidate.id === contentSelect.value);
+                if (!item) return;
+                const current = contents.reduce((total, content) => {
+                    const selected = candidates.find(candidate => candidate.id === content.id) ||
+                        (isAdapter ? this.options.munitions : this.options.craft)
+                            .find(candidate => candidate.id === content.id);
+                    return total + (isAdapter ? selected?.magazineCells || 0 : selected?.baysRequired || 0) *
+                        ShipCapacity.num(content.count);
+                }, 0);
+                const itemSize = isAdapter ? item.magazineCells : item.baysRequired;
+                if (current + itemSize > limit) return;
+                const existing = contents.find(content => content.id === item.id);
+                if (existing) existing.count++;
+                else contents.push({ id: item.id, count: 1 });
+                refresh();
+            });
+            contentPicker.append(contentSelect, addContent);
+            contentSection.appendChild(contentPicker);
+
+            contents.forEach((content, contentIndex) => {
+                const item = (isAdapter ? this.options.munitions : this.options.craft)
+                    .find(candidate => candidate.id === content.id);
+                const contentRow = document.createElement('div');
+                contentRow.className = 'ship-contents-row';
+                const contentName = document.createElement('span');
+                contentName.className = 'ship-contents-name';
+                contentName.textContent = `${item?.name || content.id} ×${content.count}`;
+                const contentRemove = document.createElement('button');
+                contentRemove.type = 'button';
+                contentRemove.className = 'ship-contents-remove';
+                contentRemove.textContent = '−';
+                contentRemove.setAttribute('aria-label', `Remove one ${item?.name || content.id}`);
+                contentRemove.addEventListener('click', () => {
+                    if (content.count > 1) content.count--;
+                    else contents.splice(contentIndex, 1);
+                    refresh();
+                });
+                contentRow.append(contentName, contentRemove);
+                contentSection.appendChild(contentRow);
+            });
+            section.appendChild(contentSection);
+        });
+
+        const fixtureCount = devices.reduce((total, entry) => {
+            const device = deviceDefinitions.find(item => item.id === entry.deviceId);
+            return total + (Number(device?.mounts) || 0);
+        }, 0);
+        const weaponsSection = document.createElement('section');
+        weaponsSection.className = 'ship-contents-section';
+        const weaponHeading = document.createElement('h4');
+        const mounted = working.hardpointLoadout.weapons.reduce((sum, entry) =>
+            sum + ShipCapacity.num(entry.count), 0);
+        weaponHeading.textContent = `Fixture-mounted weapons — ${mounted} / ${fixtureCount} mounts`;
+        if (mounted > fixtureCount) weaponHeading.classList.add('over-capacity');
+        weaponsSection.appendChild(weaponHeading);
+
+        const weaponOptions = this.hardpointWeapons.filter(weapon => !weapon.isMunition);
+        const weaponPicker = document.createElement('div');
+        weaponPicker.className = 'ship-contents-add';
+        const weaponSelect = document.createElement('select');
+        weaponSelect.setAttribute('aria-label', 'Hardpoint weapon to mount');
+        weaponOptions.forEach(weapon => {
+            const option = document.createElement('option');
+            option.value = weapon.id;
+            option.textContent = `${weapon.name} (${weapon.cost ?? 0} CV)`;
+            weaponSelect.appendChild(option);
+        });
+        const addWeapon = document.createElement('button');
+        addWeapon.type = 'button';
+        addWeapon.textContent = 'Add';
+        addWeapon.disabled = !weaponOptions.length || mounted >= fixtureCount;
+        addWeapon.addEventListener('click', () => {
+            const weapon = weaponOptions.find(item => item.id === weaponSelect.value);
+            if (!weapon || mounted >= fixtureCount) return;
+            working.hardpointLoadout.weapons.push({
+                weaponId: weapon.id,
+                count: 1,
+                arc: 'F'
+            });
+            refresh();
+        });
+        weaponPicker.append(weaponSelect, addWeapon);
+        weaponsSection.appendChild(weaponPicker);
+
+        working.hardpointLoadout.weapons.forEach((entry, index) => {
+            const weapon = weaponOptions.find(item => item.id === entry.weaponId);
+            const row = document.createElement('div');
+            row.className = 'ship-contents-row';
+            const name = document.createElement('span');
+            name.className = 'ship-contents-name';
+            name.textContent = `${weapon?.name || entry.weaponId} (${weapon?.cost ?? 0} CV)`;
+            const arc = document.createElement('select');
+            arc.setAttribute('aria-label', 'Single weapon arc');
+            for (const [value, label] of [['F', 'Fore'], ['P', 'Port'], ['S', 'Starboard'], ['A', 'Aft']]) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = label;
+                option.selected = (entry.arc || 'F') === value;
+                arc.appendChild(option);
+            }
+            arc.addEventListener('change', () => {
+                entry.arc = arc.value;
+                refresh();
+            });
+            const count = document.createElement('input');
+            count.type = 'number';
+            count.min = '1';
+            count.step = '1';
+            count.value = String(entry.count || 1);
+            count.setAttribute('aria-label', 'Weapon count');
+            count.addEventListener('change', () => {
+                entry.count = Math.max(1, Math.floor(ShipCapacity.num(count.value)));
+                refresh();
+            });
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'ship-contents-remove';
+            remove.textContent = '×';
+            remove.setAttribute('aria-label', `Remove ${weapon?.name || entry.weaponId}`);
+            remove.addEventListener('click', () => {
+                working.hardpointLoadout.weapons.splice(index, 1);
+                refresh();
+            });
+            row.append(name, arc, count, remove);
+            weaponsSection.appendChild(row);
+        });
+        section.appendChild(weaponsSection);
         return section;
     }
 

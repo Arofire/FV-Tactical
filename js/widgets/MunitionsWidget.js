@@ -145,16 +145,12 @@ class MunitionsWidget extends DesignWidget {
         return {
             id: this.id,
             name: this.munitionData.name || 'New Munition',
-            ranges: MunitionsWidget.ACCURACY_BANDS.map(band => ({
-                accuracy: this.munitionData.accuracy[band],
-                damage: profile?.damage ?? null
-            })),
-            notes: tags,
+            accuracy: MunitionsWidget.ACCURACY_BANDS.map(band => this.munitionData.accuracy[band]),
+            damage: MunitionsWidget.ACCURACY_BANDS.map(() => profile?.damage ?? null),
             tagsDescription: this.formatTags(tags),
             cost: Number(this.munitionData.cost) || 0,
             requiredTech: this.getSelectedRequiredTech(),
-            resourceType: 'hardpoints',
-            resourceCount: 1,
+            hp: 'H01',
             categoryName: 'Munitions',
             isMunition: true
         };
@@ -199,10 +195,7 @@ class MunitionsWidget extends DesignWidget {
     createContent(contentElement) {
         const sectionsContainer = contentElement.querySelector('.widget-sections');
         const identitySection = this.createDesignSection('meta', '');
-        this.setSectionContent(identitySection, this.renderIdentityFields({
-            rolePlaceholder: 'Optional munition role',
-            notesPlaceholder: 'Munition design notes'
-        }));
+        this.setSectionContent(identitySection, this.renderFlags());
         sectionsContainer.appendChild(identitySection.section);
 
         const componentsSection = this.createDesignSection('components', 'Components');
@@ -211,7 +204,7 @@ class MunitionsWidget extends DesignWidget {
                 <label for="${this.id}-profile">Profile</label>
                 <select id="${this.id}-profile"></select>
             </div>
-            <div id="${this.id}-profile-stats" class="widget-stats"></div>
+            <div id="${this.id}-profile-stats" class="design-details"></div>
             <div class="input-group">
                 <label for="${this.id}-guidance">Guidance</label>
                 <select id="${this.id}-guidance"></select>
@@ -334,7 +327,6 @@ class MunitionsWidget extends DesignWidget {
         this.setupFlagListeners(() => {
             this.refresh();
         });
-        this.setupIdentityFieldListeners();
 
         for (const [index, band] of MunitionsWidget.ACCURACY_BANDS.entries()) {
             const slider = root.querySelector(`#${this.id}-accuracy-${band}`);
@@ -355,15 +347,16 @@ class MunitionsWidget extends DesignWidget {
         return max > 0 ? Math.min(value, max) : value;
     }
 
-    buildOptions(select, items, selectedId, placeholder) {
+    buildOptions(select, items, selectedId, placeholder, { showCost = true, preserveUnavailable = true } = {}) {
         if (!select) return;
         const options = [`<option value="">${this.escape(placeholder)}</option>`];
         for (const item of items) {
             const selected = item.id === selectedId ? ' selected' : '';
-            options.push(`<option value="${this.escape(item.id)}"${selected}>${this.escape(this.formatOptionLabel(item))}</option>`);
+            const label = showCost ? this.formatOptionLabel(item) : item.name;
+            options.push(`<option value="${this.escape(item.id)}"${selected}>${this.escape(label)}</option>`);
         }
         // Preserve saved selections that are no longer tech-eligible so loads don't silently lose data.
-        if (selectedId && !items.some(item => item.id === selectedId)) {
+        if (preserveUnavailable && selectedId && !items.some(item => item.id === selectedId)) {
             options.push(`<option value="${this.escape(selectedId)}" selected>${this.escape(selectedId)} (unavailable)</option>`);
         }
         select.innerHTML = options.join('');
@@ -373,7 +366,17 @@ class MunitionsWidget extends DesignWidget {
         if (!this.element) return;
         this.buildOptions(this.element.querySelector(`#${this.id}-profile`), this.getProfileOptions(), this.munitionData.profile, 'Select profile');
         this.buildOptions(this.element.querySelector(`#${this.id}-guidance`), this.getGuidanceOptions(), this.munitionData.guidance, 'Select guidance');
-        this.buildOptions(this.element.querySelector(`#${this.id}-payload`), this.getPayloadOptions(), this.munitionData.payload, 'Select payload');
+        const payloads = this.getPayloadOptions();
+        if (this.munitionsDataLoaded && this.munitionData.payload &&
+            !payloads.some(item => item.id === this.munitionData.payload)) {
+            this.munitionData.payload = null;
+            this.munitionData.payloadCount = 1;
+        }
+        this.buildOptions(this.element.querySelector(`#${this.id}-payload`), payloads, this.munitionData.payload, 'Select payload', {
+            showCost: false,
+            preserveUnavailable: false
+        });
+        this.syncFormFromData();
         this.renderProfileStats();
         this.refreshAccuracyUI();
     }
@@ -395,20 +398,12 @@ class MunitionsWidget extends DesignWidget {
             ['Cells', profile.cells ?? '—'],
             ['Payloads', capacity || '—']
         ];
-        container.innerHTML = rows.map(([label, value]) => `
-            <div class="stat-row">
-                <span class="stat-label">${this.escape(label)}</span>
-                <span class="stat-value">${this.escape(value)}</span>
-            </div>
-        `).join('');
+        container.innerHTML = `<div class="design-chips">${this.renderChips(rows)}</div>` +
+            (profile.description ? `<p>${this.escape(profile.description)}</p>` : '');
     }
 
     syncFormFromData() {
         if (!this.element) return;
-        const roleInput = this.element.querySelector(`#${this.id}-role`);
-        if (roleInput) roleInput.value = this.munitionData.role;
-        const notesInput = this.element.querySelector(`#${this.id}-notes`);
-        if (notesInput) notesInput.value = this.munitionData.notes;
         const operationalInput = this.element.querySelector(`#${this.id}-operational`);
         if (operationalInput) operationalInput.checked = this.munitionData.operational;
         const ignoreTechInput = this.element.querySelector(`#${this.id}-ignore-required-tech`);
@@ -472,13 +467,14 @@ class MunitionsWidget extends DesignWidget {
     refreshStats() {
         this.munitionData.requiredTech = this.getSelectedRequiredTech();
         this.refreshDevelopmentMetric();
-        this.setHeaderMetric('cost', '', this.formatOptionCost(this.munitionData.cost) || '0 CV');
+        const totalCost = this.munitionData.cost;
+        this.setHeaderMetric('cost', '', this.formatTotalCost(totalCost) || '0 CV');
 
         const statsContainer = this.element?.querySelector(`#${this.id}-stats`);
         if (statsContainer) {
             const payload = this.findPayload();
             const rows = [
-                ['Cost', this.formatOptionCost(this.munitionData.cost) || `${this.munitionData.cost} CV`],
+                ['Cost', this.formatTotalCost(totalCost) || `${Math.ceil(totalCost)} CV`],
                 ['Magazine Cells', this.getMagazineCells()],
                 ['Profile', this.findProfile()?.name || '—'],
                 ['Guidance', this.findGuidance()?.name || '—'],
@@ -576,9 +572,6 @@ class MunitionsWidget extends DesignWidget {
         gridDiv.className = 'summary-grid';
 
         const payload = this.findPayload();
-        if (this.munitionData.role) {
-            this.addSummaryField(gridDiv, 'Role', this.munitionData.role);
-        }
         this.addSummaryField(gridDiv, 'Profile', this.findProfile()?.name || this.munitionData.profile || '—');
         this.addSummaryField(gridDiv, 'Guidance', this.findGuidance()?.name || this.munitionData.guidance || '—');
         this.addSummaryField(gridDiv, 'Payload', payload

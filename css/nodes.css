@@ -28,6 +28,16 @@
     border-color: #775157;
 }
 
+.node.optional {
+    background: #555;
+    border-color: #777;
+}
+
+.node.optional:hover:not(.valid-target):not(.invalid-target) {
+    background: #4a90e2;
+    border-color: #4a90e2;
+}
+
 .node.connected {
     background: #4a90e2;
     border-color: #4a90e2;

@@ -41,7 +41,7 @@ class TroopsWidget extends DesignWidget {
     async loadCatalogues() {
         const [troops, weapons] = await Promise.allSettled([
             this.fetchJSON('data/troop.json'),
-            this.fetchJSON('data/weapons.json')
+            WeaponCatalogue.load()
         ]);
         if (troops.status === 'fulfilled' && troops.value && typeof troops.value === 'object') {
             for (const key of Object.keys(this.catalogues)) {
@@ -56,10 +56,10 @@ class TroopsWidget extends DesignWidget {
                 .find(entry => entry.name === TroopsWidget.WEAPON_CATEGORY);
             this.troopWeapons = Array.isArray(category?.weapons) ? category.weapons : [];
         } else {
-            console.error('Failed to load troop weapons (data/weapons.json):', weapons.reason);
+            this.reportCatalogueError('Troop weapons catalogue (data/weapons.json)', weapons.reason);
         }
-        this.cataloguesLoaded = true;
-        this.normalizeSelections();
+        this.cataloguesLoaded = troops.status === 'fulfilled' && weapons.status === 'fulfilled';
+        if (this.cataloguesLoaded) this.normalizeSelections();
         this.refresh();
     }
 
@@ -371,7 +371,7 @@ class TroopsWidget extends DesignWidget {
         this.troopData.cost = stats.combatValue;
         this.troopData.berthsRequired = stats.berthsRequired;
         this.troopData.requiredTech = this.getSelectedRequiredTech();
-        this.setHeaderMetric('cost', '', this.formatOptionCost(stats.combatValue, 'general'));
+        this.setHeaderMetric('cost', '', this.formatTotalCost(stats.combatValue, 'general'));
         this.setSubtotal('training-section-subtotal', stats.trainingCost);
         this.setSubtotal('features-section-subtotal', stats.featureCost, 'features');
         this.setSubtotal('formations-section-subtotal', stats.formationCost);
@@ -394,7 +394,9 @@ class TroopsWidget extends DesignWidget {
 
     createNodes() {
         this.clearNodes();
-        this.addNode('output', 'Troop', 'Troop', 1, 0.4, { sectionId: 'unit', anchorId: `${this.id}-unit` });
+        this.addNode('output', 'Troop', 'Troop', 1, 0.4, {
+            sectionId: 'unit', anchorId: `${this.id}-unit`, optional: true
+        });
         this.reflowNodes();
     }
 
@@ -458,7 +460,7 @@ class TroopsWidget extends DesignWidget {
         const stats = this.calculateStats();
         [
             ['Role', this.troopData.role || '—'],
-            ['Cost', this.formatOptionCost(stats.combatValue, 'general')],
+            ['Cost', this.formatTotalCost(stats.combatValue, 'general')],
             ['Formations', this.getSelectedFormations().map(item => item.name).join(', ') || '—'],
             ['Berths', stats.berthsRequired],
             ['Equipment', `${stats.equipmentUsed}/${stats.equipmentCapacity}`]

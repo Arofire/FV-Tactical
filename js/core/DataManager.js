@@ -82,16 +82,30 @@ class DataManager {
     // Serialize all empire data
     serializeEmpireData(empire, widgets, connections) {
         const widgetsData = [];
+        const roleLists = {};
         if (widgets) {
             for (const widget of widgets.values()) {
                 widgetsData.push(widget.toJSON());
+                if (widget.type === 'ship' && Array.isArray(widget.availableRoles)) {
+                    roleLists.ship = [...widget.availableRoles];
+                } else if (widget.type === 'outfit' && Array.isArray(widget.availableRoles)) {
+                    roleLists.outfit = [...widget.availableRoles];
+                }
             }
         }
+        if (!Array.isArray(roleLists.ship) && typeof ShipWidget !== 'undefined') {
+            roleLists.ship = ShipWidget.loadStoredRoles(ShipWidget.getDefaultRoles());
+        }
+        if (!Array.isArray(roleLists.outfit) && typeof OutfitWidget !== 'undefined') {
+            roleLists.outfit = OutfitWidget.loadStoredRoles(OutfitWidget.getDefaultRoles());
+        }
+        const hasRoleLists = Object.keys(roleLists).length > 0;
 
         return {
             fileVersion: this.fileVersion,
             timestamp: new Date().toISOString(),
             empire: empire.toJSON(),
+            ...(hasRoleLists ? { roleLists } : {}),
             widgets: widgetsData,
             connections: connections ? connections.toJSON() : []
         };
@@ -111,6 +125,7 @@ class DataManager {
 
         return {
             empire: data.empire,
+            roleLists: data.roleLists,
             widgets: data.widgets,
             connections: data.connections,
             timestamp: data.timestamp
@@ -146,6 +161,16 @@ class DataManager {
 
         // Check connections array
         if (!Array.isArray(data.connections)) {
+            return false;
+        }
+
+        if (data.roleLists !== undefined &&
+            (!data.roleLists || typeof data.roleLists !== 'object' || Array.isArray(data.roleLists) ||
+                Object.entries(data.roleLists).some(([type, roles]) =>
+                    !['ship', 'outfit'].includes(type) ||
+                    !Array.isArray(roles) ||
+                    roles.some(role => typeof role !== 'string')
+                ))) {
             return false;
         }
 

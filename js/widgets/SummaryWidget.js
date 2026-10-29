@@ -123,13 +123,15 @@ class SummaryWidget extends Widget {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             minSpacing: 30,
-            allowMultipleConnections: true
+            allowMultipleConnections: true,
+            optional: true
         });
         this.addNode('input', 'Craft', 'Craft', 0, 0.7, {
             sectionId: 'info',
             anchorId: `${this.id}-info`,
             minSpacing: 30,
-            allowMultipleConnections: true
+            allowMultipleConnections: true,
+            optional: true
         });
         this.reflowNodes();
     }
@@ -262,6 +264,7 @@ class SummaryWidget extends Widget {
                 }
                 return {
                     ...outfit,
+                    sourceWidgetId: component.sourceWidgetId,
                     spinalWeapon: data.spinalWeapon || outfit.spinalWeapon || null,
                     hullPlanExportDevices: widget.getHullPlanExportDevices()
                 };
@@ -316,10 +319,18 @@ class SummaryWidget extends Widget {
             : this.numeric(this.getMetricValue(sources, [
                 'armor', 'armour',
             ]));
-        const outfitHardpoints = outfits
-            .map(outfit => this.getCount(outfit.resources || {}, ['hardpoints']))
-            .find(count => count !== null);
-        const hardpoints = outfitHardpoints ?? null;
+        const outfitWithHardpoints = outfits.find(outfit =>
+            this.getCount(outfit.resources || {}, ['hardpoints']) !== null
+        );
+        const outfitWidget = outfitWithHardpoints
+            ? window.widgetManager?.getWidget(outfitWithHardpoints.sourceWidgetId)
+            : null;
+        const hardpoints = outfitWithHardpoints
+            ? this.getHardpointCapacity(outfitWithHardpoints, classData)
+            : null;
+        const availableHardpoints = outfitWithHardpoints
+            ? this.getAvailableHardpoints(outfitWithHardpoints, classData, outfitWidget)
+            : null;
         const containmentHullBasis = counts.Freight === null || counts.Tankage === null
             ? null
             : counts.Freight + counts.Tankage;
@@ -333,11 +344,33 @@ class SummaryWidget extends Widget {
             utilityTotal,
             armor,
             hardpoints,
+            availableHardpoints,
             containmentHullBasis,
             technologies,
             hullItems,
             components
         };
+    }
+
+    getHardpointCapacity(outfit, classData) {
+        const capacity = this.getCount(outfit.resources || {}, ['hardpoints']);
+        if (capacity === null) return null;
+        const armorHits = ShipCapacity.numOrNull(outfit.armorHits) ??
+            (outfit.defenses?.armor !== undefined && classData?.armorEfficiency !== undefined
+                ? ShipCapacity.num(outfit.defenses.armor) * ShipCapacity.num(classData.armorEfficiency)
+                : null);
+        return ShipCapacity.getHardpointCapacity(capacity, armorHits);
+    }
+
+    getAvailableHardpoints(outfit, classData, outfitWidget) {
+        const capacity = this.getHardpointCapacity(outfit, classData);
+        if (capacity === null) return null;
+        const liveResourceUse = typeof outfitWidget?.getResourceUse === 'function'
+            ? outfitWidget.getResourceUse()?.hardpoints
+            : null;
+        const used = Math.max(0, ShipCapacity.numOrNull(liveResourceUse) ??
+            ShipCapacity.num(outfit.resourceUse?.hardpoints));
+        return Math.max(0, capacity - used);
     }
 
     getCount(object, keys) {
@@ -364,8 +397,9 @@ class SummaryWidget extends Widget {
             const weapons = outfit.weapons || {};
             const addWeapon = (weapon, count) => {
                 const weaponCount = this.numeric(count);
-                if (!weapon || weapon.resourceType !== 'emplacements' || weaponCount < 1) return;
-                const resourceCost = this.numeric(weapon.resourceCount) || 1;
+                const { resourceType, resourceCount } = WeaponCatalogue.getMount(weapon);
+                if (!weapon || resourceType !== 'emplacements' || weaponCount < 1) return;
+                const resourceCost = this.numeric(resourceCount) || 1;
                 const isTurretEligible = resourceCost === 2 || resourceCost === 3;
                 const slotsPerWeapon = resourceCost +
                     (isTurretEligible && weapon.isTurreted ? 1 : 0);
@@ -432,26 +466,27 @@ class SummaryWidget extends Widget {
         );
 
         const addWeapon = (weapon, count, type) => {
-            if (!weapon || weapon.resourceType !== 'emplacements') return;
+            const { resourceType, resourceCount } = WeaponCatalogue.getMount(weapon);
+            if (!weapon || resourceType !== 'emplacements') return;
             const weaponName = weapon.name || weapon.label || weapon.id || 'Weapon';
             const weaponCount = this.numeric(count);
             if (weaponCount < 1) return;
 
-            const resourceCount = this.numeric(weapon.resourceCount) || 1;
-            const weaponClass = resourceCount === 1
+            const mountedCount = this.numeric(resourceCount) || 1;
+            const weaponClass = mountedCount === 1
                 ? 'Tertiary'
-                : resourceCount === 2 ? 'Secondary' : 'Primary';
+                : mountedCount === 2 ? 'Secondary' : 'Primary';
             const isMain = type === 'offensive' && Boolean(weapon.isMain);
             const isSpinal = type === 'spinal' || Boolean(weapon.isSpinal);
             const isTurreted = !isMain && !isSpinal &&
-                resourceCount > 1 && type === 'offensive' && Boolean(weapon.isTurreted);
+                mountedCount > 1 && type === 'offensive' && Boolean(weapon.isTurreted);
             const selectedArcs = Array.from(new Set(
                 String(weapon.arc || '')
                     .toUpperCase()
                     .split('')
                     .filter(arc => arcOrder.includes(arc))
             )).sort((first, second) => arcOrder.indexOf(first) - arcOrder.indexOf(second));
-            const hasSelectableArcs = !isSpinal && resourceCount > 1 &&
+            const hasSelectableArcs = !isSpinal && mountedCount > 1 &&
                 type === 'offensive';
             const arcTerms = hasSelectableArcs && !isTurreted
                 ? selectedArcs.map(arc => arcNames[arc])
@@ -621,6 +656,7 @@ class SummaryWidget extends Widget {
         });
 
         return [
+            metric('Total hulls', model.total, value => String(value)),
             metric('Plasma fields', plasmaFields),
             metric('Active armor', activeArmor),
             {
@@ -631,7 +667,7 @@ class SummaryWidget extends Widget {
                 available: barriers !== null || reserve !== null
             },
             metric('Crew berthings', crewCapacity),
-            metric('Hardpoints', model.hardpoints, value => String(value)),
+            metric('Hardpoints', model.availableHardpoints, value => String(value)),
             metric('Active radiance', activeRadiance),
             metric('Passive radiance', passiveRadiance),
             metric('Threshold', threshold),
@@ -656,10 +692,8 @@ class SummaryWidget extends Widget {
         const cargo = cargoBase !== null
             ? this.numeric(cargoBase) + berthingCargo
             : berthingCargo > 0 ? berthingCargo : null;
-        const consumption = model.outfits.length
-            ? model.outfits.reduce((total, outfit) =>
-                total + this.numeric(outfit.resources?.systems) +
-                    this.numeric(outfit.resources?.core), 0)
+        const consumption = model.classData
+            ? ShipCapacity.getHullConsumption(model.classData.hullComposition)
             : null;
 
         return {
@@ -841,7 +875,7 @@ class SummaryWidget extends Widget {
         const armorContent = document.createElement('div');
         armorContent.className = 'section-content';
         armorContent.appendChild(this.createPropertiesGrid([
-            metrics[0], metrics[1], metrics[2]
+            metrics[0], metrics[1], metrics[2], metrics[3]
         ]));
         armorSection.append(armorTitle, armorContent);
         container.appendChild(armorSection);
@@ -853,7 +887,7 @@ class SummaryWidget extends Widget {
         statisticsTitle.textContent = 'Ship statistics';
         const statisticsContent = document.createElement('div');
         statisticsContent.className = 'section-content';
-        statisticsContent.appendChild(this.createPropertiesGrid(metrics.slice(3)));
+        statisticsContent.appendChild(this.createPropertiesGrid(metrics.slice(4)));
         statisticsSection.append(statisticsTitle, statisticsContent);
         container.appendChild(statisticsSection);
         if (model.technologies.length) {
@@ -1142,7 +1176,7 @@ class SummaryWidget extends Widget {
             ContainmentCargo: firstValue(classResources.cargo, statistics.cargo),
             ContainmentRemass: firstValue(classResources.remass, statistics.remass),
             Endurance: hullResourceMetrics.endurance,
-            Hardpoints: model.hardpoints,
+            Hardpoints: model.availableHardpoints,
             Berthing: metricValue('Crew berthings'),
             HangarHull: model.counts.Hangar,
             HangarBays: metricValue('Hangar bays'),

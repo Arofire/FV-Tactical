@@ -15,10 +15,6 @@
             <span id="empireName">New Empire</span>
             <span id="techPoints">Tech Points: 0</span>
         </div>
-        <nav class="empire-view-selector" aria-label="Empire view">
-            <button id="designViewBtn" class="active" type="button" aria-pressed="true">Design</button>
-            <button id="fleetViewBtn" type="button" aria-pressed="false">Fleet</button>
-        </nav>
         <div class="empire-controls">
             <label class="economy-mode-control" for="economyMode">
                 Economy
@@ -28,11 +24,21 @@
                 </select>
             </label>
             <button id="campaignCostRules" type="button" hidden>Campaign Cost Rules</button>
+            <!-- DEBUG / TEST ONLY: remove with RandomShipGenerator.js and its main.js binding. -->
+            <button
+                id="debugRandomShip"
+                type="button"
+                title="Temporary debug/testing tool; creates a randomized connected ship design group"
+            >DEBUG / TEST: Random Ship</button>
             <button id="saveEmpire">Save Empire</button>
             <button id="loadEmpire">Load Empire</button>
             <button id="exportData">Export Data</button>
             <input type="file" id="importData" accept=".json" style="display: none;">
             <button id="importDataBtn">Import Data</button>
+            <nav class="empire-view-selector" aria-label="Empire view">
+                <button id="designViewBtn" class="active" type="button" aria-pressed="true">Design</button>
+                <button id="fleetViewBtn" type="button" aria-pressed="false">Fleet</button>
+            </nav>
         </div>
     </div>
 
@@ -121,16 +127,19 @@
     <script src="js/core/NodeSystem.js"></script>
     <script src="js/core/DataManager.js"></script>
     <script src="js/core/PreflightCheck.js"></script>
+    <script src="js/core/WeaponCatalogue.js"></script>
     <script src="js/core/ShipCapacity.js"></script>
     <script src="js/widgets/DesignWidget.js"></script>
     <script src="js/widgets/ShipWidget.js"></script>
     <script src="js/widgets/OutfitWidget.js"></script>
+    <script src="js/widgets/ShipLoadoutWidget.js"></script>
     <script src="js/widgets/CraftWidget.js"></script>
     <script src="js/widgets/TroopsWidget.js"></script>
     <script src="js/widgets/MunitionsWidget.js"></script>
     <script src="js/widgets/ShipCoreWidget.js"></script>
     <script src="js/widgets/SummaryWidget.js"></script>
     <script src="js/widgets/HullTilesWidget.js"></script>
+    <script src="js/debug/RandomShipGenerator.js"></script>
     <script src="js/fleet/ShipBuilder.js"></script>
     <script src="js/fleet/UniqueShipExporter.js"></script>
     <script src="js/fleet/TendingDialog.js"></script>

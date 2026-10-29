@@ -174,6 +174,7 @@ class Empire {
             id: ship.id || `fleet-ship-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             classWidgetId: ship.classWidgetId ?? '',
             outfitWidgetId: ship.outfitWidgetId ?? '',
+            loadoutWidgetId: ship.loadoutWidgetId ?? '',
             name: ship.name ?? '',
             role: ship.role ?? '',
             taskForceId: ship.taskForceId ?? null,
@@ -181,7 +182,11 @@ class Empire {
                 berths: ship.contents?.berths ?? [],
                 magazine: ship.contents?.magazine ?? [],
                 hangar: ship.contents?.hangar ?? [],
-                hardpoints: ship.contents?.hardpoints ?? []
+                hardpoints: ship.contents?.hardpoints ?? [],
+                hardpointLoadout: {
+                    devices: ship.contents?.hardpointLoadout?.devices ?? [],
+                    weapons: ship.contents?.hardpointLoadout?.weapons ?? []
+                }
             },
             stores: {
                 cargo: Math.max(0, Number(ship.stores?.cargo) || 0),
@@ -269,6 +274,7 @@ class Empire {
                     id: ship.id,
                     classWidgetId: ship.classWidgetId ?? '',
                     outfitWidgetId: ship.outfitWidgetId ?? '',
+                    loadoutWidgetId: ship.loadoutWidgetId ?? '',
                     name: ship.name ?? '',
                     role: ship.role ?? '',
                     taskForceId: ship.taskForceId ?? null,
@@ -276,7 +282,24 @@ class Empire {
                         berths: normalizeContentEntries(ship.contents?.berths),
                         magazine: normalizeContentEntries(ship.contents?.magazine),
                         hangar: normalizeContentEntries(ship.contents?.hangar),
-                        hardpoints: normalizeContentEntries(ship.contents?.hardpoints)
+                        hardpoints: normalizeContentEntries(ship.contents?.hardpoints),
+                        hardpointLoadout: {
+                            devices: Array.isArray(ship.contents?.hardpointLoadout?.devices)
+                                ? ship.contents.hardpointLoadout.devices
+                                    .filter(entry => entry && typeof entry === 'object')
+                                    .map(entry => ({
+                                        instanceId: String(entry.instanceId || ''),
+                                        deviceId: String(entry.deviceId || ''),
+                                        contents: normalizeContentEntries(entry.contents)
+                                    }))
+                                : [],
+                            weapons: normalizeContentEntries(ship.contents?.hardpointLoadout?.weapons)
+                                .map(entry => ({
+                                    ...entry,
+                                    weaponId: String(entry.weaponId || entry.id || ''),
+                                    arc: String(entry.arc || 'F').toUpperCase()
+                                }))
+                        }
                     },
                     stores: {
                         cargo: Math.max(0, Number(ship.stores?.cargo) || 0),

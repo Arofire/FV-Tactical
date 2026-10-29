@@ -5,7 +5,11 @@ import argparse
 import csv
 import io
 import json
+import math
+import os
 import re
+import stat
+import tempfile
 import urllib.request
 from pathlib import Path
 
@@ -149,30 +153,53 @@ def read_csv(source):
     return rows[1:]
 
 
-def load_previous_requirements():
-    if not OUTPUT_PATH.exists():
+def load_previous_requirements(path=OUTPUT_PATH):
+    if not path.exists():
         return {}
     try:
-        previous = json.loads(OUTPUT_PATH.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return {
-        normalize(weapon["name"]): weapon["requiredTech"][0]
-        for category in previous.get("categories", [])
-        for weapon in category.get("weapons", [])
-        if weapon.get("name") and weapon.get("requiredTech")
-    }
+        previous = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"Cannot read previous weapon requirements from {path}: {error}") from error
+    if not isinstance(previous, dict) or not isinstance(previous.get("categories"), list):
+        raise ValueError(f"Previous weapon catalogue {path} must contain a categories array.")
+
+    requirements = {}
+    for category_index, category in enumerate(previous["categories"]):
+        if not isinstance(category, dict) or not isinstance(category.get("weapons"), list):
+            raise ValueError(
+                f"Previous weapon catalogue {path} has an invalid category at index {category_index}."
+            )
+        for weapon_index, weapon in enumerate(category["weapons"]):
+            context = f"category {category_index}, weapon {weapon_index}"
+            if not isinstance(weapon, dict):
+                raise ValueError(f"Previous weapon catalogue {path} has invalid {context}.")
+            name = weapon.get("name")
+            tech = weapon.get("requiredTech")
+            if not isinstance(name, str) or not isinstance(tech, list) or any(
+                not isinstance(item, str) for item in tech
+            ):
+                raise ValueError(
+                    f"Previous weapon catalogue {path} has invalid name/requiredTech at {context}."
+                )
+            if tech:
+                requirements[normalize(name)] = tech[0]
+    return requirements
 
 
-def build_catalogue(rows):
-    technology_tree = json.loads(TECH_TREE_PATH.read_text(encoding="utf-8"))
+def build_catalogue(rows, technology_tree_path=TECH_TREE_PATH, previous_path=OUTPUT_PATH):
+    try:
+        technology_tree = json.loads(technology_tree_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"Cannot read technology tree from {technology_tree_path}: {error}") from error
+    if not isinstance(technology_tree, dict):
+        raise ValueError(f"Technology tree {technology_tree_path} must be a JSON object.")
     technology_names = {
         normalize(value.get("name", key)): key
         for key, value in technology_tree.items()
         if isinstance(value, dict)
     }
     technology_ids = set(technology_tree)
-    previous_requirements = load_previous_requirements()
+    previous_requirements = load_previous_requirements(previous_path)
     categories = []
     slug_counts = {}
     current_category = None
@@ -199,12 +226,11 @@ def build_catalogue(rows):
         slug_counts[base_id] = count + 1
         weapon_id = base_id if count == 0 else f"{base_id}-{count + 1}"
 
-        ranges = []
+        accuracy = []
+        damage = []
         for index in range(1, 11, 2):
-            ranges.append({
-                "accuracy": parse_value(row[index]),
-                "damage": parse_value(row[index + 1]),
-            })
+            accuracy.append(parse_value(row[index]))
+            damage.append(parse_value(row[index + 1]))
         mount = get_mount(row[16])
         notes = parse_notes(row[11])
         tech_requirement = get_technology(name, technology_names, technology_ids, previous_requirements)
@@ -213,30 +239,37 @@ def build_catalogue(rows):
             or "spinal" in name.casefold()
             or "spinal" in (tech_requirement or "").casefold()
         )
-        weapon = {
-            "id": weapon_id,
-            "name": name,
-            "ranges": ranges,
-            "notes": notes,
-            "tagsDescription": row[11].strip(),
-            "implied": row[13].strip(),
-            "reasoning": row[14].strip(),
-            "tier": parse_value(row[15]),
-            "hp": row[16].strip() or None,
-            "resourceType": mount["resourceType"],
-            "resourceCount": mount["resourceCount"],
-            "isSpinal": is_spinal,
-            "isPointDefense": (
-                any(note["name"].casefold() == "antimissile" for note in notes)
-                or name.casefold().startswith("pd ")
-            ),
-            "cost": get_cost(row[17], current_category["name"], weapon_id),
-            "requiredTech": [tech_requirement] if tech_requirement else [],
-            "sourceRow": csv_row_number,
-        }
+        weapon = {"id": weapon_id, "name": name, "accuracy": accuracy, "damage": damage}
+        tags_description = row[11].strip()
+        implied = row[13].strip()
+        reasoning = row[14].strip()
+        tier = parse_value(row[15])
+        hp = row[16].strip()
+        cost = get_cost(row[17], current_category["name"], weapon_id)
+        if tags_description:
+            weapon["tagsDescription"] = tags_description
+        if implied:
+            weapon["implied"] = implied
+        if reasoning:
+            weapon["reasoning"] = reasoning
+        if tier is not None:
+            weapon["tier"] = tier
+        if hp:
+            weapon["hp"] = hp
+        if is_spinal:
+            weapon["isSpinal"] = True
+        if any(note["name"].casefold() == "antimissile" for note in notes) or name.casefold().startswith("pd "):
+            weapon["isPointDefense"] = True
+        if name.casefold().startswith("main "):
+            weapon["isMain"] = True
+        if cost is not None:
+            weapon["cost"] = cost
+        weapon["requiredTech"] = [tech_requirement] if tech_requirement else []
+        weapon["sourceRow"] = csv_row_number
         current_category["weapons"].append(weapon)
 
-    return {
+    catalogue = {
+        "schemaVersion": 1,
         "source": {
             "url": SOURCE_URL,
             "description": "Imported from the published weapons CSV.",
@@ -247,6 +280,177 @@ def build_catalogue(rows):
             category for category in categories if category["name"] != "Warheads"
         ],
     }
+    validate_catalogue(catalogue)
+    return catalogue
+
+
+def _is_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def validate_catalogue(catalogue):
+    """Validate compact weapon JSON before serialization or replacing a file."""
+    if not isinstance(catalogue, dict):
+        raise ValueError("Weapon catalogue must be a JSON object.")
+    if catalogue.get("schemaVersion") != 1 or isinstance(catalogue.get("schemaVersion"), bool):
+        raise ValueError("Weapon catalogue schemaVersion must be 1.")
+    source = catalogue.get("source")
+    if not isinstance(source, dict) or any(
+        not isinstance(source.get(key), str) for key in ("url", "description")
+    ):
+        raise ValueError("Weapon catalogue source must contain url and description strings.")
+    categories = catalogue.get("categories")
+    if not isinstance(categories, list):
+        raise ValueError("Weapon catalogue categories must be an array.")
+
+    ids = set()
+    for category_index, category in enumerate(categories):
+        category_context = f"category at index {category_index}"
+        if not isinstance(category, dict):
+            raise ValueError(f"{category_context} must be an object.")
+        if not isinstance(category.get("name"), str) or not category["name"].strip():
+            raise ValueError(f"{category_context} must have a non-empty name.")
+        if not isinstance(category.get("description"), str):
+            raise ValueError(f"category {category['name']!r} description must be a string.")
+        unknown_category_fields = set(category) - {"name", "description", "weapons"}
+        if unknown_category_fields:
+            raise ValueError(
+                f"category {category['name']!r} contains unsupported fields: "
+                + ", ".join(sorted(unknown_category_fields))
+                + "."
+            )
+        weapons = category.get("weapons")
+        if not isinstance(weapons, list):
+            raise ValueError(f"category {category['name']!r} weapons must be an array.")
+
+        for weapon_index, weapon in enumerate(weapons):
+            context = f"category {category['name']!r}, weapon at index {weapon_index}"
+            if not isinstance(weapon, dict):
+                raise ValueError(f"{context} must be an object.")
+            weapon_id = weapon.get("id")
+            name = weapon.get("name")
+            if not isinstance(weapon_id, str) or not weapon_id:
+                raise ValueError(f"{context} must have a non-empty id.")
+            if weapon_id in ids:
+                raise ValueError(f"{context} has duplicate id {weapon_id!r}.")
+            ids.add(weapon_id)
+            if not isinstance(name, str) or not name:
+                raise ValueError(f"{context} must have a non-empty name.")
+
+            for stat in ("accuracy", "damage"):
+                values = weapon.get(stat)
+                if not isinstance(values, list) or len(values) != 5:
+                    raise ValueError(f"{context} {stat} must contain exactly five entries.")
+                for band_index, value in enumerate(values):
+                    if value is not None and not (
+                        isinstance(value, str) or _is_number(value)
+                    ):
+                        raise ValueError(
+                            f"{context} {stat}[{band_index}] must be a string, number, or null."
+                        )
+
+            required_tech = weapon.get("requiredTech")
+            if not isinstance(required_tech, list) or any(
+                not isinstance(tech_id, str) or not tech_id for tech_id in required_tech
+            ):
+                raise ValueError(f"{context} requiredTech must be an array of non-empty tech IDs.")
+            if (
+                not isinstance(weapon.get("sourceRow"), int)
+                or isinstance(weapon["sourceRow"], bool)
+                or weapon["sourceRow"] < 2
+            ):
+                raise ValueError(f"{context} sourceRow must be an integer of at least 2.")
+
+            for field in ("tagsDescription", "implied", "reasoning"):
+                if field in weapon and not isinstance(weapon[field], str):
+                    raise ValueError(f"{context} {field} must be a string when present.")
+            for field in ("tier", "cost"):
+                if field in weapon and weapon[field] is not None and not (
+                    _is_number(weapon[field]) or isinstance(weapon[field], str)
+                ):
+                    raise ValueError(f"{context} {field} must be a number, string, or null.")
+            if "hp" in weapon:
+                hp = weapon["hp"]
+                if not isinstance(hp, str):
+                    raise ValueError(f"{context} hp must be a string when present.")
+                mount_match = re.fullmatch(r"([HUE])(\d+)", hp.strip().upper())
+                if mount_match and int(mount_match.group(2)) > 9007199254740991:
+                    raise ValueError(f"{context} hp mount size must be a safe integer.")
+            for flag in ("isSpinal", "isMain", "isPointDefense"):
+                if flag in weapon and not isinstance(weapon[flag], bool):
+                    raise ValueError(f"{context} {flag} must be a boolean when present.")
+
+            allowed = {
+                "id", "name", "accuracy", "damage", "tagsDescription", "implied",
+                "reasoning", "tier", "hp", "isSpinal", "isMain", "isPointDefense",
+                "cost", "requiredTech", "sourceRow",
+            }
+            unknown = set(weapon) - allowed
+            if unknown:
+                raise ValueError(f"{context} contains unsupported fields: {', '.join(sorted(unknown))}.")
+
+    unknown_top_level = set(catalogue) - {"schemaVersion", "source", "categories"}
+    if unknown_top_level:
+        raise ValueError(
+            "Weapon catalogue contains unsupported top-level fields: "
+            + ", ".join(sorted(unknown_top_level))
+            + "."
+        )
+
+
+def _format_json(value, depth=0, inline=False):
+    """Format JSON deterministically, keeping catalogue stat/tech arrays inline."""
+    indent = "  " * depth
+    if isinstance(value, dict):
+        if not value:
+            return "{}"
+        entries = []
+        for key, item in value.items():
+            item_inline = key in ("accuracy", "damage", "requiredTech")
+            rendered = _format_json(item, depth + 1, inline=item_inline)
+            entries.append(f'{"  " * (depth + 1)}{json.dumps(key, ensure_ascii=False)}: {rendered}')
+        return "{\n" + ",\n".join(entries) + f"\n{indent}" + "}"
+    if isinstance(value, list):
+        if inline:
+            return "[" + ", ".join(json.dumps(item, ensure_ascii=False, allow_nan=False) for item in value) + "]"
+        if not value:
+            return "[]"
+        items = [f'{"  " * (depth + 1)}{_format_json(item, depth + 1)}' for item in value]
+        return "[\n" + ",\n".join(items) + f"\n{indent}]"
+    return json.dumps(value, ensure_ascii=False, allow_nan=False)
+
+
+def serialize_catalogue(catalogue):
+    validate_catalogue(catalogue)
+    return _format_json(catalogue) + "\n"
+
+
+def write_catalogue(path, catalogue):
+    """Validate and atomically replace an output file after a completed write."""
+    text = serialize_catalogue(catalogue)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        output_mode = stat.S_IMODE(path.stat().st_mode)
+    else:
+        current_umask = os.umask(0)
+        os.umask(current_umask)
+        output_mode = 0o666 & ~current_umask
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", newline="\n", dir=path.parent,
+            prefix=f".{path.name}.", suffix=".tmp", delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            os.chmod(temporary_path, output_mode)
+            temporary.write(text)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path is not None and temporary_path.exists():
+            temporary_path.unlink()
 
 
 def main():
@@ -260,8 +464,7 @@ def main():
     args = parser.parse_args()
 
     catalogue = build_catalogue(read_csv(args.source))
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(catalogue, indent=2) + "\n", encoding="utf-8")
+    write_catalogue(args.output, catalogue)
     weapon_count = sum(len(category["weapons"]) for category in catalogue["categories"])
     print(f"Wrote {weapon_count} weapons across {len(catalogue['categories'])} categories to {args.output}")
 

@@ -400,7 +400,6 @@
 
 /* Section Layout */
 .widget-section {
-    border-bottom: 1px solid #333;
     transition: background-color 0.2s ease;
     padding: 0px 8px;
     display: flex;
@@ -625,33 +624,17 @@
     font-size: 11px;
 }
 
-.outfit-device-section {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-    margin-bottom: 10px;
-    padding: 6px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #252525;
-}
-
 .outfit-subsection-unavailable {
     min-height: 0;
-    border-color: #383838;
-    background: #202020;
     opacity: 0.55;
 }
 
-.outfit-subsection-unavailable > :not(.outfit-subsection-heading):not(h5):not(.outfit-unavailable-hint) {
+.outfit-subsection-unavailable > :not(.design-subtitle):not(.outfit-unavailable-hint) {
     display: none;
 }
 
-.outfit-subsection-unavailable .outfit-subsection-heading h5,
-.outfit-subsection-unavailable > h5 {
+.outfit-subsection-unavailable > .design-subtitle {
     color: #858585;
-    margin-bottom: 0;
 }
 
 .outfit-unavailable-hint {
@@ -666,66 +649,11 @@
     display: none;
 }
 
-.outfit-subsection-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex: 1 0 100%;
-    gap: 8px;
-}
-
-.outfit-subsection-heading h5,
-.outfit-device-section > h5 {
-    margin: 0 0 4px;
-    color: #4a90e2;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.outfit-utility-table {
-    table-layout: fixed;
-    min-width: 0;
-}
-
-.outfit-utility-table th:nth-child(2),
-.outfit-utility-table td:nth-child(2) {
-    width: 8em;
-}
-
-.outfit-utility-table th:nth-child(3),
-.outfit-utility-table td:nth-child(3) {
-    width: 40px;
-}
-
-.outfit-utility-table select,
-.outfit-utility-table input[type="number"] {
-    box-sizing: border-box;
-    width: 100%;
-    background: #0f0f0f;
-    color: #e2e2e2;
-    border: 1px solid #333;
-    border-radius: 4px;
-    padding: 4px 6px;
-}
-
-.outfit-utility-table .widget-remove-action {
-    margin: 0 auto;
-}
-
 .outfit-device-stats {
     min-width: 0;
     color: #9fa8b2;
     font-size: 11px;
     text-align: left;
-}
-
-.outfit-table-empty {
-    flex: 1 0 100%;
-    padding: 8px;
-    color: #777;
-    font-size: 11px;
-    font-style: italic;
-    text-align: center;
 }
 
 .outfit-systems-grid {
@@ -1138,6 +1066,10 @@
     font-size: 13px;
 }
 
+.composition-item input.hull-spin {
+    flex: 0 0 4em;
+}
+
 .hull-spin:focus {
     outline: none;
     border-color: #4a90e2;
@@ -1260,7 +1192,8 @@
 }
 
 .payload-select-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 64px);
     gap: 8px;
     align-items: center;
 }
@@ -1268,6 +1201,12 @@
 .payload-select-row select {
     flex: 1;
     min-width: 0;
+}
+
+.design-widget .payload-select-row input[type="number"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .accuracy-item {
@@ -1368,6 +1307,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 0 0 auto;
     /* min-width: 120px; */
 }
 
@@ -1386,7 +1326,7 @@
 
 .cargo-remass-control input.value {
     box-sizing: border-box;
-    width: 7ch;
+    width: 9ch;
     padding: 1px 2px;
     border: 1px solid transparent;
     border-radius: 3px;
@@ -1817,7 +1757,6 @@
     flex-direction: column;
     align-items: flex-start;
     width: max-content;
-    border: 1px solid #444;
     background: transparent;
 }
 
@@ -2276,12 +2215,6 @@
     padding: 6px 8px;
 }
 
-.no-weapons {
-    color: #6f7b90;
-    font-size: 11px;
-    text-align: center;
-}
-
 /* Statistics widget grid */
 .stats-grid {
     display: grid;
@@ -2345,31 +2278,10 @@
     gap: 8px;
 }
 
-.spinal-weapon-group,
-.offensive-weapons-group,
-.defensive-weapons-group {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    border: 1px solid #444;
-    padding: 4px;
-    border-radius: 4px;
-    background: #252525;
-}
-
 .outfit-armor-control {
     display: flex;
     flex-direction: column;
     gap: 8px;
-}
-
-.spinal-weapon-group h5,
-.offensive-weapons-group h5,
-.defensive-weapons-group h5 {
-    margin: 0 0 8px 0;
-    color: #4a90e2;
-    font-size: 13px;
-    font-weight: 600;
 }
 
 .weapons-table {
@@ -2400,12 +2312,6 @@
     border-bottom: none;
 }
 
-.weapons-table .no-weapons {
-    text-align: center;
-    color: #777;
-    font-style: italic;
-}
-
 .weapon-select,
 .mount-select {
     width: 100%;
@@ -2424,19 +2330,19 @@
 }
 
 .widget-add-action {
-    min-height: 26px;
-    padding: 6px 12px;
-    background: #4a90e2;
-    border: none;
+    min-height: 24px;
+    padding: 4px 10px;
+    background: #484848;
+    border: 1px solid #666;
     color: white;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     margin-bottom: 8px;
 }
 
 .widget-add-action:hover {
-    background: #357abd;
+    background: #555;
 }
 
 .widget-add-action:disabled {
@@ -2656,6 +2562,14 @@
     padding: 6px 8px;
 }
 
+.design-widget .widget-section[hidden] {
+    display: none;
+}
+
+.design-widget .design-device-sections {
+    display: contents;
+}
+
 .design-widget .design-section-title,
 .design-subtitle {
     display: flex;
@@ -2669,12 +2583,17 @@
 
 .design-widget .design-section-title > .outfit-resource-counter,
 .design-subtitle > .outfit-resource-counter {
-    margin-left: 0;
+    margin-left: auto;
 }
 
-.design-widget .design-section-title > :nth-child(2),
-.design-subtitle > :nth-child(2) {
+.design-widget .design-section-title > .outfit-section-subtotal-inline,
+.design-subtitle > .outfit-section-subtotal-inline {
     margin-left: auto;
+}
+
+.design-widget .design-section-title > .outfit-section-subtotal-inline + .outfit-resource-counter,
+.design-subtitle > .outfit-section-subtotal-inline + .outfit-resource-counter {
+    margin-left: 0;
 }
 
 .design-widget .outfit-section-subtotal-inline {
@@ -2784,6 +2703,29 @@
     gap: 2px;
 }
 
+.design-entry-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.design-entry-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 8px;
+    padding-left: 6px;
+    color: #9fa8b2;
+    font-size: 10px;
+}
+
+.design-entry-options .arc-option,
+.design-entry-options .turret-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
 .design-entry-list[hidden] {
     display: none;
 }
@@ -2883,13 +2825,10 @@
     accent-color: #4a90e2;
 }
 
-.design-picker .widget-add-action,
-.outfit-subsection-heading .widget-add-action {
+.design-picker .widget-add-action {
     margin-bottom: 0;
 }
 
-.outfit-device-section > .design-picker,
-.offensive-weapons-group > .design-picker,
-.defensive-weapons-group > .design-picker {
+.outfit-availability-container > .design-picker {
     width: 100%;
 }

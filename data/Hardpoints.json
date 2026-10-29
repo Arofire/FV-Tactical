@@ -1,0 +1,12 @@
+{
+  "devices": [
+    { "id": "adapter", "name": "Adapter", "cost": 2, "cells": 10, "requiredTech": [] },
+    { "id": "clamp", "name": "Clamp", "cost": 2, "bays": 2, "requiredTech": [] },
+    { "id": "cradle", "name": "Cradle", "cost": 2, "jumpium": 1, "requiredTech": [] },
+    { "id": "fixture", "name": "Fixture", "cost": 3, "mounts": 1, "requiredTech": [] },
+    { "id": "grapple", "name": "Grapple", "cost": 5, "grapple": 3, "requiredTech": [] },
+    { "id": "survey", "name": "Survey", "cost": 1, "requiredTech": [] },
+    { "id": "particle-sail", "name": "Particle Sail", "cost": 1, "requiredTech": [] },
+    { "id": "laser-focus", "name": "LASER Focus", "cost": 1, "requiredTech": ["heavy-optical-aperture"] }
+  ]
+}

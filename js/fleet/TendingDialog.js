@@ -116,7 +116,7 @@ class TendingDialog {
                     ? ShipCapacity.getStoresMaxima(classWidget)[resource]
                     : state.max,
                 current: ship.stores[resource],
-                consumption: ShipCapacity.getConsumption(outfitWidget),
+                consumption: ShipCapacity.getConsumption(classWidget),
                 berthingCargo: ShipCapacity.getBerthingCargo(outfitWidget),
                 demand: ShipCapacity.getMaxRemassPerBurn(classWidget, outfitWidget)
             });

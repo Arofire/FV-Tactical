@@ -49,7 +49,7 @@ class CraftWidget extends DesignWidget {
     async loadCatalogues() {
         const [craft, weapons] = await Promise.allSettled([
             this.fetchJSON('data/Craft.json'),
-            this.fetchJSON('data/weapons.json')
+            WeaponCatalogue.load()
         ]);
         if (craft.status === 'fulfilled' && craft.value && typeof craft.value === 'object') {
             for (const key of Object.keys(this.catalogues)) {
@@ -65,12 +65,13 @@ class CraftWidget extends DesignWidget {
             this.craftWeapons = Array.isArray(craftCategory?.weapons) ? craftCategory.weapons : [];
             this.hardpointOptions = typeof ShipCapacity !== 'undefined'
                 ? await ShipCapacity.getHardpointWeaponOptions(true)
-                : categories.flatMap(entry => (entry.weapons || []).filter(weapon => weapon.resourceType === 'hardpoints'));
+                : categories.flatMap(entry => (entry.weapons || []).filter(weapon =>
+                    WeaponCatalogue.getMount(weapon).resourceType === 'hardpoints'));
         } else {
-            console.error('Failed to load craft weapons (data/weapons.json):', weapons.reason);
+            this.reportCatalogueError('Craft weapons catalogue (data/weapons.json)', weapons.reason);
         }
-        this.cataloguesLoaded = true;
-        this.normalizeSelections();
+        this.cataloguesLoaded = craft.status === 'fulfilled' && weapons.status === 'fulfilled';
+        if (this.cataloguesLoaded) this.normalizeSelections();
         this.refresh();
     }
 
@@ -115,7 +116,7 @@ class CraftWidget extends DesignWidget {
     // Resource units one item occupies.
     getItemSize(category, item) {
         if (!item) return 1;
-        if (category === 'hardpoints') return Math.max(1, Number(item.resourceCount) || 1);
+        if (category === 'hardpoints') return Math.max(1, WeaponCatalogue.getMount(item).resourceCount || 1);
         return Math.max(1, Number(item.capacity) || 1);
     }
 
@@ -480,7 +481,7 @@ class CraftWidget extends DesignWidget {
         this.craftData.cost = stats.combatValue;
         this.craftData.baysRequired = stats.baysRequired;
         this.craftData.requiredTech = this.getSelectedRequiredTech();
-        this.setHeaderMetric('cost', '', this.formatOptionCost(stats.combatValue, 'general', this.getProfile()?.id || ''));
+        this.setHeaderMetric('cost', '', this.formatTotalCost(stats.combatValue, 'general', this.getProfile()?.id || ''));
         this.setSubtotal('profile-subtotal', stats.profileCost);
         this.setSubtotal('roles-subtotal', stats.roleCost, 'roles');
         this.setSubtotal('loadout-subtotal', stats.loadoutCost);
@@ -508,7 +509,9 @@ class CraftWidget extends DesignWidget {
     createNodes() {
         this.clearNodes();
         this.addNode('input', 'Core', 'Core', 0, 0.3, { sectionId: 'meta', anchorId: `${this.id}-meta` });
-        this.addNode('output', 'Craft', 'Craft', 1, 0.4, { sectionId: 'meta', anchorId: `${this.id}-meta` });
+        this.addNode('output', 'Craft', 'Craft', 1, 0.4, {
+            sectionId: 'meta', anchorId: `${this.id}-meta`, optional: true
+        });
         this.reflowNodes();
     }
 
@@ -579,7 +582,7 @@ class CraftWidget extends DesignWidget {
         const stats = this.calculateStats();
         [
             ['Role', this.craftData.role || stats.roles.join(', ') || '—'],
-            ['Cost', this.formatOptionCost(stats.combatValue, 'general', profile?.id || '')],
+            ['Cost', this.formatTotalCost(stats.combatValue, 'general', profile?.id || '')],
             ['Bays', stats.baysRequired],
             ['Hardpoints', `${stats.hardpointsUsed}/${stats.hardpoints}`]
         ].forEach(([label, value]) => this.addSummaryField(grid, label, String(value)));

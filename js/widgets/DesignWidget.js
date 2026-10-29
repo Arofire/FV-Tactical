@@ -223,6 +223,7 @@ class DesignWidget extends Widget {
             this.designData.operational = event.target.checked;
             this.refreshSummary();
             this.notifyChildrenOfChange();
+            window.widgetManager?.notifyOperationalStatusChanged?.(this);
         });
         this.element.querySelector(`#${this.id}-ignore-required-tech`)?.addEventListener('change', event => {
             this.designData.ignoreRequiredTech = event.target.checked;
@@ -236,6 +237,10 @@ class DesignWidget extends Widget {
         const ignore = this.element?.querySelector(`#${this.id}-ignore-required-tech`);
         if (operational) operational.checked = !!this.designData.operational;
         if (ignore) ignore.checked = !!this.designData.ignoreRequiredTech;
+    }
+
+    onOperationalStatusChanged(sourceWidget) {
+        if (sourceWidget !== this) this.refresh();
     }
 
     // Section title: label on the left, optional subtotal and used/capacity counter on the right.
@@ -270,7 +275,7 @@ class DesignWidget extends Widget {
 
     setSubtotal(key, value, category = 'general') {
         const element = this.element?.querySelector(`#${this.id}-${key}`);
-        if (element) element.textContent = value ? this.formatOptionCost(value, category) : '';
+        if (element) element.textContent = value ? this.formatTotalCost(value, category) : '';
     }
 
     setCounter(key, used, capacity) {
@@ -308,7 +313,7 @@ class DesignWidget extends Widget {
             quantity.textContent = `×${row.quantity}`;
             const cost = document.createElement('span');
             cost.className = 'design-entry-cost';
-            cost.textContent = row.cost ? this.formatOptionCost(row.cost, row.category || 'equipment') : '';
+            cost.textContent = row.cost ? this.formatTotalCost(row.cost, row.category || 'equipment') : '';
             const remove = document.createElement('button');
             remove.type = 'button';
             remove.className = 'widget-remove-action';

@@ -87,13 +87,16 @@ class UniqueShipExporter {
         return value === undefined || value === null || value === '' ? null : value;
     }
 
+    static getWeaponStatValues(weapon, field) {
+        const values = weapon?.[field];
+        return Array.isArray(values) && values.length === 5
+            ? values
+            : [null, null, null, null, null];
+    }
+
     static getWeaponNotes(weapon) {
-        const notes = Array.isArray(weapon?.notes) ? weapon.notes : [];
-        const findNote = name => notes.find(note =>
-            String(note?.name || '').toLowerCase() === name.toLowerCase()
-        );
-        const chargeNote = findNote('Charge');
-        const expendableNote = findNote('Expendable');
+        const chargeNote = WeaponCatalogue.getNote(weapon, 'Charge');
+        const expendableNote = WeaponCatalogue.getNote(weapon, 'Expendable');
         return {
             charge: weapon?.charge ?? chargeNote?.value ?? null,
             expend: weapon?.expend ?? expendableNote?.value ?? null
@@ -158,7 +161,9 @@ class UniqueShipExporter {
             const spinal = weaponDefinitions.get(spinalId) || {
                 id: spinalId,
                 name: spinalId,
-                resourceType: 'emplacements'
+                hp: 'E01',
+                accuracy: [null, null, null, null, null],
+                damage: [null, null, null, null, null]
             };
             this.addWeaponConfiguration(configurations, spinal, 1, 'F', false);
         }
@@ -167,19 +172,21 @@ class UniqueShipExporter {
             ['defensive', Array.isArray(weapons.defensive) ? weapons.defensive : []]
         ]) {
             for (const weapon of entries) {
-                if (!weapon || (weapon.resourceType !== 'emplacements' &&
-                    !(category === 'defensive' && weapon.resourceType === 'utilities'))) continue;
+                if (!weapon) continue;
                 const definition = weaponDefinitions.get(weapon.weaponId) || {
                     ...weapon,
                     id: weapon.weaponId,
                     name: weapon.name || weapon.weaponId
                 };
+                const { resourceType } = WeaponCatalogue.getMount(definition);
+                if (!weapon || (resourceType !== 'emplacements' &&
+                    !(category === 'defensive' && resourceType === 'utilities'))) continue;
                 this.addWeaponConfiguration(
                     configurations,
                     definition,
                     weapon.count,
                     category === 'defensive' ? 'O' : weapon.arc,
-                    weapon.isTurreted
+                    Boolean(weapon.isTurreted && !definition.isMain)
                 );
             }
         }
@@ -187,7 +194,9 @@ class UniqueShipExporter {
             const definition = weaponDefinitions.get(entry.weaponId) || {
                 id: entry.weaponId,
                 name: entry.weaponId || 'Unknown hardpoint weapon',
-                resourceType: 'hardpoints'
+                hp: 'H01',
+                accuracy: [null, null, null, null, null],
+                damage: [null, null, null, null, null]
             };
             this.addWeaponConfiguration(
                 configurations,
@@ -195,6 +204,22 @@ class UniqueShipExporter {
                 entry.count,
                 entry.arc,
                 entry.turreted
+            );
+        }
+        for (const entry of ship.contents?.hardpointLoadout?.weapons || []) {
+            const definition = weaponDefinitions.get(entry.weaponId) || {
+                id: entry.weaponId,
+                name: entry.weaponId || 'Unknown fixture-mounted weapon',
+                hp: 'H01',
+                accuracy: [null, null, null, null, null],
+                damage: [null, null, null, null, null]
+            };
+            this.addWeaponConfiguration(
+                configurations,
+                definition,
+                entry.count,
+                entry.arc,
+                false
             );
         }
         return Array.from(configurations.values());
@@ -277,9 +302,10 @@ class UniqueShipExporter {
             if (expend === null || expend === undefined || expend === '') continue;
             const count = Math.floor(this.number(entry.count));
             if (count < 1) continue;
-            const resourceCount = Math.max(1, this.number(weapon?.resourceCount));
+            const { resourceCount } = WeaponCatalogue.getMount(weapon);
+            const slotResourceCount = Math.max(1, this.number(resourceCount));
             const arcSurcharge = entry.turreted && String(entry.arc || '').length > 1 ? 1 : 0;
-            const slotCost = resourceCount + arcSurcharge;
+            const slotCost = slotResourceCount + arcSurcharge;
             stores.push({
                 name: weapon?.name || entry.weaponId || 'Unknown hardpoint weapon',
                 current: count,
@@ -476,12 +502,17 @@ class UniqueShipExporter {
         const selectedOutfitWeapons = [
             ...(Array.isArray(outfitData.weapons?.offensive)
                 ? outfitData.weapons.offensive.filter(weapon =>
-                    weapon?.resourceType === 'emplacements')
+                    WeaponCatalogue.getMount(
+                        weaponDefinitions.get(weapon?.weaponId) || weapon
+                    ).resourceType === 'emplacements')
                 : []),
             ...(Array.isArray(outfitData.weapons?.defensive)
-                ? outfitData.weapons.defensive.filter(weapon =>
-                    weapon?.resourceType === 'emplacements' ||
-                    weapon?.resourceType === 'utilities')
+                ? outfitData.weapons.defensive.filter(weapon => {
+                    const { resourceType } = WeaponCatalogue.getMount(
+                        weaponDefinitions.get(weapon?.weaponId) || weapon
+                    );
+                    return resourceType === 'emplacements' || resourceType === 'utilities';
+                })
                 : [])
         ];
         const missingOutfitWeapons = selectedOutfitWeapons.filter(weapon =>
@@ -535,7 +566,6 @@ class UniqueShipExporter {
             const prefix = `Weapon${index + 1}`;
             const weapon = configuration.weapon;
             const notes = this.getWeaponNotes(weapon);
-            const ranges = Array.isArray(weapon.ranges) ? weapon.ranges : [];
             const rangeNames = ['Short', 'Medium', 'Long', 'Far', 'Extreme'];
             const quantitySuffix = configuration.count > 1 ? ` x${configuration.count}` : '';
             const tags = [
@@ -547,9 +577,9 @@ class UniqueShipExporter {
             formFields[`${prefix}Arc`] = configuration.arcs.join('');
             rangeNames.forEach((range, rangeIndex) => {
                 formFields[`${prefix}${range}Hit`] =
-                    this.formatWeaponRange(ranges[rangeIndex]?.accuracy);
+                    this.formatWeaponRange(weapon.accuracy?.[rangeIndex]);
                 formFields[`${prefix}${range}Dam`] =
-                    this.formatWeaponRange(ranges[rangeIndex]?.damage);
+                    this.formatWeaponRange(weapon.damage?.[rangeIndex]);
             });
             formFields[`${prefix}Expend`] = notes.expend;
         });
@@ -575,7 +605,7 @@ class UniqueShipExporter {
         const radiation = this.getRadiation(outfitData);
         const entropy = this.getEntropyValues(classData);
         formFields.Systems = devices.systems.join('\n') || (systemsCount ?? null);
-        formFields.Hardpoints = (ship.contents?.hardpoints || [])
+        const hardpointLines = (ship.contents?.hardpoints || [])
             .map(entry => {
                 const weapon = weaponDefinitions.get(entry.weaponId);
                 if (!weapon) return null;
@@ -584,8 +614,27 @@ class UniqueShipExporter {
                 const count = this.number(entry.count) > 1 ? ` x${this.number(entry.count)}` : '';
                 return `${weapon.name}${arc}${turreted}${count}`;
             })
-            .filter(Boolean)
-            .join('\n') || (hardpointCapacity ?? null);
+            .filter(Boolean);
+        const hardpointDevices = ShipLoadoutWidget.getDeviceCatalogue();
+        for (const entry of ship.contents?.hardpointLoadout?.devices || []) {
+            const device = hardpointDevices.find(item => item.id === entry.deviceId);
+            const name = device?.name || entry.deviceId || 'Hardpoint device';
+            const contents = (entry.contents || []).map(content => {
+                const widget = this.getWidget(content.id);
+                const label = widget?.munitionData?.name || widget?.craftData?.name || content.id;
+                const count = this.number(content.count) > 1 ? ` x${this.number(content.count)}` : '';
+                return `${label}${count}`;
+            });
+            hardpointLines.push(`${name}${contents.length ? `: ${contents.join(', ')}` : ''}`);
+        }
+        for (const entry of ship.contents?.hardpointLoadout?.weapons || []) {
+            const weapon = weaponDefinitions.get(entry.weaponId);
+            const name = weapon?.name || entry.weaponId || 'Mounted weapon';
+            const arc = entry.arc ? ` ${entry.arc}` : '';
+            const count = this.number(entry.count) > 1 ? ` x${this.number(entry.count)}` : '';
+            hardpointLines.push(`${name}${arc}${count}`);
+        }
+        formFields.Hardpoints = hardpointLines.join('\n') || (hardpointCapacity ?? null);
         formFields.Features = Object.entries(classData.foundations || {})
             .filter(([, enabled]) => Boolean(enabled))
             .map(([key]) => classWidget?.foundationLabels?.[key] || key)
@@ -628,7 +677,7 @@ class UniqueShipExporter {
             );
         }
         return {
-            schema: 'fv-tactical.unique-ship/v1',
+            schema: 'fv-tactical.unique-ship/v2',
             ship: {
                 id: ship.id,
                 name: ship.name || null,
@@ -637,6 +686,7 @@ class UniqueShipExporter {
                     ?.find(force => force.id === ship.taskForceId)?.name || null,
                 classWidgetId: ship.classWidgetId || null,
                 outfitWidgetId: ship.outfitWidgetId || null,
+                loadoutWidgetId: ship.loadoutWidgetId || null,
                 stores: { ...(ship.stores || {}) },
                 contents: ShipBuilder.cloneContents(ship.contents || ShipBuilder.emptyContents())
             },
@@ -653,13 +703,14 @@ class UniqueShipExporter {
                 count: configuration.count,
                 arcs: configuration.arcs,
                 turreted: configuration.turreted,
-                resourceType: configuration.weapon.resourceType || null,
+                resourceType: WeaponCatalogue.getMount(configuration.weapon).resourceType,
                 details: {
                     tags: [
                         configuration.weapon.tagsDescription,
                         configuration.turreted ? 'Turreted' : null
                     ].filter(Boolean).join(', ') || null,
-                    ranges: configuration.weapon.ranges || [],
+                    accuracy: this.getWeaponStatValues(configuration.weapon, 'accuracy'),
+                    damage: this.getWeaponStatValues(configuration.weapon, 'damage'),
                     expend: this.getWeaponNotes(configuration.weapon).expend
                 }
             })),

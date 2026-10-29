@@ -1101,6 +1101,7 @@ class NodeSystem {
             troops: 'Troop Unit',
             munitions: 'Munition Design',
             outfit: 'Ship Outfit',
+            shipLoadout: 'Ship Loadout',
             shipCore: 'Ship Core',
             summary: 'Summary',
             hullTiles: 'Hull Tiles'
@@ -1252,8 +1253,12 @@ class NodeSystem {
                 outputs: ['Class']
             },
             'outfit': {
-                inputs: ['Core','Class'],
+                inputs: ['Core','Class', 'Loadout'],
                 outputs: ['Outfit']
+            },
+            'shipLoadout': {
+                inputs: ['Class'],
+                outputs: ['Loadout']
             },
             'craft': {
                 inputs: ['Core'],
@@ -1357,17 +1362,33 @@ class NodeSystem {
     }
 
     fromJSON(connectionsData) {
-        // Clear existing connections
-        this.clearAllConnections();
-        
-        // Recreate connections
-        for (const connectionData of connectionsData) {
-            const { sourceNodeId, targetNodeId } = connectionData;
-            if (sourceNodeId && targetNodeId && this.canConnect(sourceNodeId, targetNodeId)) {
-                this.createConnection(sourceNodeId, targetNodeId);
-            } else {
-                console.warn('Skipping invalid connection:', connectionData);
+        const widgets = window.widgetManager?.getAllWidgets?.() || [];
+        widgets.forEach(widget => { widget.deferExpandableNodeUpdates = true; });
+        try {
+            this.clearAllConnections();
+
+            for (const { sourceNodeId, targetNodeId } of connectionsData) {
+                for (const nodeId of [sourceNodeId, targetNodeId]) {
+                    if (!nodeId) continue;
+                    widgets.forEach(widget => widget.ensureNodeForConnection?.(nodeId));
+                }
             }
+
+            for (const connectionData of connectionsData) {
+                const { sourceNodeId, targetNodeId } = connectionData;
+                if (sourceNodeId && targetNodeId && this.canConnect(sourceNodeId, targetNodeId)) {
+                    this.createConnection(sourceNodeId, targetNodeId);
+                } else {
+                    console.warn('Skipping invalid connection:', connectionData);
+                }
+            }
+        } finally {
+            widgets.forEach(widget => { widget.deferExpandableNodeUpdates = false; });
+            widgets.forEach(widget => {
+                for (const groupId of widget.expandableNodeGroups?.keys?.() || []) {
+                    widget.updateExpandableGroup(groupId);
+                }
+            });
         }
     }
 

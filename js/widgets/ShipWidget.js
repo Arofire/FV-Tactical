@@ -3,11 +3,7 @@ class ShipWidget extends DesignWidget {
     constructor(x = 100, y = 100) {
         super('ship', 'New Ship Class', x, y);
         
-        this.defaultRoles = [
-            'corvette', 'frigate', 'destroyer', 'cruiser', 'battleship', 
-            'dreadnought', 'carrier', 'fighter', 'bomber', 'scout', 
-            'transport', 'support'
-        ];
+        this.defaultRoles = ShipWidget.getDefaultRoles();
 
         // Initialize ship class data
         this.shipData = {
@@ -124,30 +120,50 @@ class ShipWidget extends DesignWidget {
         this.queuePreflightCheck();
     }
 
+    static getDefaultRoles() {
+        return [
+            'corvette', 'frigate', 'destroyer', 'cruiser', 'battleship',
+            'dreadnought', 'carrier', 'fighter', 'bomber', 'scout',
+            'transport', 'support'
+        ];
+    }
+
     static getRoleStorageKey() {
         return 'shipWidgetRoles';
     }
 
     static loadStoredRoles(defaultRoles = []) {
-        let stored = [];
         try {
-            const fromStorage = localStorage.getItem(ShipWidget.getRoleStorageKey());
-            if (fromStorage) {
-                stored = JSON.parse(fromStorage);
+            const raw = localStorage.getItem(ShipWidget.getRoleStorageKey());
+            if (!raw) return [...defaultRoles];
+            const parsed = JSON.parse(raw);
+            if (parsed && !Array.isArray(parsed) && parsed.replaceDefaults === true &&
+                Array.isArray(parsed.roles)) {
+                return Array.from(new Set(parsed.roles.filter(role => typeof role === 'string')))
+                    .sort((a, b) => a.localeCompare(b));
             }
-        } catch (err) {
-            console.warn('Unable to load stored ship roles', err);
+            const stored = Array.isArray(parsed) ? parsed : [];
+            return Array.from(new Set([...defaultRoles, ...stored])).sort((a, b) => a.localeCompare(b));
+        } catch (error) {
+            console.warn('Unable to load stored ship roles', error);
+            return [...defaultRoles];
         }
-        const merged = new Set([...(defaultRoles || []), ...(stored || [])]);
-        return Array.from(merged).sort((a, b) => a.localeCompare(b));
     }
 
     static saveStoredRoles(roles = []) {
         try {
-            localStorage.setItem(ShipWidget.getRoleStorageKey(), JSON.stringify(roles));
+            localStorage.setItem(ShipWidget.getRoleStorageKey(), JSON.stringify({
+                roles: Array.from(new Set(roles.filter(role => typeof role === 'string'))),
+                replaceDefaults: true
+            }));
         } catch (err) {
             console.warn('Unable to persist ship roles', err);
         }
+    }
+
+    static setStoredRoles(roles) {
+        if (!Array.isArray(roles)) return;
+        ShipWidget.saveStoredRoles(roles);
     }
 
     getRoleInputValue() {
@@ -162,10 +178,20 @@ class ShipWidget extends DesignWidget {
         return role.charAt(0).toUpperCase() + role.slice(1);
     }
 
+    static escapeRoleHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[character]);
+    }
+
     generateRoleOptionsHTML(selectedRole) {
         return this.availableRoles
             .sort((a, b) => a.localeCompare(b))
-            .map(role => `<option value="${role}" ${selectedRole === role ? 'selected' : ''}>${this.formatRoleLabel(role)}</option>`)
+            .map(role => `<option value="${ShipWidget.escapeRoleHTML(role)}" ${selectedRole === role ? 'selected' : ''}>${ShipWidget.escapeRoleHTML(this.formatRoleLabel(role))}</option>`)
             .join('');
     }
 
@@ -185,6 +211,39 @@ class ShipWidget extends DesignWidget {
             this.availableRoles.push(normalized);
             this.availableRoles.sort((a, b) => a.localeCompare(b));
             ShipWidget.saveStoredRoles(this.availableRoles);
+            const widgets = window.widgetManager?.getAllWidgets?.() || [];
+            if (!widgets.includes(this)) widgets.push(this);
+            for (const widget of widgets) {
+                if (widget.type !== 'ship') continue;
+                widget.availableRoles = [...this.availableRoles];
+                widget.populateRoleSelect(widget.roleSelectElement, widget.shipData.role);
+            }
+        }
+    }
+
+    removeRolePreset(role) {
+        const removedRole = typeof role === 'string' ? role.trim() : '';
+        if (!removedRole || !this.availableRoles.includes(removedRole)) return;
+        const roles = this.availableRoles.filter(availableRole => availableRole !== removedRole);
+        ShipWidget.saveStoredRoles(roles);
+
+        const widgets = window.widgetManager?.getAllWidgets?.() || [];
+        if (!widgets.includes(this)) widgets.push(this);
+        for (const widget of widgets) {
+            if (widget.type !== 'ship') continue;
+            widget.availableRoles = [...roles];
+            const activeRole = widget.roleMode === 'custom'
+                ? widget.roleCustomInput?.value.trim() || widget.shipData.customRole || widget.shipData.role
+                : widget.shipData.role;
+            if (activeRole === removedRole) {
+                widget.shipData.role = roles[0] || '';
+                widget.shipData.customRole = '';
+                widget.roleMode = 'dropdown';
+            }
+            widget.populateRoleSelect(widget.roleSelectElement, widget.shipData.role);
+            widget.applyRoleMode(widget.roleMode);
+            widget.queuePreflightCheck();
+            widget.notifyShipDataChanged();
         }
     }
 
@@ -434,6 +493,7 @@ class ShipWidget extends DesignWidget {
                     </select>
                     <input type="text" id="${this.id}-role-custom" class="role-input" placeholder="Enter custom role" value="${roleInputValue}" ${this.roleMode === 'dropdown' ? 'style="display:none;"' : ''}>
                     <button type="button" class="role-toggle-btn" id="${this.id}-role-toggle" title="${this.roleMode === 'dropdown' ? 'Use custom role' : 'Use role list'}">${this.roleMode === 'dropdown' ? '🖉' : '🌳'}</button>
+                    <button type="button" class="widget-remove-action" id="${this.id}-role-remove" title="Remove current role preset" aria-label="Remove current role preset">−</button>
                 </div>
             </div>
         `);
@@ -566,6 +626,7 @@ class ShipWidget extends DesignWidget {
         const roleSelect = getElement(`${this.id}-role-select`);
         const customRoleInput = getElement(`${this.id}-role-custom`);
         const roleToggleBtn = getElement(`${this.id}-role-toggle`);
+        const roleRemoveBtn = getElement(`${this.id}-role-remove`);
         this.roleSelectElement = roleSelect;
         this.roleCustomInput = customRoleInput;
         this.roleToggleButton = roleToggleBtn;
@@ -651,6 +712,15 @@ class ShipWidget extends DesignWidget {
                 }
                 this.queuePreflightCheck();
                 this.notifyShipDataChanged();
+            });
+        }
+
+        if (roleRemoveBtn) {
+            roleRemoveBtn.addEventListener('click', () => {
+                const role = this.roleMode === 'custom'
+                    ? this.roleCustomInput?.value.trim() || this.shipData.customRole || this.shipData.role
+                    : this.roleSelectElement?.value || this.shipData.role;
+                this.removeRolePreset(role);
             });
         }
 
@@ -1027,6 +1097,10 @@ class ShipWidget extends DesignWidget {
                 if ('allowMultipleConnections' in options) {
                     existing.allowMultipleConnections = !!options.allowMultipleConnections;
                 }
+                if ('optional' in options) {
+                    existing.optional = !!options.optional;
+                    this.getNodeDomElement(nodeId)?.classList.toggle('optional', existing.optional);
+                }
                 const labelElement = this.element?.querySelector(`.node-label[data-node-id="${nodeId}"]`);
                 if (labelElement) {
                     labelElement.textContent = label;
@@ -1045,7 +1119,8 @@ class ShipWidget extends DesignWidget {
             nodeId: nodeIds.classInput,
             anchorId: 'ship-information',
             sectionId: 'information',
-            minSpacing: 36
+            minSpacing: 36,
+            optional: true
         });
 
         ensureNode('output', 'Class', 'Class', 1, 0.25, {

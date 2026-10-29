@@ -38,6 +38,17 @@ Create `js/widgets/<Name>Widget.js` as a subclass of `DesignWidget`.
 8. Implement `getSerializedData()` and `loadSerializedData(data)` together for the current format only. Serialize stable IDs and plain data; normalize and merge duplicate quantity entries, and never silently reinterpret an unknown ID. Recompute cached cost/tech/capacity fields from the selected options where appropriate.
 9. Implement `createNodes()` with stable node type names and section anchors. Keep existing node names, directions, and connection semantics when migrating a widget.
 
+## 2a. Match shared widget layout and totals
+
+- Treat identity controls as optional: always include the applicable Operational / Ignore Required Tech flags, but render Role and Notes only when the widget's design contract uses them. Use `renderFlags()` when only the flags belong in the identity section.
+- Keep each control group inside its owning `design-section`. For nested pickers or per-instance tables, follow Craft's `.design-subsection.design-loadout` category and `.design-subsection.design-loadout-group` nested-group classes. Do not append those groups as siblings of the widget's main sections; that can make them span the full center column instead of aligning with their section content.
+- Use `outfit-section-subtotal outfit-section-subtotal-inline` for inline section and subsection costs, and `outfit-resource-counter` with `.outfit-resource-used` / `.outfit-resource-capacity` for used-versus-available counts. Place these beside the subsection title so CSS keeps totals aligned consistently with Outfit and Craft.
+- Use the shared top-right cost metric for the widget total: call `setHeaderMetric('cost', '', formattedCost)` from the widget's totals refresh path, using the existing economy-aware formatter. Refresh it whenever a selection, quantity, technology filter, or economy mode changes.
+- Round displayed totals and subtotals up to the nearest integer. Use `formatTotalCost()` for aggregate costs and `formatCostTotals()` for resource-cost maps; preserve fractional catalogue prices and underlying calculations, rounding only for display.
+- Keep repeated quantity rows consistent with `DesignWidget.renderEntryRows()`: item name first, quantity next, cost next, and remove action last. Use `.design-entry`, `.design-entry-name`, `.design-entry-quantity`, `.design-entry-cost`, and `.widget-remove-action`; this keeps quantities and removal controls aligned across device types.
+- When repeated devices each own separate contents, aggregate same-type devices into one quantity-and-cost row, but retain one nested contents table per instance. Sum the row cost across instances and show per-instance capacities beside each table's title. Show a dependent category only while at least one device of that type exists.
+- Avoid duplicating catalogue-attribute labels beside an add picker when the same values are already represented by the device rows, capacities, counters, or category totals.
+
 Example shared identity setup:
 
 ```js
@@ -95,7 +106,7 @@ See the project migration inventory and sequence in [`docs/design-widget-workflo
 
 ## 5. Completion checklist
 
-- [ ] Widget name, role, and notes round-trip through save/load and rename.
+- [ ] Widget name and applicable identity fields round-trip through save/load and rename.
 - [ ] Operational and Ignore Required Tech flags persist and trigger the appropriate consumers.
 - [ ] Catalogue loading errors are surfaced; the UI does not silently report a successful empty design.
 - [ ] All required-tech IDs exist in `data/tech-tree.json`.

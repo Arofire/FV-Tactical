@@ -252,10 +252,7 @@ class ShipCoreWidget extends DesignWidget {
         
         // Header section with flags
         const headerSection = this.createDesignSection('header', '');
-        this.setSectionContent(headerSection, this.renderIdentityFields({
-            rolePlaceholder: 'Optional core role',
-            notesPlaceholder: 'Core design notes'
-        }));
+        this.setSectionContent(headerSection, this.renderFlags());
         sections.appendChild(headerSection.section);
 
         // Components section
@@ -358,7 +355,7 @@ class ShipCoreWidget extends DesignWidget {
         gearingSection.titleElement.appendChild(gearsToggle);
         this.setSectionContent(gearingSection, `
             <div id="${this.id}-gears-content" class="outfit-category-content">
-                <button type="button" id="${this.id}-add-gear" class="widget-add-action">Add gear</button>
+                <button type="button" id="${this.id}-add-gear" class="widget-add-action">Add</button>
                 <div id="${this.id}-gears" class="core-gears"></div>
             </div>
         `);
@@ -378,8 +375,6 @@ class ShipCoreWidget extends DesignWidget {
         });
         const operationalCheckbox = this.element?.querySelector(`#${this.id}-operational`);
         operationalCheckbox?.addEventListener('change', () => this.refreshOutfitCoreAvailability());
-        this.setupIdentityFieldListeners();
-
         const powerplantInput = this.getPowerplantInput();
         if (powerplantInput) {
             powerplantInput.addEventListener('input', (e) => {
@@ -769,11 +764,13 @@ class ShipCoreWidget extends DesignWidget {
         this.clearNodes();
         this.addNode('input', 'Class', 'Class', 0, 0.25, {
             sectionId: 'header',
-            anchorId: `${this.id}-header`
+            anchorId: `${this.id}-header`,
+            optional: true
         });
         this.addNode('output', 'Core', 'Core', 1, 0.5, {
             sectionId: 'header',
-            anchorId: `${this.id}-header`
+            anchorId: `${this.id}-header`,
+            optional: true
         });
         this.reflowNodes();
         this.refreshPowerplantSize();
@@ -953,11 +950,6 @@ class ShipCoreWidget extends DesignWidget {
     }
 
     syncFormFromData() {
-        const roleInput = this.element?.querySelector(`#${this.id}-role`);
-        if (roleInput) roleInput.value = this.coreData.role;
-        const notesInput = this.element?.querySelector(`#${this.id}-notes`);
-        if (notesInput) notesInput.value = this.coreData.notes;
-
         const operationalCheckbox = document.getElementById(`${this.id}-operational`);
         if (operationalCheckbox) operationalCheckbox.checked = this.coreData.operational;
 

@@ -62,6 +62,7 @@ class FVTacticalApp {
             console.log('Loading saved data...');
             
             this.empire.fromJSON(savedData.empire);
+            this.applyRoleLists(savedData.roleLists);
             this.updateEmpireDisplay();
             console.log('Empire data restored');
 
@@ -254,6 +255,7 @@ class FVTacticalApp {
         const fleetViewBtn = document.getElementById('fleetViewBtn');
         const addFleetShipBtn = document.getElementById('addFleetShip');
         const addTaskForceBtn = document.getElementById('addTaskForce');
+        const debugRandomShipButton = document.getElementById('debugRandomShip');
 
         if (saveBtn) saveBtn.addEventListener('click', () => this.saveEmpire());
         if (loadBtn) loadBtn.addEventListener('click', () => this.loadEmpire());
@@ -279,6 +281,35 @@ class FVTacticalApp {
         }
         if (campaignCostRulesButton) {
             campaignCostRulesButton.addEventListener('click', () => this.openCampaignCostRules());
+        }
+        // DEBUG / TEST ONLY: remove this binding with the button and debug generator module.
+        if (debugRandomShipButton) {
+            debugRandomShipButton.addEventListener('click', async () => {
+                const generator = window.DebugRandomShipGenerator;
+                if (!generator?.createRandomShipGroup) {
+                    const error = new Error('The debug random ship generator module is unavailable.');
+                    console.error(error);
+                    this.showNotification(error.message, 'error');
+                    return;
+                }
+
+                const originalLabel = debugRandomShipButton.textContent;
+                debugRandomShipButton.disabled = true;
+                debugRandomShipButton.setAttribute('aria-busy', 'true');
+                debugRandomShipButton.textContent = 'DEBUG / TEST: Generating…';
+                try {
+                    await generator.createRandomShipGroup(this);
+                    this.updateFleetView();
+                    this.showNotification('DEBUG / TEST ship group generated.', 'success');
+                } catch (error) {
+                    console.error('Debug random ship generation failed:', error);
+                    this.showNotification(`Debug ship generation failed: ${error.message}`, 'error');
+                } finally {
+                    debugRandomShipButton.disabled = false;
+                    debugRandomShipButton.removeAttribute('aria-busy');
+                    debugRandomShipButton.textContent = originalLabel;
+                }
+            });
         }
         if (designViewBtn) designViewBtn.addEventListener('click', () => this.setEmpireView('design'));
         if (fleetViewBtn) fleetViewBtn.addEventListener('click', () => this.setEmpireView('fleet'));
@@ -497,6 +528,9 @@ class FVTacticalApp {
                     break;
                 case 'outfit':
                     widget = new OutfitWidget(x, y);
+                    break;
+                case 'shipLoadout':
+                    widget = new ShipLoadoutWidget(x, y);
                     break;
                 case 'shipCore':
                     widget = new ShipCoreWidget(x, y);
@@ -887,6 +921,7 @@ class FVTacticalApp {
     async loadEmpireData(data) {
         // Clear existing widgets
         this.widgetManager.clearAll();
+        this.applyRoleLists(data.roleLists);
         
         // Load empire data
         this.empire.fromJSON(data.empire);
@@ -903,6 +938,7 @@ class FVTacticalApp {
                 case 'troops': widget = new TroopsWidget(); break;
                 case 'munitions': widget = new MunitionsWidget(); break;
                 case 'outfit': widget = new OutfitWidget(); break;
+                case 'shipLoadout': widget = new ShipLoadoutWidget(); break;
                 case 'shipCore': widget = new ShipCoreWidget(); break;
                 case 'summary': widget = new SummaryWidget(); break;
                 case 'hullTiles': widget = new HullTilesWidget(); break;
@@ -944,6 +980,12 @@ class FVTacticalApp {
         this.runPreflightCheck();
         
 
+    }
+
+    applyRoleLists(roleLists) {
+        if (!roleLists || typeof roleLists !== 'object') return;
+        if (Array.isArray(roleLists.ship)) ShipWidget.setStoredRoles(roleLists.ship);
+        if (Array.isArray(roleLists.outfit)) OutfitWidget.setStoredRoles(roleLists.outfit);
     }
 
     showNotification(message, type = 'info') {
@@ -1011,6 +1053,7 @@ class FVTacticalApp {
             { type: 'troops', label: 'Troop Unit' },
             { type: 'munitions', label: 'Munition Design' },
             { type: 'outfit', label: 'Ship Outfit' },
+            { type: 'shipLoadout', label: 'Ship Loadout' },
             { type: 'shipCore', label: 'Ship Core' },
             { type: 'summary', label: 'Summary' },
             { type: 'hullTiles', label: 'Hull Tiles' }
@@ -1500,6 +1543,14 @@ class WidgetManager {
 
     getAllWidgets() {
         return Array.from(this.widgets.values());
+    }
+
+    notifyOperationalStatusChanged(sourceWidget) {
+        for (const widget of this.widgets.values()) {
+            if (widget !== sourceWidget && typeof widget.onOperationalStatusChanged === 'function') {
+                widget.onOperationalStatusChanged(sourceWidget);
+            }
+        }
     }
 
     deselectAll() {

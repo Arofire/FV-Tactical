@@ -277,12 +277,18 @@ class Widget {
         const units = window.empire?.economyMode === 'campaign' ? ['IP', 'MP', 'EP'] : ['CV'];
         const parts = units
             .filter(unit => Number(totals[unit]) > 0)
-            .map(unit => `${totals[unit].toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`);
+            .map(unit => `${Math.ceil(totals[unit]).toLocaleString()} ${unit}`);
         return parts.length ? parts.join(' + ') : `0 ${units[0]}`;
     }
 
+    formatTotalCost(value, category = 'general', itemId = '') {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+        return this.formatOptionCost(Math.ceil(value), category, itemId)
+            .replace(/\b\d+(?:\.\d+)?\b/g, amount => String(Math.ceil(Number(amount))));
+    }
+
     formatDevelopmentCost(value) {
-        return `${Number.isFinite(value) ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'} DvP`;
+        return `${Number.isFinite(value) ? Math.ceil(value).toLocaleString() : '—'} DvP`;
     }
 
     refreshDevelopmentMetric() {
@@ -611,6 +617,7 @@ class Widget {
             anchorOffset: options.anchorOffset || 0,
             sectionId: options.sectionId || null, // Which section to place the node in
             allowMultipleConnections: !!options.allowMultipleConnections,
+            optional: !!options.optional,
             groupId: options.groupId || null
         };
         
@@ -642,6 +649,7 @@ class Widget {
     createNodeElement(node) {
         const nodeElement = document.createElement('div');
         nodeElement.className = `node ${node.type} ${node.nodeType}`;
+        nodeElement.classList.toggle('optional', node.optional);
         nodeElement.id = node.id;
         
         const labelElement = document.createElement('div');
@@ -750,10 +758,13 @@ class Widget {
     }
 
     handleNodeConnectionChange(nodeId) {
+        if (this.deferExpandableNodeUpdates) return;
         const groupId = this.nodeGroupMembership.get(nodeId);
         if (!groupId) return;
         this.updateExpandableGroup(groupId);
     }
+
+    ensureNodeForConnection() {}
 
     createExpandableNodeGroup(groupId, config = {}) {
         const groupConfig = {
@@ -770,6 +781,7 @@ class Widget {
             minAvailable: typeof config.minAvailable === 'number' ? config.minAvailable : 1,
             maxFree: typeof config.maxFree === 'number' ? config.maxFree : 2,
             allowMultipleConnections: !!config.allowMultipleConnections,
+            optional: !!config.optional,
             relativeX: typeof config.relativeX === 'number' ? config.relativeX : (config.direction === 'output' ? 1 : 0),
             relativeY: typeof config.relativeY === 'number' ? config.relativeY : 0.5,
             nodes: []
@@ -799,6 +811,7 @@ class Widget {
                 anchorOffset: group.anchorOffset,
                 minSpacing: group.minSpacing,
                 allowMultipleConnections: group.allowMultipleConnections,
+                optional: group.optional,
                 groupId
             }
         );
@@ -1226,6 +1239,7 @@ class Widget {
         if (typeof this.onMinimizeStateChanged === 'function') {
             this.onMinimizeStateChanged(this.minimized);
         }
+        this.pinnedWidget?.syncState();
 
         if (window.app && window.app.updateMinimap) {
             window.app.updateMinimap();
@@ -1406,7 +1420,9 @@ class Widget {
     close() {
         // Remove pinned widget if exists
         if (this.pinnedWidget) {
-            this.pinnedWidget.remove();
+            this.pinnedWidget.destroy();
+            this.pinnedWidget = null;
+            this.pinned = false;
         }
         
         // Remove all connections
@@ -1708,6 +1724,7 @@ class Widget {
         if (typeof this.onMinimizeStateChanged === 'function') {
             this.onMinimizeStateChanged(this.minimized);
         }
+        this.pinnedWidget?.syncState();
 
         this.updateAllNodePositions();
     }
@@ -2071,16 +2088,25 @@ class Widget {
     }
 }
 
-// PinnedWidget class - Creates an editable duplicate on the pinned layer
+// PinnedWidget mirrors the original widget's content while forwarding interactions.
 class PinnedWidget {
     constructor(originalWidget) {
         this.originalWidget = originalWidget;
         this.id = `${originalWidget.id}-pinned`;
-        this.x = window.innerWidth - originalWidget.width - 20;
+        this.instanceKey = Math.random().toString(36).slice(2, 8);
+        this.x = Math.max(0, window.innerWidth - originalWidget.width - 20);
         this.y = 80;
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
-        
+        this.pinnedToOriginal = new WeakMap();
+        this.originalToPinned = new WeakMap();
+        this.pinnedIdByOriginalId = new Map();
+        this.dragHandler = event => this.drag(event);
+        this.stopDragHandler = () => this.stopDrag();
+        this.handlePinnedInput = event => this.forwardInput(event);
+        this.handlePinnedClick = event => this.forwardClick(event);
+        this.handleOriginalInput = event => this.syncControlFromOriginal(event);
+
         this.create();
         this.setupSync();
         this.setupEventListeners();
@@ -2088,12 +2114,12 @@ class PinnedWidget {
     
     create() {
         this.element = document.createElement('div');
-        this.element.className = `widget ${this.originalWidget.type}-widget pinned-widget`;
+        this.element.className = `${this.originalWidget.element.className} pinned-widget`;
+        this.element.classList.remove('selected', 'dragging', 'resizing');
         this.element.id = this.id;
         this.element.style.left = this.x + 'px';
         this.element.style.top = this.y + 'px';
         this.element.style.width = this.originalWidget.width + 'px';
-        this.element.style.height = this.originalWidget.height + 'px';
         this.element.style.position = 'absolute';
         this.element.style.zIndex = '10000';
         this.element.style.border = '2px solid #4a90e2';
@@ -2138,89 +2164,214 @@ class PinnedWidget {
         
         // Sync initial content
         this.syncContent();
+        this.syncState();
     }
     
     setupSync() {
-        // Watch for changes in original widget content
-        this.observer = new MutationObserver(() => {
-            this.syncContent();
-        });
-        
-        const originalContent = this.originalWidget.element.querySelector('.widget-content');
-        if (originalContent) {
-            this.observer.observe(originalContent, {
+        this.originalContent = this.originalWidget.element.querySelector('.widget-content');
+        this.pinnedContent = this.element.querySelector('.widget-content');
+        this.observer = new MutationObserver(records => this.syncOriginalMutations(records));
+        if (this.originalContent) {
+            this.observer.observe(this.originalContent, {
                 childList: true,
                 subtree: true,
                 attributes: true,
                 characterData: true
             });
         }
+
+        this.headerObserver = new MutationObserver(() => this.updateTitle());
+        const originalHeader = this.originalWidget.element.querySelector('.widget-header');
+        if (originalHeader) {
+            this.headerObserver.observe(originalHeader, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+        }
+
+        this.originalContent?.addEventListener('input', this.handleOriginalInput);
+        this.originalContent?.addEventListener('change', this.handleOriginalInput);
+        this.pinnedContent?.addEventListener('input', this.handlePinnedInput);
+        this.pinnedContent?.addEventListener('change', this.handlePinnedInput);
+        this.pinnedContent?.addEventListener('click', this.handlePinnedClick);
+        this.syncAllControlValues();
+
+        if (typeof ResizeObserver === 'function') {
+            this.resizeObserver = new ResizeObserver(() => this.syncDimensions());
+            this.resizeObserver.observe(this.originalWidget.element);
+        }
     }
     
     syncContent() {
         const originalContent = this.originalWidget.element.querySelector('.widget-content');
         const pinnedContent = this.element.querySelector('.widget-content');
-        
-        if (originalContent && pinnedContent) {
-            // Clone content structure
-            pinnedContent.innerHTML = originalContent.innerHTML;
-            
-            // Rebind event listeners for interactive elements
-            this.rebindInteractions();
+        if (!originalContent || !pinnedContent) return;
+        this.originalContent = originalContent;
+        this.pinnedContent = pinnedContent;
+
+        const focusedElement = document.activeElement;
+        const focusedSource = this.pinnedToOriginal.get(focusedElement);
+        const preserveFocus = focusedSource &&
+            ['INPUT', 'SELECT', 'TEXTAREA'].includes(focusedElement.tagName);
+        let selection = null;
+        if (preserveFocus && typeof focusedElement.selectionStart === 'number') {
+            selection = {
+                start: focusedElement.selectionStart,
+                end: focusedElement.selectionEnd,
+                direction: focusedElement.selectionDirection
+            };
+        }
+
+        pinnedContent.innerHTML = originalContent.innerHTML;
+        this.pinnedContent = pinnedContent;
+        this.pinnedIdByOriginalId.clear();
+        pinnedContent.querySelectorAll('[id]').forEach(element => {
+            const originalId = element.id;
+            const pinnedId = `${originalId}-pinned-${this.instanceKey}`;
+            this.pinnedIdByOriginalId.set(originalId, pinnedId);
+            element.dataset.pinnedSourceId = originalId;
+            element.id = pinnedId;
+        });
+        this.remapReferences(pinnedContent);
+        this.buildElementMappings(originalContent, pinnedContent);
+        this.syncAllControlValues();
+        this.syncState();
+        this.updateTitle();
+
+        if (preserveFocus) {
+            const replacement = this.originalToPinned.get(focusedSource);
+            if (replacement && replacement.isConnected) {
+                replacement.focus({ preventScroll: true });
+                if (selection) {
+                    try {
+                        replacement.setSelectionRange(selection.start, selection.end, selection.direction);
+                    } catch (error) {
+                        // Some focused input types do not support text selection.
+                    }
+                }
+            }
         }
     }
-    
-    rebindInteractions() {
-        // Find all inputs, selects, textareas, and buttons in pinned content
-        const interactiveElements = this.element.querySelectorAll(
-            'input, select, textarea, button:not(.widget-control-btn)'
-        );
-        
-        interactiveElements.forEach(element => {
-            // Find corresponding element in original widget
-            const elementId = element.id;
-            if (elementId) {
-                const originalElement = document.getElementById(elementId);
-                if (originalElement) {
-                    // Sync value from original to pinned
-                    if (element.type === 'checkbox') {
-                        element.checked = originalElement.checked;
-                    } else {
-                        element.value = originalElement.value;
-                    }
-                    
-                    // Set up bidirectional sync
-                    const syncToOriginal = () => {
-                        if (element.type === 'checkbox') {
-                            originalElement.checked = element.checked;
-                        } else {
-                            originalElement.value = element.value;
-                        }
-                        
-                        // Trigger change event on original
-                        originalElement.dispatchEvent(new Event('change', { bubbles: true }));
-                        originalElement.dispatchEvent(new Event('input', { bubbles: true }));
-                    };
-                    
-                    const syncToPinned = () => {
-                        if (element.type === 'checkbox') {
-                            element.checked = originalElement.checked;
-                        } else {
-                            element.value = originalElement.value;
-                        }
-                    };
-                    
-                    // Listen for changes in pinned element
-                    element.addEventListener('input', syncToOriginal);
-                    element.addEventListener('change', syncToOriginal);
-                    element.addEventListener('click', syncToOriginal);
-                    
-                    // Listen for changes in original element
-                    originalElement.addEventListener('input', syncToPinned);
-                    originalElement.addEventListener('change', syncToPinned);
+
+    syncOriginalMutations(records) {
+        if (records.some(record => record.type === 'childList')) {
+            this.syncContent();
+            return;
+        }
+
+        records.forEach(record => {
+            const clone = this.originalToPinned.get(record.target);
+            if (!clone) return;
+            if (record.type === 'characterData') {
+                clone.nodeValue = record.target.nodeValue;
+            } else if (record.type === 'attributes' && record.attributeName !== 'id') {
+                const attribute = record.attributeName;
+                const value = record.target.getAttribute(attribute);
+                if (value === null) {
+                    clone.removeAttribute(attribute);
+                } else {
+                    clone.setAttribute(attribute, this.remapReferenceValue(attribute, value));
                 }
             }
         });
+        this.syncAllControlValues();
+    }
+
+    buildElementMappings(originalNode, pinnedNode) {
+        this.pinnedToOriginal = new WeakMap();
+        this.originalToPinned = new WeakMap();
+        const visit = (source, clone) => {
+            this.pinnedToOriginal.set(clone, source);
+            this.originalToPinned.set(source, clone);
+            const sourceChildren = source.childNodes;
+            const cloneChildren = clone.childNodes;
+            for (let index = 0; index < sourceChildren.length && index < cloneChildren.length; index += 1) {
+                visit(sourceChildren[index], cloneChildren[index]);
+            }
+        };
+        visit(originalNode, pinnedNode);
+    }
+
+    remapReferences(container) {
+        const referenceAttributes = [
+            'for', 'aria-controls', 'aria-describedby', 'aria-labelledby',
+            'aria-owns', 'list', 'form', 'headers'
+        ];
+        container.querySelectorAll('*').forEach(element => {
+            referenceAttributes.forEach(attribute => {
+                const value = element.getAttribute(attribute);
+                if (!value) return;
+                element.setAttribute(attribute, this.remapReferenceValue(attribute, value));
+            });
+            const href = element.getAttribute('href');
+            if (href?.startsWith('#')) {
+                element.setAttribute('href', this.remapReferenceValue('href', href));
+            }
+        });
+    }
+
+    remapReferenceValue(attribute, value) {
+        if (attribute === 'href' && value.startsWith('#')) {
+            const originalId = value.slice(1);
+            return `#${this.pinnedIdByOriginalId.get(originalId) || originalId}`;
+        }
+        if (![
+            'for', 'aria-controls', 'aria-describedby', 'aria-labelledby',
+            'aria-owns', 'list', 'form', 'headers'
+        ].includes(attribute)) {
+            return value;
+        }
+        return value.split(/\s+/)
+            .map(id => this.pinnedIdByOriginalId.get(id) || id)
+            .join(' ');
+    }
+
+    syncAllControlValues() {
+        this.originalContent?.querySelectorAll('input, select, textarea').forEach(source => {
+            const clone = this.originalToPinned.get(source);
+            if (clone) this.copyControlValue(source, clone);
+        });
+    }
+
+    copyControlValue(source, clone) {
+        if ('value' in source && 'value' in clone) clone.value = source.value;
+        if ('checked' in source && 'checked' in clone) clone.checked = source.checked;
+        if (source.tagName === 'SELECT' && source.multiple) {
+            Array.from(clone.options).forEach((option, index) => {
+                option.selected = !!source.options[index]?.selected;
+            });
+        }
+    }
+
+    forwardInput(event) {
+        const pinnedElement = event.target;
+        const originalElement = this.pinnedToOriginal.get(pinnedElement);
+        if (!originalElement) return;
+
+        if (pinnedElement.isContentEditable && originalElement.isContentEditable) {
+            originalElement.innerHTML = pinnedElement.innerHTML;
+        } else {
+            this.copyControlValue(pinnedElement, originalElement);
+        }
+        originalElement.dispatchEvent(new Event(event.type, { bubbles: true }));
+    }
+
+    syncControlFromOriginal(event) {
+        const clone = this.originalToPinned.get(event.target);
+        if (clone) this.copyControlValue(event.target, clone);
+    }
+
+    forwardClick(event) {
+        const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+        const button = target?.closest('button, a[href], [role="button"]');
+        if (!button) return;
+
+        const originalButton = this.pinnedToOriginal.get(button);
+        if (!originalButton) return;
+        event.preventDefault();
+        event.stopPropagation();
+        originalButton.click();
     }
     
     setupEventListeners() {
@@ -2239,8 +2390,8 @@ class PinnedWidget {
         this.dragOffset.x = e.clientX - rect.left;
         this.dragOffset.y = e.clientY - rect.top;
         
-        document.addEventListener('mousemove', this.drag.bind(this));
-        document.addEventListener('mouseup', this.stopDrag.bind(this));
+        document.addEventListener('mousemove', this.dragHandler);
+        document.addEventListener('mouseup', this.stopDragHandler);
         
         e.preventDefault();
     }
@@ -2261,14 +2412,50 @@ class PinnedWidget {
     
     stopDrag() {
         this.isDragging = false;
-        document.removeEventListener('mousemove', this.drag.bind(this));
-        document.removeEventListener('mouseup', this.stopDrag.bind(this));
+        document.removeEventListener('mousemove', this.dragHandler);
+        document.removeEventListener('mouseup', this.stopDragHandler);
+    }
+
+    syncState() {
+        if (!this.element) return;
+        const original = this.originalWidget.element;
+        this.element.classList.toggle('minimized', original.classList.contains('minimized'));
+        this.element.classList.toggle(
+            'has-connected-summary-inputs',
+            original.classList.contains('has-connected-summary-inputs')
+        );
+        this.syncDimensions();
+        this.updateTitle();
+    }
+
+    syncDimensions() {
+        if (!this.element || !this.originalWidget.element) return;
+        const width = this.originalWidget.element.getBoundingClientRect().width || this.originalWidget.width;
+        this.element.style.width = `${width}px`;
+        this.element.style.height = this.originalWidget.element.style.height || '';
+    }
+
+    updateTitle() {
+        const title = this.element?.querySelector('.widget-title');
+        if (title) title.textContent = `${this.originalWidget.title} (Pinned)`;
     }
     
     destroy() {
         if (this.observer) {
             this.observer.disconnect();
         }
+        if (this.headerObserver) {
+            this.headerObserver.disconnect();
+        }
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+        }
+        this.originalContent?.removeEventListener('input', this.handleOriginalInput);
+        this.originalContent?.removeEventListener('change', this.handleOriginalInput);
+        this.pinnedContent?.removeEventListener('input', this.handlePinnedInput);
+        this.pinnedContent?.removeEventListener('change', this.handlePinnedInput);
+        this.pinnedContent?.removeEventListener('click', this.handlePinnedClick);
+        this.stopDrag();
         if (this.element) {
             this.element.remove();
         }

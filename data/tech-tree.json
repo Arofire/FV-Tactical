@@ -766,7 +766,7 @@
     "requiredTech": [
       "heavy-chemical-laser"
     ],
-    "description": "Heavy optical focusing systems"
+    "description": "Heavy optical focusing and external refocusing systems"
   },
   "light-optical-aperture": {
     "name": "Light Optical Aperture",

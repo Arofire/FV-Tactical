@@ -4,7 +4,7 @@ class HullTilesWidget extends SummaryWidget {
     }
 
     createContent(contentElement) {
-        const section = this.createSection('tiles', 'Hull tiles');
+        const section = this.createSection('tiles', '');
         this.setSectionContent(section, `
             <div class="hull-plan-view" id="${this.id}-plan-view" aria-live="polite"></div>
         `);
