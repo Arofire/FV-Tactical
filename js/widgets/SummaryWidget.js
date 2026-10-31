@@ -151,13 +151,8 @@ class SummaryWidget extends Widget {
             : hasConnectedInputs ? '30' : (this.selected ? '20' : '10');
     }
 
-    select() {
-        super.select();
-        this.updateConnectedInputLayer();
-    }
-
-    deselect() {
-        super.deselect();
+    setSelected(selected) {
+        super.setSelected(selected);
         this.updateConnectedInputLayer();
     }
 

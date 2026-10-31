@@ -81,9 +81,18 @@ class Widget {
             titleElement.setAttribute('aria-label', 'Rename widget title');
             titleElement.addEventListener('mousedown', event => {
                 event.stopPropagation();
-                this.select();
+                if (event.button !== 0) return;
+                if (event.ctrlKey || event.metaKey) {
+                    event.preventDefault();
+                    this.toggleSelection();
+                    return;
+                }
+                if (!this.selected) this.select();
             });
-            titleElement.addEventListener('click', () => this.beginTitleEdit());
+            titleElement.addEventListener('click', event => {
+                if (event.ctrlKey || event.metaKey) return;
+                this.beginTitleEdit();
+            });
             titleElement.addEventListener('keydown', event => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
@@ -847,17 +856,13 @@ class Widget {
         this.reflowNodes();
     }
 
+    // The canvas expands to fit widgets instead of clamping them.
+    ensureCanvasFits() {
+        window.canvasExtent?.growToFit([this]);
+    }
+
     clampToCanvasBounds() {
-        const canvas = document.getElementById('canvas');
-        if (!canvas) return;
-        const canvasWidth = canvas.offsetWidth;
-        const canvasHeight = canvas.offsetHeight;
-        const widgetWidth = this.element?.offsetWidth || this.width || 0;
-        const widgetHeight = this.element?.offsetHeight || this.height || 0;
-        const maxX = Math.max(0, canvasWidth - widgetWidth);
-        const maxY = Math.max(0, canvasHeight - widgetHeight);
-        this.x = Math.max(0, Math.min(this.x, maxX));
-        this.y = Math.max(0, Math.min(this.y, maxY));
+        this.ensureCanvasFits();
     }
 
     setPosition(x, y, options = {}) {
@@ -1038,14 +1043,52 @@ class Widget {
 
         // Selection
         this.element.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
             if (e.target === this.element || e.target.closest('.widget-content')) {
-                this.select();
+                if (e.ctrlKey || e.metaKey) {
+                    if (!Widget.isInteractiveTarget(e.target)) {
+                        e.preventDefault();
+                        this.toggleSelection();
+                    }
+                    return;
+                }
+                // Keep an existing multi-selection while editing one of its widgets
+                if (!this.selected) this.select();
             }
         });
     }
 
+    static isInteractiveTarget(target) {
+        return !!target?.closest?.('input, textarea, select, button, [contenteditable=""], [contenteditable="true"], .node');
+    }
+
+    toggleSelection() {
+        if (window.widgetManager?.toggleSelection) {
+            window.widgetManager.toggleSelection(this);
+        } else {
+            this.setSelected(!this.selected);
+        }
+    }
+
     startDrag(e) {
         if (e.button !== 0) return; // Only left mouse button
+
+        const inControls = !!e.target.closest?.('.widget-controls');
+        if (e.ctrlKey || e.metaKey) {
+            if (!inControls) {
+                e.preventDefault();
+                this.toggleSelection();
+            }
+            return;
+        }
+
+        const manager = window.widgetManager;
+        if (this.selected && manager?.getSelected && manager.getSelected().length > 1) {
+            if (inControls) return;
+            manager.startGroupDrag(this, e);
+            e.preventDefault();
+            return;
+        }
         
         this.isDragging = true;
         this.element.classList.add('dragging');
@@ -1119,7 +1162,7 @@ class Widget {
         if (window.app && window.app.updateMinimap) window.app.updateMinimap();
     }
 
-    applyMagneticSnapping() {
+    applyMagneticSnapping(exclude = null) {
         if (!window.widgetManager) return;
 
         const snapThreshold = 15; // pixels within which snapping occurs
@@ -1137,7 +1180,7 @@ class Widget {
         let bestDy = snapThreshold;
 
         for (const otherWidget of window.widgetManager.widgets.values()) {
-            if (otherWidget === this || !otherWidget.element) continue;
+            if (otherWidget === this || !otherWidget.element || exclude?.has(otherWidget)) continue;
 
             const otherWidth = otherWidget.element.offsetWidth || otherWidget.width || 300;
             const otherHeight = otherWidget.element.offsetHeight || otherWidget.height || 200;
@@ -1194,24 +1237,35 @@ class Widget {
     this.manualPosition = true;
         if (this._boundDrag) document.removeEventListener('mousemove', this._boundDrag);
         if (this._boundStopDrag) document.removeEventListener('mouseup', this._boundStopDrag);
+        window.canvasExtent?.settle();
         if (window.app && window.app.updateMinimap) window.app.updateMinimap();
     }
 
+    // Select only this widget (the widget manager owns multi-selection state).
     select() {
-        // Deselect all other widgets
+        if (window.widgetManager?.selectOnly) {
+            window.widgetManager.selectOnly(this);
+            return;
+        }
         document.querySelectorAll('.widget.selected').forEach(w => {
             w.classList.remove('selected');
         });
-        
-        this.selected = true;
-        this.element.classList.add('selected');
-        this.element.style.zIndex = '20';
+        this.setSelected(true);
     }
 
     deselect() {
-        this.selected = false;
-        this.element.classList.remove('selected');
-        this.element.style.zIndex = '10';
+        if (window.widgetManager?.removeFromSelection) {
+            window.widgetManager.removeFromSelection(this);
+            return;
+        }
+        this.setSelected(false);
+    }
+
+    setSelected(selected) {
+        this.selected = !!selected;
+        if (!this.element) return;
+        this.element.classList.toggle('selected', this.selected);
+        this.element.style.zIndex = this.selected ? '20' : '10';
     }
 
     toggleMinimize() {
@@ -1247,6 +1301,8 @@ class Widget {
 
         const refresh = () => {
             this.reflowNodes();
+            window.canvasExtent?.settle();
+            window.widgetManager?.updateSelectionToolbar?.();
         };
 
         if (typeof requestAnimationFrame === 'function') {
@@ -1339,10 +1395,11 @@ class Widget {
         }
     }
 
-    duplicate() {
+    duplicate(options = {}) {
+        const { offsetX = 40, offsetY = 40, runPreflight = true } = options;
         // Create a new widget of the same type, offset from the original
-        const duplicateX = this.x + 40;
-        const duplicateY = this.y + 40;
+        const duplicateX = this.x + offsetX;
+        const duplicateY = this.y + offsetY;
         
         const newWidget = window.app?.createWidget(this.type, duplicateX, duplicateY);
         if (!newWidget) return;
@@ -1365,7 +1422,7 @@ class Widget {
         }
         
         // Trigger any necessary refreshes
-        if (window.preflightCheck) {
+        if (runPreflight && window.preflightCheck) {
             window.preflightCheck.runCheck();
         }
         

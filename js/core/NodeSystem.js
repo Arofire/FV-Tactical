@@ -31,7 +31,7 @@ class NodeSystem {
         
         // Canvas click to deselect connections
         document.getElementById('canvas').addEventListener('click', (e) => {
-            if (e.target.id === 'canvas') {
+            if (window.app?.isCanvasBackground?.(e.target) ?? e.target.id === 'canvas') {
                 this.deselectAllConnections();
             }
         });

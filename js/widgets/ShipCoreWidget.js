@@ -27,7 +27,7 @@ class ShipCoreWidget extends DesignWidget {
         return this.optionsPromise;
     }
 
-    // Core cost in CV/IP: reactor threshold, engine thrust demand, and manifold entropy capacity.
+    // Core cost in CV/IP: reactor threshold, gear remass savings, and manifold entropy capacity.
     static calculateCost(core, hulls, options = this.options) {
         if (!core || !options || !Number.isFinite(hulls) || hulls <= 0) return null;
         const isSelected = component => Boolean(core[component] && options[component]?.options?.[core[component]]);
@@ -37,9 +37,12 @@ class ShipCoreWidget extends DesignWidget {
         let engine = 0;
         if (isSelected('engine')) {
             const metrics = OutfitWidget.calculateGearBurnMetrics(hulls, core.engineEfficiency, 0);
-            if (metrics) {
-                const reactionFactor = options.engine.options[core.engine].reaction ? 1 / 3 : 1;
-                engine = Math.pow(metrics.thrustRequired, 1 / core.engineEfficiency) * hulls * reactionFactor;
+            if (!metrics || !Array.isArray(core.gears)) return null;
+            for (const gear of core.gears) {
+                const instability = Number(gear?.instability);
+                if (!Number.isFinite(instability) || instability < 1) return null;
+                engine += metrics.thrustRequired -
+                    metrics.thrustRequired / Math.pow(instability, 1 / core.engineEfficiency);
             }
         }
         const entropy = isSelected('manifold') ? Math.floor(hulls * (Number(core.manifoldEfficiency) || 0)) : 0;

@@ -723,15 +723,8 @@ class PreflightCheck {
             if (widget) {
                 widget.select();
                 
-                // Scroll widget into view
-                const canvas = document.getElementById('canvas');
-                const canvasRect = canvas.getBoundingClientRect();
-                const widgetRect = widget.element.getBoundingClientRect();
-                
-                if (widgetRect.top < canvasRect.top || widgetRect.bottom > canvasRect.bottom ||
-                    widgetRect.left < canvasRect.left || widgetRect.right > canvasRect.right) {
-                    canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                // Pan the workspace so the widget is visible
+                window.app?.ensureWidgetVisible?.(widget);
             }
         }
     }

@@ -4,6 +4,7 @@ class FVTacticalApp {
         this.empire = new Empire();
         this.widgetManager = new WidgetManager();
         this.nodeSystem = new NodeSystem();
+        this.canvasExtent = new CanvasExtent(this);
         this.dataManager = new DataManager();
         this.preflightCheck = null;
         this.cascadeDragEnabled = false;
@@ -18,6 +19,7 @@ class FVTacticalApp {
         window.empire = this.empire;
         window.widgetManager = this.widgetManager;
         window.nodeSystem = this.nodeSystem;
+        window.canvasExtent = this.canvasExtent;
         window.dataManager = this.dataManager;
         window.preflightCheck = this.preflightCheck;
         window.app = this;
@@ -81,6 +83,7 @@ class FVTacticalApp {
             console.log('Connections restored');
 
             // Update UI
+            this.canvasExtent.settle();
             if (this.updateMinimap) {
                 this.updateMinimap();
             }
@@ -450,14 +453,17 @@ class FVTacticalApp {
         const canvas = document.getElementById('canvas');
         if (canvas) {
             canvas.addEventListener('click', (e) => {
-                if (e.target === canvas) {
-                    this.widgetManager.deselectAll();
+                if (this.isCanvasBackground(e.target)) {
+                    // Ctrl/Cmd clicks belong to box selection and must not clear the selection
+                    if (!(e.ctrlKey || e.metaKey) && !this.widgetManager.consumeMarqueeClick()) {
+                        this.widgetManager.deselectAll();
+                    }
                     this.hideContextMenu();
                 }
             });
             
             canvas.addEventListener('dblclick', (e) => {
-                if (e.target === canvas) {
+                if (this.isCanvasBackground(e.target)) {
                     e.preventDefault();
                     e.stopPropagation(); // Prevent workspace-level dblclick handlers from firing
                     this.showContextMenu(e.clientX, e.clientY);
@@ -484,10 +490,21 @@ class FVTacticalApp {
                 }
             }
             
+            if (this.activeEmpireView !== 'design' || FVTacticalApp.isEditableTarget(e.target)) return;
             if (e.key === 'Delete') {
                 this.widgetManager.deleteSelected();
+            } else if (e.key === 'Escape') {
+                this.widgetManager.cancelMarquee();
+                this.widgetManager.deselectAll();
             }
         });
+    }
+
+    static isEditableTarget(target) {
+        if (!target || !(target instanceof Element)) return false;
+        const nonTextInputs = ['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file'];
+        if (target instanceof HTMLInputElement) return !nonTextInputs.includes(target.type);
+        return !!target.closest('textarea, select, [contenteditable=""], [contenteditable="true"]');
     }
 
     createWidget(type, x = null, y = null) {
@@ -507,13 +524,11 @@ class FVTacticalApp {
             y = 100 + offset;
         }
         
-        // Defensive: If coordinates blew up due to stale transform, clamp into canvas bounds
-        if (x !== null && y !== null) {
-            if (Math.abs(x) > 20000 || Math.abs(y) > 20000) {
-                console.warn('Clamping extreme widget creation coords', x, y);
-                x = Math.max(0, Math.min(x, canvas.offsetWidth - 500));
-                y = Math.max(0, Math.min(y, canvas.offsetHeight - 400));
-            }
+        // Defensive: reject non-finite coordinates from a stale transform
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+            console.warn('Invalid widget creation coords, using canvas centre', x, y);
+            x = this.canvasExtent.center.x;
+            y = this.canvasExtent.center.y;
         }
 
         let widget;
@@ -973,6 +988,7 @@ class FVTacticalApp {
         }
         
         // Update UI
+        this.canvasExtent.settle();
         await this.updateTechTree();
         this.updateEmpireDisplay();
         this.updateFleetView();
@@ -1114,36 +1130,40 @@ class FVTacticalApp {
         const canvas = document.getElementById('canvas');
         
         if (!workspace || !canvas) return;
+
+        this.canvasExtent.attach();
         
-        // Initialize workspace transform state (scale 1) and center on canvas middle
-        const canvasWidth = canvas.offsetWidth;
-        const canvasHeight = canvas.offsetHeight;
+        // Initialize workspace transform state (scale 1) centred on the canvas centre point
+        const center = this.canvasExtent.center;
         const viewportWidth = workspace.clientWidth;
         const viewportHeight = workspace.clientHeight;
         
         this.workspaceTransform = {
             scale: 1,
-            translateX: viewportWidth / 2 - canvasWidth / 2,
-            translateY: viewportHeight / 2 - canvasHeight / 2
+            translateX: viewportWidth / 2 - center.x,
+            translateY: viewportHeight / 2 - center.y
         };
-        // Track current canvas extents for dynamic growth
-        this.canvasBounds = { width: canvasWidth, height: canvasHeight };
 
-    // Apply initial transform immediately so user sees centered view without needing to pan
-    this.updateWorkspaceTransform();
+        // Apply initial transform immediately so user sees centered view without needing to pan
+        this.updateWorkspaceTransform();
         
         this.isDraggingWorkspace = false;
         this.dragStart = { x: 0, y: 0 };
         
-        // Add pan functionality (drag empty canvas background - left click only)
+        // Add pan functionality (drag empty canvas background - left click only).
+        // Ctrl/Cmd + left drag draws a selection box instead.
         canvas.addEventListener('mousedown', (e) => {
-            if (e.target === canvas && e.button === 0) { // left button only
-                this.isDraggingWorkspace = true;
-                this.dragStart.x = e.clientX;
-                this.dragStart.y = e.clientY;
-                canvas.style.cursor = 'grabbing';
+            if (!this.isCanvasBackground(e.target) || e.button !== 0) return;
+            if (e.ctrlKey || e.metaKey) {
+                this.widgetManager.startMarquee(e);
                 e.preventDefault();
+                return;
             }
+            this.isDraggingWorkspace = true;
+            this.dragStart.x = e.clientX;
+            this.dragStart.y = e.clientY;
+            canvas.style.cursor = 'grabbing';
+            e.preventDefault();
         });
 
         // Middle mouse panning anywhere (even over widgets)
@@ -1181,6 +1201,7 @@ class FVTacticalApp {
                 this.isDraggingWorkspace = false;
                 canvas.style.cursor = '';
                 document.body.style.cursor = '';
+                this.canvasExtent.settle();
                 // Do a full minimap update after dragging ends
                 this.updateMinimap(true);
             }
@@ -1238,8 +1259,14 @@ class FVTacticalApp {
                 this.workspaceTransform.translateY = mouseY - canvasY * newScale;
                 
                 this.updateWorkspaceTransform();
+                clearTimeout(this.zoomSettleTimeout);
+                this.zoomSettleTimeout = setTimeout(() => this.canvasExtent.settle(), 250);
             }
         }, { passive: false });
+    }
+
+    isCanvasBackground(target) {
+        return this.canvasExtent.isBackground(target);
     }
     
     getMinimumZoom() {
@@ -1249,8 +1276,8 @@ class FVTacticalApp {
         
         const viewportWidth = workspace.clientWidth;
         const viewportHeight = workspace.clientHeight;
-        const canvasWidth = canvas.offsetWidth;
-        const canvasHeight = canvas.offsetHeight;
+        const canvasWidth = this.canvasExtent.width;
+        const canvasHeight = this.canvasExtent.height;
         
         // Calculate zoom needed to fit canvas width and height separately
         const zoomForWidth = viewportWidth / canvasWidth;
@@ -1265,10 +1292,8 @@ class FVTacticalApp {
         const workspace = document.getElementById('workspace');
         const canvas = document.getElementById('canvas');
         if (!workspace || !canvas) return null;
-        const canvasWidth = canvas.offsetWidth;
-        const canvasHeight = canvas.offsetHeight;
-        // Bounds are fixed to canvas edges (world space 0..canvasWidth/Height)
-        return { minX: 0, minY: 0, maxX: canvasWidth, maxY: canvasHeight };
+        // Bounds follow the dynamically expanding canvas extent (world space, may be negative)
+        return { ...this.canvasExtent.bounds };
     }
 
     constrainWorkspaceTransform() {
@@ -1281,13 +1306,13 @@ class FVTacticalApp {
         const vh = workspace.clientHeight;
         const scale = this.workspaceTransform.scale;
         
-    // Prevent showing empty space beyond canvas edges. The most positive offset
-    // aligns the canvas origin with the viewport edge; the most negative offset
-    // keeps the far edge of the canvas anchored to the opposite viewport edge.
-    const maxTranslateX = 0;
-    const maxTranslateY = 0;
-    const minTranslateX = Math.min(0, vw - bounds.maxX * scale);
-    const minTranslateY = Math.min(0, vh - bounds.maxY * scale);
+        // Prevent showing empty space beyond canvas edges. The most positive offset
+        // aligns the canvas's min edge with the viewport edge; the most negative offset
+        // keeps the far edge of the canvas anchored to the opposite viewport edge.
+        const maxTranslateX = -bounds.minX * scale;
+        const maxTranslateY = -bounds.minY * scale;
+        const minTranslateX = Math.min(maxTranslateX, vw - bounds.maxX * scale);
+        const minTranslateY = Math.min(maxTranslateY, vh - bounds.maxY * scale);
         
         // Apply constraints
         if (this.workspaceTransform.translateX < minTranslateX) this.workspaceTransform.translateX = minTranslateX;
@@ -1298,7 +1323,6 @@ class FVTacticalApp {
 
     updateWorkspaceTransform() {
         // Always apply boundary constraints to keep navigation within the canvas bounds
-        // This ensures the entire 6000x4000 canvas area is accessible
         this.constrainWorkspaceTransform();
         
         const canvas = document.getElementById('canvas');
@@ -1308,7 +1332,8 @@ class FVTacticalApp {
             canvas.style.transform = `translate(${this.workspaceTransform.translateX}px, ${this.workspaceTransform.translateY}px) scale(${this.workspaceTransform.scale})`;
         }
         if (svg) {
-            svg.style.transform = `translate(${this.workspaceTransform.translateX}px, ${this.workspaceTransform.translateY}px) scale(${this.workspaceTransform.scale})`;
+            const { minX, minY } = this.canvasExtent.bounds;
+            svg.style.transform = `translate(${this.workspaceTransform.translateX}px, ${this.workspaceTransform.translateY}px) scale(${this.workspaceTransform.scale}) translate(${minX}px, ${minY}px)`;
         }
         
         // Update sticky headers on all widgets after canvas transform
@@ -1330,6 +1355,7 @@ class FVTacticalApp {
 
         // Update minimap viewport (optimize during dragging)
         this.updateMinimap(!this.isDraggingWorkspace);
+        window.widgetManager?.updateSelectionToolbar?.();
     }
 
     updateCursorCoords(screenPos) {
@@ -1416,8 +1442,9 @@ class FVTacticalApp {
         
         // Convert minimap coordinates to world coordinates
         // Account for centering offset and uniform scale
-        const worldX = (minimapX - this.minimapOffset.x) / this.minimapScale;
-        const worldY = (minimapY - this.minimapOffset.y) / this.minimapScale;
+        const { minX, minY } = this.canvasExtent.bounds;
+        const worldX = minX + (minimapX - this.minimapOffset.x) / this.minimapScale;
+        const worldY = minY + (minimapY - this.minimapOffset.y) / this.minimapScale;
         
         const viewScale = this.workspaceTransform.scale;
         // Center viewport on chosen world point
@@ -1435,9 +1462,10 @@ class FVTacticalApp {
         const canvas = document.getElementById('canvas');
         if (!workspace || !canvas) return;
 
-        // Use canvas dimensions to represent the entire workspace area
-        const canvasWidth = canvas.offsetWidth;
-        const canvasHeight = canvas.offsetHeight;
+        // Use the canvas extent to represent the entire workspace area
+        const { minX: boundsMinX, minY: boundsMinY } = this.canvasExtent.bounds;
+        const canvasWidth = this.canvasExtent.width;
+        const canvasHeight = this.canvasExtent.height;
         const minimapWidth = this.minimapEl.clientWidth;
         const minimapHeight = this.minimapEl.clientHeight;
         
@@ -1473,8 +1501,8 @@ class FVTacticalApp {
                 const actualHeight = widget.element ? widget.element.offsetHeight : widget.height;
                 
                 // Position widgets with uniform scale and centering offset
-                item.style.left = (offsetX + widget.x * scale) + 'px';
-                item.style.top = (offsetY + widget.y * scale) + 'px';
+                item.style.left = (offsetX + (widget.x - boundsMinX) * scale) + 'px';
+                item.style.top = (offsetY + (widget.y - boundsMinY) * scale) + 'px';
                 item.style.width = Math.max(2, actualWidth * scale) + 'px';
                 item.style.height = Math.max(2, actualHeight * scale) + 'px';
             }
@@ -1495,8 +1523,8 @@ class FVTacticalApp {
         const viewportHeight = workspace.clientHeight / t.scale;
         
         // Position and size the viewport indicator with uniform scale and centering
-        this.minimapViewportEl.style.left = (offsetX + viewportLeft * scale) + 'px';
-        this.minimapViewportEl.style.top = (offsetY + viewportTop * scale) + 'px';
+        this.minimapViewportEl.style.left = (offsetX + (viewportLeft - boundsMinX) * scale) + 'px';
+        this.minimapViewportEl.style.top = (offsetY + (viewportTop - boundsMinY) * scale) + 'px';
         this.minimapViewportEl.style.width = (viewportWidth * scale) + 'px';
         this.minimapViewportEl.style.height = (viewportHeight * scale) + 'px';
         
@@ -1511,6 +1539,7 @@ class FVTacticalApp {
 class WidgetManager {
     constructor() {
         this.widgets = new Map();
+        this.selection = new WidgetSelection(this);
     }
 
     addWidget(widget) {
@@ -1534,6 +1563,7 @@ class WidgetManager {
                 window.nodeSystem.removeNodeConnections(nodeId);
             }
             this.widgets.delete(widgetId);
+            this.selection.forget(widgetId);
             
             // Update empty canvas text visibility
             if (window.app) {
@@ -1559,20 +1589,64 @@ class WidgetManager {
         }
     }
 
+    getSelected() {
+        return this.selection.getSelected();
+    }
+
+    selectOnly(widget) {
+        this.selection.selectOnly(widget);
+    }
+
+    toggleSelection(widget) {
+        this.selection.toggle(widget);
+    }
+
+    addToSelection(widgets) {
+        this.selection.add(widgets);
+    }
+
+    removeFromSelection(widget) {
+        this.selection.remove(widget);
+    }
+
+    setSelection(widgets) {
+        this.selection.setSelection(widgets);
+    }
+
     deselectAll() {
-        for (const widget of this.widgets.values()) {
-            widget.deselect();
-        }
+        this.selection.clear();
     }
 
     deleteSelected() {
-        const selected = Array.from(this.widgets.values()).filter(w => w.selected);
-        for (const widget of selected) {
-            widget.close();
-        }
+        this.selection.deleteSelected();
+    }
+
+    duplicateSelected() {
+        return this.selection.duplicateSelected();
+    }
+
+    startMarquee(event) {
+        this.selection.startMarquee(event);
+    }
+
+    cancelMarquee() {
+        this.selection.cancelMarquee();
+    }
+
+    consumeMarqueeClick() {
+        return this.selection.consumeMarqueeClick();
+    }
+
+    startGroupDrag(leader, event) {
+        this.selection.startGroupDrag(leader, event);
+    }
+
+    updateSelectionToolbar() {
+        this.selection.updateToolbar();
     }
 
     clearAll() {
+        this.selection.clear();
         for (const widget of this.widgets.values()) {
             widget.element.remove();
         }

@@ -1120,21 +1120,82 @@ body {
     opacity: 0;
 }
 
-/* Canvas - Infinite workspace */
+/* Canvas - expanding workspace. The canvas element marks world (0,0); the
+   surface child covers the current world bounds (sized by CanvasExtent.js). */
 .canvas {
     flex: none; /* Prevent flexbox from shrinking the canvas height */
     position: absolute; /* Remove from document flow so overlays remain visible */
     top: 0;
     left: 0;
     overflow: visible;
-    /* Temporarily reduced workspace size */
-    width: 6000px;
-    height: 4000px;
+    width: 0;
+    height: 0;
     /* Use top-left origin so math for world <-> screen coords is straightforward */
     transform-origin: 0 0;
+}
+
+.canvas-surface {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 6000px;
+    height: 4000px;
     background-color: #1a1a1a;
     background-image: radial-gradient(circle, #333 1px, transparent 1px);
     background-size: 20px 20px;
+}
+
+body.is-box-selecting {
+    user-select: none;
+}
+
+.selection-marquee {
+    position: absolute;
+    border: 1px dashed #4a90e2;
+    background: rgba(74, 144, 226, 0.12);
+    pointer-events: none;
+    z-index: 150;
+}
+
+.selection-outline {
+    position: absolute;
+    border: 1px dashed rgba(74, 144, 226, 0.7);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.selection-toolbar {
+    position: absolute;
+    transform-origin: 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: #3d3d3d;
+    border: 1px solid #555;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    z-index: 160;
+}
+
+.selection-toolbar-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e0e0e0;
+    user-select: none;
+}
+
+.selection-toolbar .widget-control-btn.duplicate:hover,
+.selection-toolbar .widget-control-btn.clear-selection:hover {
+    background: #4a90e2;
+}
+
+.selection-toolbar[hidden],
+.selection-outline[hidden],
+.selection-marquee[hidden] {
+    display: none;
 }
 
 /* Connection SVG Overlay */
@@ -1142,9 +1203,9 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    /* Match canvas world size so paths are not clipped */
-    width: 6000px; /* keep in sync with .canvas dimensions */
-    height: 4000px; /* keep in sync with .canvas dimensions */
+    /* Sized and offset to the canvas world bounds by CanvasExtent.js */
+    width: 6000px;
+    height: 4000px;
     /* Let pointer events fall through to widgets; individual paths can still capture events */
     pointer-events: none;
     z-index: 5;

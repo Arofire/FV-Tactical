@@ -152,6 +152,12 @@ async function runFleetRegressionChecks() {
             resources: { cargo: 100, remass: 80 } },
         getCostTotals: () => ({ CV: 100 })
     };
+    test('hull consumption uses per-type rates and excludes containment hulls', () => {
+        equal(ShipCapacity.getHullConsumption({
+            magazine: 2, hangar: 2, system: 4, emplacement: 2,
+            core: 1, freight: 10, tankage: 10
+        }), 6, 'Half-rate non-core hulls, full-rate core, no containment consumption');
+    });
     const outfitWidget = {
         id: 'outfit', type: 'outfit',
         outfitData: { name: 'Outfit', systems: {
@@ -190,7 +196,7 @@ async function runFleetRegressionChecks() {
         equal(metrics.deviceResources.bays, 4, 'Clamp bays aggregate');
         equal(metrics.jumpDistance, 2, 'One navigation gives ship range 2');
         equal(metrics.jumpiumCapacity, 3, 'Outfit capacity plus actual cradles');
-        equal(metrics.endurance, 5, 'Current stores plus berthing cargo / consumption');
+        equal(metrics.endurance, 10, 'Current stores plus berthing cargo / consumption');
         equal(metrics.cost, 150 + ShipCapacity.summarizeContents(configured,
             ShipCapacity.getContentOptions(true), [fixture]).cost, 'Actual contents CV');
         assert(metrics.contentsValid, 'Non-operational existing designs still counted');
@@ -360,13 +366,13 @@ async function runFleetRegressionChecks() {
     ];
     test('force summaries distinguish occupancy, tending endurance and navigation eligibility', () => {
         let values = summaryValues(view.createForceSummary(supported));
-        equal(values.Endurance, '10', 'Pooled current cargo and berthing cargo');
+        equal(values.Endurance, '20', 'Pooled current cargo and berthing cargo');
         equal(values['Munitions / Cells'], '24 / 90', 'Magazine and adapter occupancy, not item counts');
         equal(values['Maximum Jump Distance'], '2', 'Two navigation qualifies for force range');
         outfitWidget.outfitData.systems.general.tending = 0;
         view.metrics.clear();
         values = summaryValues(view.createForceSummary(supported));
-        equal(values.Endurance, '5', 'Without tending use lowest endurance');
+        equal(values.Endurance, '10', 'Without tending use lowest endurance');
         outfitWidget.outfitData.systems.quantum.navigation = 1;
         view.metrics.clear();
         values = summaryValues(view.createForceSummary(supported));

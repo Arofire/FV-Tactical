@@ -70,11 +70,20 @@
         const groupWidth = sizes.reduce((sum, size) => sum + size.width, 0) +
             GROUP_GAP * (sizes.length - 1);
         const groupHeight = Math.max(...sizes.map(size => size.height));
-        const canvasWidth = canvas.offsetWidth;
-        const canvasHeight = canvas.offsetHeight;
+        // Search the base canvas area first so repeated groups don't push the canvas outward
+        const bounds = (typeof CanvasExtent !== 'undefined' && CanvasExtent.BASE) ||
+            { minX: 0, minY: 0, maxX: canvas.offsetWidth, maxY: canvas.offsetHeight };
+        const placeRow = (left, top) => {
+            let nextLeft = left;
+            return sizes.map(size => {
+                const position = { x: nextLeft, y: top };
+                nextLeft += size.width + GROUP_GAP;
+                return position;
+            });
+        };
 
-        for (let top = POSITION_MARGIN; top + groupHeight <= canvasHeight; top += POSITION_STEP) {
-            for (let left = POSITION_MARGIN; left + groupWidth <= canvasWidth; left += POSITION_STEP) {
+        for (let top = bounds.minY + POSITION_MARGIN; top + groupHeight <= bounds.maxY; top += POSITION_STEP) {
+            for (let left = bounds.minX + POSITION_MARGIN; left + groupWidth <= bounds.maxX; left += POSITION_STEP) {
                 let nextLeft = left;
                 const proposed = sizes.map(size => {
                     const rect = {
@@ -93,7 +102,9 @@
                 }
             }
         }
-        throw new Error('No non-overlapping space remains on the design canvas for another ship group.');
+        // The canvas expands, so place the group below everything else when the current area is full
+        const lowest = existingWidgets.reduce((max, widget) => Math.max(max, widgetBounds(widget).bottom), bounds.minY);
+        return placeRow(bounds.minX + POSITION_MARGIN, lowest + POSITION_MARGIN);
     }
 
     function chooseWeaponEntries(items, category, outfit) {

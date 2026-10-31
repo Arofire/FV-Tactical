@@ -405,7 +405,7 @@ class ShipWidget extends DesignWidget {
             return total + count * unitCost;
         }, 0);
         const remassCapacity = Math.max(0, Number(this.shipData.resources?.remass) || 0);
-        const total = Math.round(hullCost + remassCapacity * 0.3189);
+        const total = Math.round(hullCost + remassCapacity * 0.6378);
 
         return {
             combatValue: total,

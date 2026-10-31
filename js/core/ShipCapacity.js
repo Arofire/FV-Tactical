@@ -210,11 +210,22 @@ class ShipCapacity {
         };
     }
 
-    // Cargo consumed per day by every hull except Freight and Tankage.
+    // Cargo consumed per day by hull type; Freight and Tankage consume none.
     static getHullConsumption(hullComposition) {
         const composition = hullComposition || {};
-        return ['emplacement', 'hangar', 'magazine', 'system', 'core']
-            .reduce((total, type) => total + ShipCapacity.num(composition[type]), 0);
+        const consumptionRates = {
+            emplacement: 0.5,
+            hangar: 0.5,
+            magazine: 0.5,
+            system: 0.5,
+            core: 1,
+            freight: 0,
+            tankage: 0
+        };
+        return Object.entries(consumptionRates).reduce(
+            (total, [type, rate]) => total + ShipCapacity.num(composition[type]) * rate,
+            0
+        );
     }
 
     static getConsumption(classWidget) {
