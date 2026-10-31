@@ -118,14 +118,6 @@ class UniqueShipExporter {
                 }
             }
         }
-        // Operational munition designs can fill hardpoint cells like catalogue weapons.
-        for (const widget of window.widgetManager?.getAllWidgets?.() || []) {
-            if (widget?.type === 'munitions' && widget.munitionData?.operational &&
-                    typeof widget.toWeaponDefinition === 'function') {
-                const definition = widget.toWeaponDefinition();
-                if (definition.id) definitions.set(definition.id, definition);
-            }
-        }
         return definitions;
     }
 
@@ -190,22 +182,6 @@ class UniqueShipExporter {
                 );
             }
         }
-        for (const entry of ship.contents?.hardpoints || []) {
-            const definition = weaponDefinitions.get(entry.weaponId) || {
-                id: entry.weaponId,
-                name: entry.weaponId || 'Unknown hardpoint weapon',
-                hp: 'H01',
-                accuracy: [null, null, null, null, null],
-                damage: [null, null, null, null, null]
-            };
-            this.addWeaponConfiguration(
-                configurations,
-                definition,
-                entry.count,
-                entry.arc,
-                entry.turreted
-            );
-        }
         for (const entry of ship.contents?.hardpointLoadout?.weapons || []) {
             const definition = weaponDefinitions.get(entry.weaponId) || {
                 id: entry.weaponId,
@@ -250,7 +226,7 @@ class UniqueShipExporter {
         return Array.from(grouped.values());
     }
 
-    static getStoreRows(ship, classWidget, hardpointCapacities, weaponDefinitions) {
+    static getStoreRows(ship, classWidget, weaponDefinitions) {
         const classData = classWidget?.shipData || {};
         const composition = classData.hullComposition || {};
         const magazineCapacity = this.number(composition.magazine) * 25;
@@ -296,23 +272,20 @@ class UniqueShipExporter {
                 resourceId: entry.id
             });
         }
-        for (const entry of ship.contents?.hardpoints || []) {
+        const fixtureCapacity = (ship.contents?.hardpointLoadout?.devices || [])
+            .reduce((sum, entry) => sum + this.number(ShipLoadoutWidget.getDeviceCatalogue()
+                .find(device => device.id === entry.deviceId)?.mounts), 0);
+        for (const entry of ship.contents?.hardpointLoadout?.weapons || []) {
             const weapon = weaponDefinitions.get(entry.weaponId);
             const expend = this.getWeaponNotes(weapon).expend;
             if (expend === null || expend === undefined || expend === '') continue;
             const count = Math.floor(this.number(entry.count));
             if (count < 1) continue;
-            const { resourceCount } = WeaponCatalogue.getMount(weapon);
-            const slotResourceCount = Math.max(1, this.number(resourceCount));
-            const arcSurcharge = entry.turreted && String(entry.arc || '').length > 1 ? 1 : 0;
-            const slotCost = slotResourceCount + arcSurcharge;
             stores.push({
-                name: weapon?.name || entry.weaponId || 'Unknown hardpoint weapon',
+                name: weapon?.name || entry.weaponId || 'Unknown fixture-mounted weapon',
                 current: count,
-                capacity: hasClassData && hardpointCapacities !== null && slotCost > 0
-                    ? Math.floor(this.number(hardpointCapacities) / slotCost)
-                    : null,
-                resourceType: 'expendableHardpointWeapon',
+                capacity: fixtureCapacity,
+                resourceType: 'expendableFixtureWeapon',
                 resourceId: entry.weaponId
             });
         }
@@ -330,7 +303,15 @@ class UniqueShipExporter {
             Tankage: this.number(composition.tankage),
             Core: this.number(composition.core)
         };
-        const layout = SummaryWidget.prototype.createLayout.call(this, counts);
+        const quantumSystemCount = ['targeting', 'command', 'navigation'].reduce(
+            (total, id) => total + this.number(outfitData?.systems?.quantum?.[id]),
+            0
+        );
+        const layout = SummaryWidget.prototype.createLayout.call(
+            this,
+            counts,
+            quantumSystemCount
+        );
         const columns = Math.max(1, layout.cols);
         const armor = outfitData?.armorHits ??
             outfitData?.defenses?.armor ?? 0;
@@ -350,7 +331,9 @@ class UniqueShipExporter {
             () => new Array(columns).fill('')
         );
         for (const cell of layout.cells) {
-            lowerRows[cell.row][cell.col] = SummaryWidget.HULL_CODES[cell.category] || '';
+            lowerRows[cell.row][cell.col] = cell.category === 'Quantum'
+                ? 'Q'
+                : SummaryWidget.HULL_CODES[cell.category] || '';
         }
         return {
             upperRows,
@@ -396,24 +379,11 @@ class UniqueShipExporter {
         return { passive, active, deployed };
     }
 
-    static getEntropyValues(classData) {
-        if (!classData?.hullComposition ||
-            typeof classData.hullComposition !== 'object') {
-            return { capacities: [], radiance: [] };
-        }
-        const composition = classData?.hullComposition || {};
-        const capacity = 2 * (
-            this.number(composition.emplacement) + this.number(composition.system)
-        );
-        const capacities = SummaryWidget.calculateEntropyBands(capacity) || [];
-        let radianceValue = 0;
+    static getEntropyValues(outfitWidget, coreData) {
+        const analysis = outfitWidget?.getGearBurnAnalysis?.(coreData);
         return {
-            capacities,
-            radiance: capacities.map((current, index) => {
-                const next = capacities[index + 1];
-                if (next !== undefined && current < next) return radianceValue++;
-                return 5;
-            })
+            capacities: analysis?.exportEntropyBands || [],
+            radiance: analysis?.exportEntropyRadiance || []
         };
     }
 
@@ -441,6 +411,9 @@ class UniqueShipExporter {
     }
 
     static async getExportData(ship, app) {
+        if (ship.contents && Object.hasOwn(ship.contents, 'hardpoints')) {
+            throw new Error('Direct hardpoint contents are not part of the current ship format.');
+        }
         const classWidget = this.getWidget(ship.classWidgetId);
         const outfitWidget = this.getWidget(ship.outfitWidgetId);
         const classData = classWidget?.type === 'ship' ? classWidget.shipData || {} : {};
@@ -458,7 +431,7 @@ class UniqueShipExporter {
         const hardpointCapacity = outfitWidget
             ? outfitData.resources?.hardpoints ?? null
             : null;
-        const stores = this.getStoreRows(ship, classWidget, hardpointCapacity, weaponDefinitions);
+        const stores = this.getStoreRows(ship, classWidget, weaponDefinitions);
         const hullGrid = this.getHullGrid(classData, outfitData);
         const formFields = this.createEmptyFormFields();
         const warnings = [];
@@ -491,7 +464,7 @@ class UniqueShipExporter {
                 `${missingMunitions.length} munition design(s) could not be resolved; their names use Fleet IDs.`
             );
         }
-        const missingHardpointWeapons = (ship.contents?.hardpoints || []).filter(entry =>
+        const missingHardpointWeapons = (ship.contents?.hardpointLoadout?.weapons || []).filter(entry =>
             this.number(entry.count) > 0 && !weaponDefinitions.has(entry.weaponId)
         );
         if (missingHardpointWeapons.length) {
@@ -533,7 +506,7 @@ class UniqueShipExporter {
                 `The sheet shows ${this.HULL_ROWS_BELOW} of ${hullGrid.lowerRows.length} ship hull rows.`
             );
         }
-        if ((ship.contents?.hardpoints || []).length && !weaponCatalogue.categories.length) {
+        if ((ship.contents?.hardpointLoadout?.weapons || []).length && !weaponCatalogue.categories.length) {
             throw new Error('The weapon catalogue could not be loaded to resolve this ship\'s hardpoint weapons.');
         }
 
@@ -603,18 +576,9 @@ class UniqueShipExporter {
         const devices = this.getOutfitDeviceLines(outfitWidget);
         const systemsCount = outfitData.resources?.systems;
         const radiation = this.getRadiation(outfitData);
-        const entropy = this.getEntropyValues(classData);
+        const entropy = this.getEntropyValues(outfitWidget, coreData);
         formFields.Systems = devices.systems.join('\n') || (systemsCount ?? null);
-        const hardpointLines = (ship.contents?.hardpoints || [])
-            .map(entry => {
-                const weapon = weaponDefinitions.get(entry.weaponId);
-                if (!weapon) return null;
-                const arc = entry.arc ? ` ${entry.arc}` : '';
-                const turreted = entry.turreted ? ' Turreted' : '';
-                const count = this.number(entry.count) > 1 ? ` x${this.number(entry.count)}` : '';
-                return `${weapon.name}${arc}${turreted}${count}`;
-            })
-            .filter(Boolean);
+        const hardpointLines = [];
         const hardpointDevices = ShipLoadoutWidget.getDeviceCatalogue();
         for (const entry of ship.contents?.hardpointLoadout?.devices || []) {
             const device = hardpointDevices.find(item => item.id === entry.deviceId);

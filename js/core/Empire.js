@@ -160,16 +160,62 @@ class Empire {
         if (index === -1) return null;
         const removed = this.taskForces.splice(index, 1)[0];
         for (const ship of this.fleetShips) {
-            if (ship.taskForceId === taskForceId) ship.taskForceId = null;
+            if (ship.taskForceId === taskForceId) this.assignFleetShip(ship.id, null);
         }
         return removed;
     }
 
     getTaskForceShips(taskForceId) {
-        return this.fleetShips.filter(ship => ship.taskForceId === taskForceId);
+        return this.fleetShips.filter(ship => ship.taskForceId === taskForceId)
+            .sort((first, second) => first.taskForceOrder - second.taskForceOrder);
+    }
+
+    assignFleetShip(shipId, taskForceId) {
+        return this.assignFleetShips([shipId], taskForceId)[0];
+    }
+
+    assignFleetShips(shipIds, taskForceId) {
+        if (!Array.isArray(shipIds) || !shipIds.length ||
+            shipIds.some(id => typeof id !== 'string' || !id)) {
+            throw new Error('Select ships to assign.');
+        }
+        const ships = [...new Set(shipIds)].map(id => {
+            const ship = this.fleetShips.find(entry => entry.id === id);
+            if (!ship) throw new Error(`Ship "${id}" does not exist.`);
+            return ship;
+        });
+        const destination = taskForceId || null;
+        if (destination && !this.taskForces.some(force => force.id === destination)) {
+            throw new Error(`Task force "${destination}" does not exist.`);
+        }
+        const transfers = ships.filter(ship => ship.taskForceId !== destination);
+        if (!transfers.length) return ships;
+        let nextOrder = this.getNextTaskForceOrder(destination);
+        if (!Number.isSafeInteger(nextOrder + transfers.length - 1)) {
+            throw new Error('Task-force membership order exceeds its limit.');
+        }
+        for (const ship of transfers) {
+            ship.taskForceOrder = nextOrder++;
+            ship.taskForceId = destination;
+        }
+        return ships;
+    }
+
+    getNextTaskForceOrder(taskForceId) {
+        const next = this.fleetShips.filter(ship => ship.taskForceId === taskForceId)
+            .reduce((maximum, ship) => Math.max(maximum, ship.taskForceOrder), -1) + 1;
+        if (!Number.isSafeInteger(next)) throw new Error('Task-force membership order exceeds its limit.');
+        return next;
     }
 
     addFleetShip(ship) {
+        const taskForceId = ship.taskForceId || null;
+        if (taskForceId && !this.taskForces.some(force => force.id === taskForceId)) {
+            throw new Error(`Task force "${taskForceId}" does not exist.`);
+        }
+        if (ship.contents && Object.hasOwn(ship.contents, 'hardpoints')) {
+            throw new Error('Direct hardpoint contents are not part of the current ship format.');
+        }
         this.fleetShips.push({
             id: ship.id || `fleet-ship-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             classWidgetId: ship.classWidgetId ?? '',
@@ -177,12 +223,12 @@ class Empire {
             loadoutWidgetId: ship.loadoutWidgetId ?? '',
             name: ship.name ?? '',
             role: ship.role ?? '',
-            taskForceId: ship.taskForceId ?? null,
+            taskForceId,
+            taskForceOrder: this.getNextTaskForceOrder(taskForceId),
             contents: {
                 berths: ship.contents?.berths ?? [],
                 magazine: ship.contents?.magazine ?? [],
                 hangar: ship.contents?.hangar ?? [],
-                hardpoints: ship.contents?.hardpoints ?? [],
                 hardpointLoadout: {
                     devices: ship.contents?.hardpointLoadout?.devices ?? [],
                     weapons: ship.contents?.hardpointLoadout?.weapons ?? []
@@ -240,6 +286,12 @@ class Empire {
 
     // Deserialization
     fromJSON(data) {
+        for (const ship of data.fleetShips || []) {
+            if (!Number.isSafeInteger(ship.taskForceOrder) || ship.taskForceOrder < 0 ||
+                !ship.contents || Object.hasOwn(ship.contents, 'hardpoints')) {
+                throw new Error('Fleet ships must use the current contents and task-force ordering format.');
+            }
+        }
         this.name = data.name || 'New Empire';
         this.techPoints = data.techPoints || 0;
         this.researchedTech = new Set(data.researchedTech || []);
@@ -278,11 +330,11 @@ class Empire {
                     name: ship.name ?? '',
                     role: ship.role ?? '',
                     taskForceId: ship.taskForceId ?? null,
+                    taskForceOrder: ship.taskForceOrder,
                     contents: {
                         berths: normalizeContentEntries(ship.contents?.berths),
                         magazine: normalizeContentEntries(ship.contents?.magazine),
                         hangar: normalizeContentEntries(ship.contents?.hangar),
-                        hardpoints: normalizeContentEntries(ship.contents?.hardpoints),
                         hardpointLoadout: {
                             devices: Array.isArray(ship.contents?.hardpointLoadout?.devices)
                                 ? ship.contents.hardpointLoadout.devices
@@ -296,7 +348,7 @@ class Empire {
                             weapons: normalizeContentEntries(ship.contents?.hardpointLoadout?.weapons)
                                 .map(entry => ({
                                     ...entry,
-                                    weaponId: String(entry.weaponId || entry.id || ''),
+                                    weaponId: String(entry.weaponId),
                                     arc: String(entry.arc || 'F').toUpperCase()
                                 }))
                         }

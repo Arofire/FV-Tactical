@@ -245,7 +245,7 @@ class TendingDialog {
 
             const currentLabel = document.createElement('span');
             currentLabel.className = 'tending-current';
-            currentLabel.textContent = `${entry.current} / ${entry.max} t`;
+            currentLabel.textContent = `${entry.current} / ${entry.max}`;
 
             const slider = document.createElement('input');
             slider.type = 'range';
@@ -257,7 +257,7 @@ class TendingDialog {
 
             const valueLabel = document.createElement('span');
             valueLabel.className = 'tending-value';
-            valueLabel.textContent = `${entry.final} t`;
+            valueLabel.textContent = `${entry.final}`;
 
             const lockLabel = document.createElement('label');
             lockLabel.className = 'tending-lock';
@@ -271,7 +271,7 @@ class TendingDialog {
 
             slider.addEventListener('input', () => {
                 entry.final = Math.max(0, Math.min(entry.max, Number(slider.value) || 0));
-                valueLabel.textContent = `${entry.final} t`;
+                valueLabel.textContent = `${entry.final}`;
                 this.rebalance(resource, target.ship.id);
                 this.refreshResource(resource);
             });
@@ -297,10 +297,10 @@ class TendingDialog {
             if (row && row.slider !== document.activeElement) {
                 row.slider.value = String(entry.final);
             }
-            if (row) row.valueLabel.textContent = `${entry.final} t`;
+            if (row) row.valueLabel.textContent = `${entry.final}`;
         }
         const retains = this.tenderRetains(resource);
-        this.poolLabels[resource].textContent = `tender retains ${retains} t`;
+        this.poolLabels[resource].textContent = `tender retains ${retains}`;
         this.poolLabels[resource].classList.toggle('over-capacity', retains < 0);
         if (this.confirmButton) {
             this.confirmButton.disabled =

@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/widgets.css">
     <link rel="stylesheet" href="css/nodes.css">
+    <link rel="stylesheet" href="css/fleet.css">
+    <link rel="stylesheet" href="css/ship-dialogs.css">
 </head>
 <body>
     <!-- Empire Info Bar -->
@@ -81,22 +83,21 @@
 
         <div id="workspace" class="workspace">
             <section id="fleetView" class="fleet-view" hidden aria-label="Fleet">
-                <header class="fleet-view-header">
-                    <div>
-                        <h1>Fleet</h1>
-                        <p>Build ships from operational classes and organize them into task forces.</p>
-                    </div>
-                    <div class="fleet-view-actions">
-                        <button id="addTaskForce" type="button">New Task Force</button>
-                        <button id="addFleetShip" type="button">Build Ships</button>
-                    </div>
-                </header>
-                <div class="fleet-panels">
-                    <div id="taskForcePanel" class="fleet-taskforce-panel" aria-label="Task forces"></div>
-                    <aside id="fleetInventoryPanel" class="fleet-inventory-panel" aria-label="Empire ship inventory">
-                        <h2>Empire Inventory</h2>
-                        <div id="fleetInventoryList" class="fleet-inventory-list"></div>
-                    </aside>
+                <aside id="fleetInventoryPanel" class="fleet-inventory-panel" aria-label="Empire ship inventory">
+                    <h2>Empire Inventory</h2>
+                    <div id="fleetInventoryList" class="fleet-inventory-list"></div>
+                </aside>
+                <div class="fleet-main">
+                    <header class="fleet-view-header">
+                        <div>
+                            <h1>Fleet</h1>
+                        </div>
+                        <div class="fleet-view-actions">
+                            <button id="addTaskForce" type="button">New Task Force</button>
+                            <button id="addFleetShip" type="button">Build Ships</button>
+                        </div>
+                    </header>
+                    <div id="taskForcePanel" class="fleet-taskforce-panel" aria-label="Selected task force"></div>
                 </div>
             </section>
             <div id="canvas" class="canvas">

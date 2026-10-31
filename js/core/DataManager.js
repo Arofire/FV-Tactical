@@ -2,7 +2,7 @@
 class DataManager {
     constructor() {
         this.storageKey = 'fv-tactical-empire';
-        this.fileVersion = '2.0';
+        this.fileVersion = '2.1';
     }
 
     // Save empire data to localStorage
@@ -175,7 +175,7 @@ class DataManager {
         }
 
         const supportedWidgetTypes = new Set([
-            'ship', 'craft', 'troops', 'munitions', 'outfit', 'shipCore', 'summary', 'hullTiles'
+            'ship', 'craft', 'troops', 'munitions', 'outfit', 'shipCore', 'shipLoadout', 'summary', 'hullTiles'
         ]);
         const widgetIds = new Set();
         for (const widget of data.widgets) {
@@ -198,6 +198,49 @@ class DataManager {
                 typeof connection.sourceNodeId !== 'string' || !connection.sourceNodeId ||
                 typeof connection.targetNodeId !== 'string' || !connection.targetNodeId)) {
             return false;
+        }
+
+        if (!Array.isArray(empire.taskForces) || !Array.isArray(empire.fleetShips)) return false;
+        const forceIds = new Set();
+        for (const force of empire.taskForces) {
+            if (!force || typeof force.id !== 'string' || !force.id ||
+                typeof force.name !== 'string' || forceIds.has(force.id)) return false;
+            forceIds.add(force.id);
+        }
+        const fleetIds = new Set();
+        const membershipOrders = new Set();
+        const validEntries = (entries, idField = 'id') => Array.isArray(entries) &&
+            entries.every(entry => entry && typeof entry === 'object' &&
+                typeof entry[idField] === 'string' && entry[idField] &&
+                Number.isSafeInteger(entry.count) && entry.count >= 0);
+        for (const ship of empire.fleetShips) {
+            const contents = ship?.contents;
+            const orderKey = JSON.stringify([ship?.taskForceId, ship?.taskForceOrder]);
+            if (!ship || typeof ship.id !== 'string' || !ship.id || fleetIds.has(ship.id) ||
+                typeof ship.name !== 'string' || typeof ship.role !== 'string' ||
+                typeof ship.classWidgetId !== 'string' || typeof ship.outfitWidgetId !== 'string' ||
+                typeof ship.loadoutWidgetId !== 'string' ||
+                !(ship.taskForceId === null || forceIds.has(ship.taskForceId)) ||
+                !Number.isSafeInteger(ship.taskForceOrder) || ship.taskForceOrder < 0 ||
+                membershipOrders.has(orderKey) || !contents || typeof contents !== 'object' ||
+                Object.hasOwn(contents, 'hardpoints') ||
+                !validEntries(contents.berths) || !validEntries(contents.magazine) ||
+                !validEntries(contents.hangar) || !contents.hardpointLoadout ||
+                !Array.isArray(contents.hardpointLoadout.devices) ||
+                !validEntries(contents.hardpointLoadout.weapons, 'weaponId') ||
+                !ship.stores || !Number.isFinite(ship.stores.cargo) || ship.stores.cargo < 0 ||
+                !Number.isFinite(ship.stores.remass) || ship.stores.remass < 0) return false;
+            const deviceIds = new Set();
+            for (const device of contents.hardpointLoadout.devices) {
+                if (!device || typeof device.instanceId !== 'string' || !device.instanceId ||
+                    deviceIds.has(device.instanceId) || typeof device.deviceId !== 'string' ||
+                    !device.deviceId || !validEntries(device.contents)) return false;
+                deviceIds.add(device.instanceId);
+            }
+            if (contents.hardpointLoadout.weapons.some(entry =>
+                typeof entry.arc !== 'string' || !/^[FPSA]$/.test(entry.arc))) return false;
+            fleetIds.add(ship.id);
+            membershipOrders.add(orderKey);
         }
 
         return true;

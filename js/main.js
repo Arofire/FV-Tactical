@@ -346,8 +346,14 @@ class FVTacticalApp {
         if (isFleet) this.updateFleetView();
     }
 
-    updateFleetView() {
-        this.fleetView.render();
+    async updateFleetView() {
+        try {
+            await ShipCapacity.loadFleetCatalogues();
+            this.fleetView.render();
+        } catch (error) {
+            console.error('Unable to render Fleet:', error);
+            this.showNotification(`Unable to render Fleet: ${error.message}`, 'error');
+        }
     }
 
     formatOptionCost(value, category = 'general', itemId = '') {

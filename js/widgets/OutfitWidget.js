@@ -1,5 +1,39 @@
 // Outfit configuration for a Ship Class, with core-derived resources.
 class OutfitWidget extends DesignWidget {
+    static QUANTUM_SYSTEM_IDS = ['targeting', 'command', 'navigation'];
+
+    static calculateEntropyBands(entropyCapacity, radiatorOffset = 0) {
+        if (!Number.isFinite(entropyCapacity) || entropyCapacity < 0 ||
+            !Number.isFinite(radiatorOffset)) {
+            return null;
+        }
+        return Array.from({ length: 6 }, (_, index) => {
+            const base = Math.min(
+                entropyCapacity,
+                Math.max(1, Math.round(entropyCapacity * (index + 1) / 6))
+            );
+            return Math.min(
+                entropyCapacity,
+                Math.max(0, base + radiatorOffset * (index + 1))
+            );
+        });
+    }
+
+    static combineEntropyAnalyses(analyses = []) {
+        const valid = analyses.filter(analysis =>
+            Number.isFinite(analysis?.totalEntropy) && analysis.totalEntropy >= 0
+        );
+        if (!valid.length) return null;
+        const totalEntropy = valid.reduce((total, analysis) =>
+            total + analysis.totalEntropy, 0);
+        const radiatorOffset = valid.reduce((total, analysis) =>
+            total + (Number.isFinite(analysis.radiatorOffset) ? analysis.radiatorOffset : 0), 0);
+        return {
+            totalEntropy,
+            entropyBands: OutfitWidget.calculateEntropyBands(totalEntropy, radiatorOffset)
+        };
+    }
+
     static calculateGearBurnMetrics(hullCount, baseEngineExponent, instability) {
         const hulls = Number(hullCount);
         const baseExponent = Number(baseEngineExponent);
@@ -54,6 +88,7 @@ class OutfitWidget extends DesignWidget {
                 core: null,
                 containmentHulls: null
             },
+            initiative: null,
             defenses: {
                 armor: 0
             },
@@ -69,7 +104,12 @@ class OutfitWidget extends DesignWidget {
                     laserGenerator: { techId: '', count: 0 },
                     tending: 0
                 },
-                entropy: {}
+                entropy: {},
+                quantum: {
+                    targeting: 0,
+                    command: 0,
+                    navigation: 0
+                }
             },
             resourceUse: {
                 utilities: 0,
@@ -89,7 +129,7 @@ class OutfitWidget extends DesignWidget {
         this.weaponsDataLoaded = false;
         this.utilitiesData = { radiators: [], defenses: [] };
         this.utilitiesDataLoaded = false;
-        this.systemsData = { general: [], entropy: [] };
+        this.systemsData = { general: [], entropy: [], quantum: [] };
         this.systemsDataLoaded = false;
         this.laserGeneratorTechs = [];
         this.userToggledCategoryIds = new Set();
@@ -294,8 +334,9 @@ class OutfitWidget extends DesignWidget {
                 this.fetchJSON('data/systems.json'),
                 TechTree.ensureLoaded()
             ]);
-            if (!data || !Array.isArray(data.general) || !Array.isArray(data.entropy)) {
-                throw new Error('Systems data must contain general and entropy arrays');
+            if (!data || !Array.isArray(data.general) || !Array.isArray(data.entropy) ||
+                !Array.isArray(data.quantum)) {
+                throw new Error('Systems data must contain general, entropy, and quantum arrays');
             }
             this.systemsData = data;
             this.systemsDataLoaded = true;
@@ -324,9 +365,15 @@ class OutfitWidget extends DesignWidget {
                 };
             }
             this.outfitData.systems.entropy = entropySelections;
+            this.outfitData.systems.quantum = Object.fromEntries(
+                OutfitWidget.QUANTUM_SYSTEM_IDS.map(id => [
+                    id,
+                    this.parseCount(this.outfitData.systems.quantum?.[id])
+                ])
+            );
         } catch (error) {
             this.reportCatalogueError('Systems catalogue (data/systems.json)', error);
-            this.systemsData = { general: [], entropy: [] };
+            this.systemsData = { general: [], entropy: [], quantum: [] };
             this.laserGeneratorTechs = [];
         }
         this.refresh();
@@ -338,6 +385,7 @@ class OutfitWidget extends DesignWidget {
         this.outfitData.armorHits = this.getArmorHits();
         this.outfitData.armorHardpoints = this.getHardpointCapacity(resources);
         this.outfitData.effectiveHulls = this.getEffectiveHullCount();
+        this.outfitData.initiative = this.getInitiative();
     }
 
     getAllWeapons() {
@@ -675,7 +723,6 @@ class OutfitWidget extends DesignWidget {
                 } else {
                     this.outfitData.utilityDevices[collection].push({ ...item, count: 1 });
                 }
-                if (picker) picker.value = '';
                 this.refreshCatalogControls();
                 this.refreshWeaponResourceDisplay();
                 this.refreshSectionCostLabels();
@@ -711,7 +758,6 @@ class OutfitWidget extends DesignWidget {
                 } else {
                     this.outfitData.weapons[category].push(weapon);
                 }
-                if (picker) picker.value = '';
             } else if (button.dataset.weaponAction === 'remove') {
                 if (category !== 'offensive' && category !== 'defensive') return;
                 const index = Number(button.dataset.index);
@@ -733,6 +779,10 @@ class OutfitWidget extends DesignWidget {
         const category = target.dataset.category;
         const weapon = this.outfitData.weapons?.[category]?.[Number(target.dataset.index)];
         if (!weapon) return;
+        if (field === 'isTurreted' && weapon.isTurreted && !value &&
+            this.getValidWeaponArc(weapon.arc, weapon.isMain, true).length > 1) {
+            weapon.arc = '';
+        }
         weapon[field] = value;
         if (field === 'isTurreted') {
             this.normalizeWeaponArc(weapon, category);
@@ -785,6 +835,9 @@ class OutfitWidget extends DesignWidget {
             ? target.value
             : checkedArcs.join('');
         weapon.arc = this.getValidWeaponArc(selectedArcs, definition?.isMain, isTurreted);
+        row.querySelectorAll('[data-arc-checkbox]').forEach(checkbox => {
+            checkbox.checked = weapon.arc.includes(checkbox.value);
+        });
     }
 
     parseCount(value) {
@@ -897,16 +950,44 @@ class OutfitWidget extends DesignWidget {
         return classHullCount === null ? null : classHullCount + this.parseCount(this.outfitData.defenses?.armor);
     }
 
+    getInitiative() {
+        const hullComposition = this.getConnectedClassData()?.hullComposition;
+        if (!hullComposition || typeof hullComposition !== 'object') return null;
+        const coreHulls = this.numericOrNull(hullComposition.core);
+        const totalHulls = this.getEffectiveHullCount();
+        if (coreHulls === null || totalHulls === null || totalHulls <= 0) return null;
+        return coreHulls / totalHulls;
+    }
+
     getGearBurnAnalysis(core = this.getCoreData()) {
         if (!core) return null;
         const effectiveHulls = this.getEffectiveHullCount();
-        const classHullCount = this.getClassHullCount();
         const classData = this.getConnectedClassData();
         const availableRemass = this.numericOrNull(classData?.resources?.remass);
         const manifoldEfficiency = this.numericOrNull(core.manifoldEfficiency);
-        const totalEntropy = classHullCount === null || manifoldEfficiency === null
+        const hullComposition = classData?.hullComposition;
+        const baseEntropy = !hullComposition || typeof hullComposition !== 'object'
             ? null
-            : Math.floor(classHullCount * manifoldEfficiency);
+            : 2 * (
+                this.parseCount(hullComposition.emplacement) +
+                this.getQuantumSystemCount()
+            );
+        const totalEntropy = baseEntropy === null || manifoldEfficiency === null
+            ? null
+            : Math.floor(baseEntropy * manifoldEfficiency);
+        const radiatorOffset = this.getRadiatorEntropyOffset();
+        const entropyBands = totalEntropy === null
+            ? null
+            : OutfitWidget.calculateEntropyBands(totalEntropy, radiatorOffset);
+        const exportEntropyBands = totalEntropy === null
+            ? null
+            : OutfitWidget.calculateEntropyBands(totalEntropy);
+        let entropyRadianceValue = 0;
+        const exportEntropyRadiance = exportEntropyBands?.map((current, index) => {
+            const next = exportEntropyBands[index + 1];
+            if (next !== undefined && current < next) return entropyRadianceValue++;
+            return 5;
+        }) ?? null;
         const baseMetrics = effectiveHulls === null
             ? null
             : OutfitWidget.calculateGearBurnMetrics(
@@ -945,11 +1026,33 @@ class OutfitWidget extends DesignWidget {
         });
         return {
             effectiveHulls,
+            baseEntropy,
             totalEntropy,
+            radiatorOffset,
+            entropyBands,
+            exportEntropyBands,
+            exportEntropyRadiance,
             thrustPenalty: baseMetrics?.thrustPenalty ?? null,
             availableRemass,
             gears
         };
+    }
+
+    getQuantumSystemCount() {
+        return OutfitWidget.QUANTUM_SYSTEM_IDS.reduce(
+            (total, id) => total + this.parseCount(this.outfitData.systems.quantum?.[id]),
+            0
+        );
+    }
+
+    getRadiatorEntropyOffset() {
+        return (this.outfitData.utilityDevices?.radiators || []).reduce((total, selection) => {
+            const definition = this.utilitiesData.radiators.find(item => item.id === selection.id);
+            const offset = Number(selection.offset ?? definition?.offset);
+            return total + (Number.isFinite(offset)
+                ? offset * this.parseCount(selection.count)
+                : 0);
+        }, 0);
     }
 
     addResourceCounter(titleElement, resource) {
@@ -1137,6 +1240,12 @@ class OutfitWidget extends DesignWidget {
                     this.parseCount(this.outfitData.systems.entropy[item.id]?.count);
             }
         }
+        if (!category || category === 'quantum') {
+            for (const item of this.systemsData.quantum) {
+                total += (Number(item.cost) || 0) *
+                    this.parseCount(this.outfitData.systems.quantum[item.id]);
+            }
+        }
         return total;
     }
 
@@ -1160,6 +1269,7 @@ class OutfitWidget extends DesignWidget {
         setSubsectionCost('defensive-weapon-subtotal', this.getWeaponCategoryCost('defensive'));
         setSubsectionCost('general-system-subtotal', this.getSystemsCost('general'));
         setSubsectionCost('entropy-system-subtotal', this.getSystemsCost('entropy'));
+        setSubsectionCost('quantum-system-subtotal', this.getSystemsCost('quantum'));
         const utilities = this.element.querySelector(`#${this.id}-utility-cost`);
         if (utilities) utilities.textContent = formatSubtotal(this.getUtilityCostSubtotal());
         const emplacements = this.element.querySelector(`#${this.id}-emplacement-cost`);
@@ -1405,6 +1515,11 @@ class OutfitWidget extends DesignWidget {
             ${this.renderOutfitSubsectionTitle('Entropy Systems', 'entropy-system-subtotal')}
             <div id="${this.id}-entropy-system-rows">${this.renderEntropySystems()}</div>
             <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
+        </div>
+        <div class="design-subsection design-loadout-group outfit-availability-container" data-availability-key="quantum-systems">
+            ${this.renderOutfitSubsectionTitle('Quantum Systems', 'quantum-system-subtotal')}
+            <div id="${this.id}-quantum-system-rows">${this.renderQuantumSystems()}</div>
+            <p class="outfit-unavailable-hint" hidden>No options available with current technology.</p>
         </div>`;
     }
 
@@ -1466,10 +1581,21 @@ class OutfitWidget extends DesignWidget {
         return `<div class="composition-grid outfit-systems-grid">${this.systemsData.entropy.map(item => {
             const selection = this.outfitData.systems.entropy[item.id] || { count: 0 };
             const unavailable = !this.isCatalogItemAvailable(item);
-            return `<div class="composition-item outfit-system-item outfit-entropy-system${unavailable ? ' is-unavailable' : ''}">
+            return `<div class="composition-item outfit-system-item${unavailable ? ' is-unavailable' : ''}">
                 <label for="${this.id}-entropy-${OutfitWidget.escapeHTML(item.id)}">${OutfitWidget.escapeHTML(item.name)}</label>
                 <input id="${this.id}-entropy-${OutfitWidget.escapeHTML(item.id)}" class="hull-spin" type="number" min="0" step="1" value="${this.parseCount(selection.count)}" data-system-count="entropy:${OutfitWidget.escapeHTML(item.id)}" aria-label="${OutfitWidget.escapeHTML(item.name)} quantity" ${unavailable ? 'disabled' : ''}>
-                <span class="outfit-device-stats">Radiance: ${item.radiance}</span>
+                ${unavailable ? '<span class="outfit-device-stats">Required technology unavailable</span>' : ''}
+            </div>`;
+        }).join('')}</div>`;
+    }
+
+    renderQuantumSystems() {
+        return `<div class="composition-grid outfit-systems-grid outfit-quantum-systems-grid">${this.systemsData.quantum.map(item => {
+            const count = this.parseCount(this.outfitData.systems.quantum[item.id]);
+            const unavailable = !this.isCatalogItemAvailable(item);
+            return `<div class="composition-item outfit-system-item outfit-quantum-system${unavailable ? ' is-unavailable' : ''}">
+                <label for="${this.id}-quantum-${OutfitWidget.escapeHTML(item.id)}">${OutfitWidget.escapeHTML(item.name)}</label>
+                <input id="${this.id}-quantum-${OutfitWidget.escapeHTML(item.id)}" class="hull-spin" type="number" min="0" step="1" value="${count}" data-system-count="quantum:${OutfitWidget.escapeHTML(item.id)}" aria-label="${OutfitWidget.escapeHTML(item.name)} quantity" ${unavailable ? 'disabled' : ''}>
                 ${unavailable ? '<span class="outfit-device-stats">Required technology unavailable</span>' : ''}
             </div>`;
         }).join('')}</div>`;
@@ -1593,6 +1719,10 @@ class OutfitWidget extends DesignWidget {
                 radiance: item.radiance,
                 requiredTech: [...(item.requiredTech || [])]
             };
+        } else if (field.startsWith('quantum:')) {
+            const id = field.slice('quantum:'.length);
+            if (!OutfitWidget.QUANTUM_SYSTEM_IDS.includes(id)) return;
+            this.outfitData.systems.quantum[id] = count;
         } else if (field === 'laserGenerator') {
             this.outfitData.systems.general.laserGenerator.count = count;
         } else {
@@ -1700,8 +1830,10 @@ class OutfitWidget extends DesignWidget {
     refreshSystemsControls() {
         const general = this.element?.querySelector(`#${this.id}-general-system-rows`);
         const entropy = this.element?.querySelector(`#${this.id}-entropy-system-rows`);
+        const quantum = this.element?.querySelector(`#${this.id}-quantum-system-rows`);
         if (general) general.innerHTML = this.renderGeneralSystems();
         if (entropy) entropy.innerHTML = this.renderEntropySystems();
+        if (quantum) quantum.innerHTML = this.renderQuantumSystems();
     }
 
     refreshCatalogControls() {
@@ -1723,6 +1855,12 @@ class OutfitWidget extends DesignWidget {
                 }))
             };
         }
+        this.outfitData.systems.quantum = Object.fromEntries(
+            OutfitWidget.QUANTUM_SYSTEM_IDS.map(id => [
+                id,
+                this.parseCount(this.outfitData.systems.quantum?.[id])
+            ])
+        );
         this.refreshUtilityDevicePickers();
         this.refreshUtilityDeviceRows('radiators');
         this.refreshUtilityDeviceRows('defenses');
@@ -1748,9 +1886,12 @@ class OutfitWidget extends DesignWidget {
     renderWeaponPicker(category) {
         const items = category === 'offensive' ? this.getOffensiveWeapons() : this.getPDWeapons();
         const available = this.filterByRequiredTech(this.getGeneratorFilteredWeapons(items));
-        const options = available.map(weapon =>
-            `<option value="${OutfitWidget.escapeHTML(weapon.id)}">${OutfitWidget.escapeHTML(weapon.name)} (${OutfitWidget.escapeHTML(weapon.hp || weapon.categoryName)})</option>`
-        ).join('');
+        const options = available.map(weapon => {
+            const label = category === 'defensive'
+                ? weapon.name
+                : `${weapon.name} (${weapon.hp || weapon.categoryName})`;
+            return `<option value="${OutfitWidget.escapeHTML(weapon.id)}">${OutfitWidget.escapeHTML(label)}</option>`;
+        }).join('');
         return `<div class="design-picker">
             <select class="design-select" data-weapon-picker="${category}" aria-label="${category === 'offensive' ? 'Offensive' : 'Defensive'} weapon to add">
                 <option value="">Select weapon...</option>${options}
@@ -1862,7 +2003,8 @@ class OutfitWidget extends DesignWidget {
                     ? this.getAvailableLaserGeneratorTechs().length > 0
                     : this.isCatalogItemAvailable(item)
             ),
-            'entropy-systems': this.systemsData.entropy.some(item => this.isCatalogItemAvailable(item))
+            'entropy-systems': this.systemsData.entropy.some(item => this.isCatalogItemAvailable(item)),
+            'quantum-systems': this.systemsData.quantum.some(item => this.isCatalogItemAvailable(item))
         };
         this.element.querySelectorAll('[data-availability-key]').forEach(container => {
             const available = availability[container.dataset.availabilityKey] ?? true;
@@ -1874,15 +2016,14 @@ class OutfitWidget extends DesignWidget {
 
     getWeaponResourceUse() {
         const resourceUse = { hardpoints: 0, utilities: 0, emplacements: 0 };
-        const addWeapon = (weaponId, count, arc = '', isTurreted = false, hasSelectableArc = false) => {
+        const addWeapon = (weaponId, count, isTurreted = false) => {
             const weapon = this.getWeaponDefinition(weaponId);
             const { resourceType, resourceCount } = WeaponCatalogue.getMount(weapon);
             if (!weapon || !resourceType ||
                 !Object.prototype.hasOwnProperty.call(resourceUse, resourceType)) return;
-            const validArc = this.getValidWeaponArc(arc, weapon.isMain, isTurreted);
-            const arcSurcharge = hasSelectableArc && validArc.length > 1 ? 1 : 0;
+            const turretSurcharge = isTurreted && !this.isTurretOptionDisabled(weapon) ? 1 : 0;
             resourceUse[resourceType] += this.parseCount(count) *
-                (this.parseCount(resourceCount) + arcSurcharge);
+                (this.parseCount(resourceCount) + turretSurcharge);
         };
 
         addWeapon(this.outfitData.weapons?.spinal, 1);
@@ -1891,9 +2032,7 @@ class OutfitWidget extends DesignWidget {
                 addWeapon(
                     weapon.weaponId,
                     weapon.count,
-                    weapon.arc,
-                    category === 'offensive' && weapon.isTurreted,
-                    category === 'offensive'
+                    category === 'offensive' && weapon.isTurreted
                 );
             }
         }
@@ -1924,11 +2063,12 @@ class OutfitWidget extends DesignWidget {
             this.parseCount(generalSystems.tending);
         const entropySystemUse = this.systemsData.entropy.reduce((sum, item) =>
             sum + this.parseCount(this.outfitData.systems.entropy[item.id]?.count), 0);
+        const quantumSystemUse = this.getQuantumSystemCount();
         return {
             core: core ? this.parseCount(core.powerplantSize) : 0,
             emplacements: weaponUse.emplacements,
             utilities: weaponUse.utilities + utilityDeviceUse,
-            systems: generalSystemUse + entropySystemUse,
+            systems: generalSystemUse + entropySystemUse + quantumSystemUse,
             hardpoints: weaponUse.hardpoints + this.getConnectedLoadoutHardpointUse()
         };
     }
@@ -2091,6 +2231,11 @@ class OutfitWidget extends DesignWidget {
                 add(item.requiredTech);
             }
         }
+        for (const item of this.systemsData.quantum) {
+            if (this.parseCount(this.outfitData.systems.quantum[item.id]) > 0) {
+                add(item.requiredTech);
+            }
+        }
         for (const connection of this.getConnectedDataByNodeType('Loadout')) {
             const loadout = connection.data?.loadoutData;
             if (loadout?.operational && Array.isArray(loadout.requiredTech)) {
@@ -2130,6 +2275,12 @@ class OutfitWidget extends DesignWidget {
                 requiredTech: count > 0 ? [...(item.requiredTech || [])] : []
             };
         }
+        this.outfitData.systems.quantum = Object.fromEntries(
+            OutfitWidget.QUANTUM_SYSTEM_IDS.map(id => [
+                id,
+                this.parseCount(this.outfitData.systems.quantum?.[id])
+            ])
+        );
         const requiredTech = this.getSelectedRequiredTech();
         this.outfitData.requiredTech = requiredTech;
         const selectedSpinal = this.getAllWeapons().find(weapon => weapon.id === this.outfitData.weapons.spinal);
@@ -2176,6 +2327,9 @@ class OutfitWidget extends DesignWidget {
         }
         for (const item of this.systemsData.entropy) {
             addSystem(item.name, this.outfitData.systems.entropy[item.id]?.count);
+        }
+        for (const item of this.systemsData.quantum) {
+            addSystem(item.name, this.outfitData.systems.quantum[item.id]);
         }
 
         const utilities = [];
@@ -2303,7 +2457,13 @@ class OutfitWidget extends DesignWidget {
                     ...(incoming.systems?.entropy && typeof incoming.systems.entropy === 'object'
                         ? incoming.systems.entropy
                         : {})
-                }
+                },
+                quantum: Object.fromEntries(
+                    OutfitWidget.QUANTUM_SYSTEM_IDS.map(id => [
+                        id,
+                        this.parseCount(incoming.systems?.quantum?.[id])
+                    ])
+                )
             },
             resourceUse: {
                 ...this.outfitData.resourceUse,

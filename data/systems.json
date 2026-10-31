@@ -8,5 +8,10 @@
   "entropy": [
     { "id": "hyperspace-vents", "name": "Hyperspace Vents", "cost": 20, "radiance": 2, "requiredTech": ["chronal-condensates"] },
     { "id": "demon-clarifiers", "name": "Demon Clarifiers", "cost": 25, "radiance": 3, "requiredTech": ["boson-mastery"] }
+  ],
+  "quantum": [
+    { "id": "targeting", "name": "Targeting", "cost": 60, "requiredTech": [] },
+    { "id": "command", "name": "Command", "cost": 60, "requiredTech": [] },
+    { "id": "navigation", "name": "Navigation", "cost": 60, "requiredTech": [] }
   ]
 }

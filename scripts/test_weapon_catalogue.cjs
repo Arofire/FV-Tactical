@@ -129,7 +129,7 @@ test('omitted optional defaults and explicit zero or false stay distinct without
     assert.equal(Object.hasOwn(absent, 'isMain'), false);
 });
 
-test('Outfit directly filters compact definitions and counts multi-arc mounts', () => {
+test('Outfit directly filters compact definitions and counts turret mounts', () => {
     const context = runtime();
     const O = context.OutfitWidget;
     const definitions = [
@@ -153,6 +153,96 @@ test('Outfit directly filters compact definitions and counts multi-arc mounts', 
     assert.equal(outfit.isTurretOptionDisabled(weapon()), false);
     assert.equal(outfit.getValidWeaponArc('FPSA', true, true), 'PS');
     assert.equal(outfit.isGeneratorTaggedWeapon(weapon({ tagsDescription: 'Generator' })), true);
+});
+
+test('turret selection adds one emplacement per weapon independently of arcs and other rows', () => {
+    const context = runtime();
+    const outfit = Object.create(context.OutfitWidget.prototype);
+    outfit.weaponsData = catalogue();
+    const first = { weaponId: 'example', hp: 'E02', count: 2, arc: '', isTurreted: false };
+    const second = { weaponId: 'example', hp: 'E02', count: 3, arc: 'S', isTurreted: false };
+    outfit.outfitData = { weapons: { offensive: [first, second], defensive: [] } };
+    const summary = Object.create(context.SummaryWidget.prototype);
+    const setTurret = (index, value) => outfit.updateWeaponField(
+        { dataset: { category: 'offensive', index: String(index) } }, 'isTurreted', value
+    );
+    assert.equal(outfit.getWeaponResourceUse().emplacements, 10);
+    setTurret(0, true);
+    for (const arc of ['', 'F', 'FP', 'AFPS']) {
+        first.arc = arc;
+        assert.equal(outfit.getWeaponResourceUse().emplacements, 12, arc);
+        assert.equal(summary.createHullItems([outfit.outfitData]).Emplacement.length, 12, arc);
+        assert.deepEqual(second, {
+            weaponId: 'example', hp: 'E02', count: 3, arc: 'S', isTurreted: false
+        });
+    }
+    setTurret(1, true);
+    assert.equal(outfit.getWeaponResourceUse().emplacements, 15);
+    setTurret(0, false);
+    assert.equal(first.arc, '');
+    assert.equal(second.isTurreted, true);
+    assert.equal(second.arc, 'S');
+    assert.equal(outfit.getWeaponResourceUse().emplacements, 13);
+    setTurret(1, false);
+    assert.equal(second.arc, 'S');
+    assert.equal(outfit.getWeaponResourceUse().emplacements, 10);
+});
+
+test('arc checkboxes replace non-turret arcs, allow turret arcs, and only update their own row', () => {
+    const { OutfitWidget: O } = runtime();
+    const outfit = Object.create(O.prototype);
+    outfit.weaponsData = catalogue();
+    outfit.outfitData = { weapons: { offensive: [
+        { weaponId: 'example', count: 1, arc: 'F', isTurreted: false },
+        { weaponId: 'example', count: 1, arc: 'S', isTurreted: false }
+    ] } };
+    const rows = outfit.outfitData.weapons.offensive.map((selection, index) => {
+        const checkboxes = Array.from('FPSA', value => ({
+            value,
+            checked: selection.arc.includes(value),
+            dataset: { category: 'offensive', index: String(index) }
+        }));
+        const row = {
+            querySelectorAll: selector => selector.endsWith(':checked')
+                ? checkboxes.filter(checkbox => checkbox.checked) : checkboxes
+        };
+        checkboxes.forEach(checkbox => {
+            checkbox.closest = selector => {
+                assert.equal(selector, '.design-entry-options');
+                return row;
+            };
+        });
+        return checkboxes;
+    });
+    const toggleArc = (index, value, checked) => {
+        const target = rows[index].find(checkbox => checkbox.value === value);
+        target.checked = checked;
+        outfit.updateWeaponArc(target);
+    };
+    const checkedArcs = index => rows[index].filter(checkbox => checkbox.checked)
+        .map(checkbox => checkbox.value).join('');
+    toggleArc(0, 'P', true);
+    assert.equal(outfit.outfitData.weapons.offensive[0].arc, 'P');
+    assert.equal(checkedArcs(0), 'P');
+    assert.equal(checkedArcs(1), 'S');
+    outfit.updateWeaponField(
+        { dataset: { category: 'offensive', index: '0' } }, 'isTurreted', true
+    );
+    toggleArc(0, 'F', true);
+    toggleArc(0, 'S', true);
+    toggleArc(0, 'A', true);
+    assert.equal(outfit.outfitData.weapons.offensive[0].arc, 'AFPS');
+    assert.equal(checkedArcs(0), 'FPSA');
+    toggleArc(0, 'P', false);
+    assert.equal(outfit.outfitData.weapons.offensive[0].arc, 'AFS');
+    toggleArc(1, 'A', true);
+    assert.equal(outfit.outfitData.weapons.offensive[1].arc, 'A');
+    assert.equal(checkedArcs(1), 'A');
+    assert.equal(checkedArcs(0), 'FSA');
+    assert.equal(outfit.outfitData.weapons.offensive[1].isTurreted, false);
+    toggleArc(1, 'A', false);
+    assert.equal(outfit.outfitData.weapons.offensive[1].arc, '');
+    assert.equal(checkedArcs(1), '');
 });
 
 test('a current definition clears stale saved classification and resource summaries', () => {
@@ -210,7 +300,7 @@ test('operational munition definitions use compact arrays and one-hardpoint moun
     }
 });
 
-test('hardpoint options and content accounting use native compact mount data', async () => {
+test('fixture weapon options and content accounting use native compact data', async () => {
     const context = runtime();
     const data = catalogue([
         weapon({ id: 'free', hp: 'H02' }),
@@ -222,12 +312,21 @@ test('hardpoint options and content accounting use native compact mount data', a
     const S = context.ShipCapacity;
     assert.deepEqual(plain((await S.getHardpointWeaponOptions()).map(w => w.id)), ['free', 'unlocked']);
     assert.equal((await S.getHardpointWeaponOptions(true)).length, 3);
-    context.ShipLoadoutWidget.deviceCatalogue = [];
+    context.ShipLoadoutWidget.deviceCatalogue = [
+        { id: 'fixture', cost: 2, mounts: 2 }
+    ];
     const summary = S.summarizeContents(
-        { hardpoints: [{ weaponId: 'free', count: 2, arc: 'FP', turreted: true }] },
+        { hardpointLoadout: {
+            devices: [{ instanceId: 'fixture-1', deviceId: 'fixture', contents: [] }],
+            weapons: [{ weaponId: 'free', count: 2, arc: 'F' }]
+        } },
         { troops: [], craft: [], munitions: [] }, data.categories[0].weapons);
-    assert.equal(summary.used.hardpoints, 6);
-    assert.equal(summary.cost, 62);
+    assert.equal(summary.used.hardpoints, 1);
+    assert.equal(summary.used.fixtureMounts, 2);
+    assert.equal(summary.valid, true);
+    assert.equal(summary.cost, 64);
+    assert.throws(() => S.summarizeContents(
+        { hardpoints: [] }, { troops: [], craft: [], munitions: [] }), /current ship format/);
     assert.equal(context.CraftWidget.prototype.getItemSize('hardpoints', data.categories[0].weapons[0]), 2);
 });
 

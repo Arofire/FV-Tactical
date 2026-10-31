@@ -1,21 +1,4 @@
 class SummaryWidget extends Widget {
-    static calculateEntropyBands(entropyCapacity, radiatorOffset = 0) {
-        if (!Number.isFinite(entropyCapacity) || entropyCapacity < 0 ||
-            !Number.isFinite(radiatorOffset)) {
-            return null;
-        }
-        return Array.from({ length: 6 }, (_, index) => {
-            const base = Math.min(
-                entropyCapacity,
-                Math.max(1, Math.round(entropyCapacity * (index + 1) / 6))
-            );
-            return Math.min(
-                entropyCapacity,
-                Math.max(0, base + radiatorOffset * (index + 1))
-            );
-        });
-    }
-
     constructor(x = 100, y = 100, type = 'summary', title = 'Summary') {
         super(type, title, x, y, null);
         this.exportMenuRoot = null;
@@ -303,6 +286,7 @@ class SummaryWidget extends Widget {
 
         const technologies = this.collectTechnologies(components);
         const hullItems = this.createHullItems(outfits);
+        const quantumSystemCounts = this.getQuantumSystemCounts(outfits);
         const knownTotal = Object.values(counts).reduce((sum, count) => sum + (count ?? 0), 0);
         const complete = Object.values(counts).every(count => count !== null);
         const total = complete ? knownTotal : null;
@@ -348,6 +332,7 @@ class SummaryWidget extends Widget {
             containmentHullBasis,
             technologies,
             hullItems,
+            quantumSystemCounts,
             components
         };
     }
@@ -449,6 +434,37 @@ class SummaryWidget extends Widget {
         }
         items.Emplacement.sort((a, b) => a.resourceCost - b.resourceCost);
         return items;
+    }
+
+    getQuantumSystemCounts(outfits) {
+        const counts = { targeting: 0, command: 0, navigation: 0 };
+        for (const outfit of outfits) {
+            for (const id of Object.keys(counts)) {
+                counts[id] += this.numeric(outfit.systems?.quantum?.[id]);
+            }
+        }
+        return counts;
+    }
+
+    getQuantumSystemTotal(counts) {
+        return Object.values(counts || {}).reduce((total, count) => total + this.numeric(count), 0);
+    }
+
+    getQuantumMetrics(counts) {
+        const command = this.numeric(counts.command);
+        const navigation = this.numeric(counts.navigation);
+        const targeting = this.numeric(counts.targeting);
+        const jumpInefficiency = Math.max(
+            1,
+            4 - Math.max(0, navigation - 1) * 0.1
+        );
+        return [
+            { label: 'Orbit Quality', value: String(command), available: true },
+            { label: 'Hardening', value: String(Math.max(0, command - 1)), available: true },
+            { label: 'Natural Compute', value: String(targeting), available: true },
+            { label: 'Jumpium Capacity', value: String(navigation), available: true },
+            { label: 'Jump Inefficiency', value: jumpInefficiency.toFixed(1), available: true }
+        ];
     }
 
     formatEmplacementWeaponsForExport(outfits) {
@@ -633,16 +649,11 @@ class SummaryWidget extends Widget {
             passiveDeviceRadiance
         );
         const threshold = this.getMetricValue(cores, ['reactorStability']);
-        const outfitEntropyCapacities = outfitData
-            .map(outfit => outfit.selectedCore?.burnAnalysis?.totalEntropy)
-            .filter(capacity => Number.isFinite(capacity) && capacity >= 0);
-        const entropyCapacity = outfitEntropyCapacities.length
-            ? outfitEntropyCapacities.reduce((total, capacity) => total + capacity, 0)
-            : null;
-        const radiatorOffset = sumDeviceMetric('radiators', 'offset');
-        const entropyBands = entropyCapacity === null
-            ? null
-            : SummaryWidget.calculateEntropyBands(entropyCapacity, radiatorOffset);
+        const entropy = OutfitWidget.combineEntropyAnalyses(
+            outfitData.map(outfit => outfit.selectedCore?.burnAnalysis)
+        );
+        const entropyCapacity = entropy?.totalEntropy ?? null;
+        const entropyBands = entropy?.entropyBands ?? null;
         const magazineCells = counts.Magazine === null ? null : counts.Magazine * 25;
         const hangarBays = counts.Hangar === null ? null : counts.Hangar * 4;
 
@@ -666,6 +677,15 @@ class SummaryWidget extends Widget {
                     : 'Not available',
                 available: barriers !== null || reserve !== null
             },
+            metric(
+                'Initiative',
+                outfitData.find(outfit => Number.isFinite(outfit.initiative))?.initiative,
+                value => {
+                    const percentage = Math.floor(value * 100 + Number.EPSILON * 100);
+                    const rating = Math.floor(percentage / 5);
+                    return `${rating} (${percentage}%)`;
+                }
+            ),
             metric('Crew berthings', crewCapacity),
             metric('Hardpoints', model.availableHardpoints, value => String(value)),
             metric('Active radiance', activeRadiance),
@@ -713,20 +733,28 @@ class SummaryWidget extends Widget {
             System: 'S',
             Freight: 'F',
             Tankage: 'T',
-            Core: 'C'
+            Core: 'C',
+            Quantum: 'Q'
         };
     }
 
     static get STACK_ORDER() {
-        return ['Core'];
+        return ['Core', 'Quantum'];
     }
 
     static get FLOW_ORDER() {
         return ['Freight', 'Tankage', 'Emplacement', 'Hangar', 'Magazine', 'System'];
     }
 
-    createLayout(counts) {
-        const total = Object.values(counts).reduce((sum, count) => sum + (count ?? 0), 0);
+    createLayout(counts, quantumSystemCount = 0) {
+        const systemHulls = this.numeric(counts.System);
+        const quantumHulls = Math.min(systemHulls, this.numeric(quantumSystemCount));
+        const layoutCounts = {
+            ...counts,
+            System: systemHulls - quantumHulls,
+            Quantum: quantumHulls
+        };
+        const total = Object.values(layoutCounts).reduce((sum, count) => sum + (count ?? 0), 0);
         if (!total) return { rows: 0, cols: 0, missing: 0, cells: [] };
 
         const rows = Math.ceil(Math.sqrt(total) / 2);
@@ -741,7 +769,7 @@ class SummaryWidget extends Widget {
         const descending = [...slots].sort((a, b) => b.col - a.col || b.row - a.row);
         const cells = [];
         for (const category of SummaryWidget.STACK_ORDER) {
-            for (let index = 0; index < (counts[category] || 0); index++) {
+            for (let index = 0; index < (layoutCounts[category] || 0); index++) {
                 const slot = descending[cells.length];
                 if (!slot) break;
                 cells.push({ ...slot, category });
@@ -751,7 +779,7 @@ class SummaryWidget extends Widget {
         const flowSlots = slots.filter(slot => !occupied.has(`${slot.row}:${slot.col}`));
         let flowIndex = 0;
         for (const category of SummaryWidget.FLOW_ORDER) {
-            for (let index = 0; index < (counts[category] || 0); index++) {
+            for (let index = 0; index < (layoutCounts[category] || 0); index++) {
                 const slot = flowSlots[flowIndex++];
                 if (!slot) break;
                 cells.push({ ...slot, category });
@@ -890,6 +918,20 @@ class SummaryWidget extends Widget {
         statisticsContent.appendChild(this.createPropertiesGrid(metrics.slice(4)));
         statisticsSection.append(statisticsTitle, statisticsContent);
         container.appendChild(statisticsSection);
+        if (this.getQuantumSystemTotal(model.quantumSystemCounts) > 0) {
+            const quantumSection = document.createElement('section');
+            quantumSection.className = 'widget-section hull-plan-metrics-section';
+            const quantumTitle = document.createElement('h4');
+            quantumTitle.className = 'section-title';
+            quantumTitle.textContent = 'Quantum';
+            const quantumContent = document.createElement('div');
+            quantumContent.className = 'section-content';
+            quantumContent.appendChild(
+                this.createPropertiesGrid(this.getQuantumMetrics(model.quantumSystemCounts))
+            );
+            quantumSection.append(quantumTitle, quantumContent);
+            container.appendChild(quantumSection);
+        }
         if (model.technologies.length) {
             const techSection = document.createElement('section');
             techSection.className = 'widget-section hull-plan-metrics-section';
@@ -926,7 +968,10 @@ class SummaryWidget extends Widget {
         const components = this.getConnectedComponents();
         const model = this.getModel(components);
         const metrics = this.getMetrics(model);
-        const layout = this.createLayout(model.counts);
+        const layout = this.createLayout(
+            model.counts,
+            this.getQuantumSystemTotal(model.quantumSystemCounts)
+        );
         const riggingTotals = this.getConnectedRiggingTotals(components);
         const deviceLines = this.getOutfitDeviceLines(model.outfits);
         const formFields = this.getPdfFormFields(model, layout, metrics, riggingTotals, deviceLines);
@@ -938,7 +983,9 @@ class SummaryWidget extends Widget {
                 row: cell.row + 1,
                 column: cell.col + 1,
                 type: cell.category,
-                code: SummaryWidget.HULL_CODES[cell.category],
+                code: cell.category === 'Quantum'
+                    ? 'Q'
+                    : SummaryWidget.HULL_CODES[cell.category],
                 ...(cell.category === 'Emplacement' && item
                     ? {
                         weaponId: item.weaponId,

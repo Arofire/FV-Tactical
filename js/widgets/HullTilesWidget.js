@@ -25,7 +25,10 @@ class HullTilesWidget extends SummaryWidget {
 
     renderPlan(container, model) {
         container.replaceChildren();
-        const layout = this.createLayout(model.counts);
+        const layout = this.createLayout(
+            model.counts,
+            this.getQuantumSystemTotal(model.quantumSystemCounts)
+        );
         const armorCount = this.numeric(model.armor);
         const utilityCount = this.numeric(model.utilityTotal);
         if (!layout.cells.length && armorCount === 0 && utilityCount === 0) {
@@ -77,14 +80,18 @@ class HullTilesWidget extends SummaryWidget {
         layout.cells.forEach(cell => {
             totals[cell.category] = (totals[cell.category] || 0) + 1;
             const element = document.createElement('div');
-            element.className = `hull-plan-cell hull-plan-${cell.category.toLowerCase()}`;
+            const isQuantum = cell.category === 'Quantum';
+            const tileCode = isQuantum ? 'Q' : SummaryWidget.HULL_CODES[cell.category];
+            element.className = `hull-plan-cell hull-plan-${isQuantum
+                ? 'quantum'
+                : cell.category.toLowerCase()}`;
             element.setAttribute('role', 'gridcell');
 
             const items = model.hullItems[cell.category] || [];
             const item = items[totals[cell.category] - 1];
             const code = document.createElement('strong');
             code.className = 'hull-plan-cell-code';
-            code.textContent = SummaryWidget.HULL_CODES[cell.category];
+            code.textContent = tileCode;
             element.appendChild(code);
 
             if (cell.category === 'Emplacement' && item) {
@@ -106,12 +113,14 @@ class HullTilesWidget extends SummaryWidget {
                     element.appendChild(identifier);
                 }
             } else {
-                element.title = cell.category === 'Emplacement'
-                    ? 'Unassigned emplacement'
-                    : SummaryWidget.HULL_CODES[cell.category];
+                element.title = isQuantum
+                    ? 'Quantum system'
+                    : cell.category === 'Emplacement'
+                        ? 'Unassigned emplacement'
+                        : SummaryWidget.HULL_CODES[cell.category];
                 element.setAttribute(
                     'aria-label',
-                    `${SummaryWidget.HULL_CODES[cell.category]}: ${cell.category}`
+                    `${tileCode}: ${isQuantum ? 'Quantum system' : cell.category}`
                 );
             }
             hullRows[cell.row][cell.col] = element;

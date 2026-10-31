@@ -1185,8 +1185,8 @@ class ShipWidget extends DesignWidget {
                 value: `${classCostValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${classCostUnit}`
             },
             { label: 'Hull Sections', value: hullSummary },
-            { label: 'Cargo', value: this.formatOptionalNumber(resources.cargo, ' t') },
-            { label: 'Remass', value: this.formatOptionalNumber(resources.remass, ' t') },
+            { label: 'Cargo', value: this.formatOptionalNumber(resources.cargo) },
+            { label: 'Remass', value: this.formatOptionalNumber(resources.remass) },
             { label: 'Propulsion', value: this.formatPropulsion(power) },
             { label: 'Heat', value: this.formatHeat(heat) }
         ];

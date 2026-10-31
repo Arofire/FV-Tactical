@@ -2,6 +2,16 @@
 // buildable configurations from design-canvas widgets. Formulas mirror
 // SummaryWidget/OutfitWidget — see the noted source methods.
 class ShipCapacity {
+    static fleetWeapons = null;
+
+    static async loadFleetCatalogues() {
+        const [, catalogue] = await Promise.all([
+            ShipLoadoutWidget.loadDeviceCatalogue(),
+            WeaponCatalogue.load()
+        ]);
+        this.fleetWeapons = catalogue.categories.flatMap(category => category.weapons);
+    }
+
     static num(value) {
         const number = Number(value);
         return Number.isFinite(number) ? number : 0;
@@ -64,7 +74,6 @@ class ShipCapacity {
             berths: (data?.berths || []).map(entry => ({ id: entry.id, count: entry.count })),
             magazine: (data?.magazine || []).map(entry => ({ id: entry.id, count: entry.count })),
             hangar: (data?.hangar || []).map(entry => ({ id: entry.id, count: entry.count })),
-            hardpoints: [],
             hardpointLoadout: {
                 devices: (data?.hardpointDevices || []).map(entry => ({
                     instanceId: entry.instanceId,
@@ -134,7 +143,7 @@ class ShipCapacity {
         const outfitData = outfitWidget?.outfitData || {};
         const composition = classData.hullComposition || {};
 
-        // Berths: berthing systems * 5, less 1 per 10 cargo tons allocated to
+        // Berths: berthing systems * 5, less 1 per 10 cargo allocated to
         // berthing (SummaryWidget.getMetrics crew-capacity fallback).
         const generalSystems = outfitData.systems?.general || {};
         const berthingSystems = ShipCapacity.num(generalSystems.berthing);
@@ -244,11 +253,105 @@ class ShipCapacity {
         return ShipCapacity.num(outfitWidget?.outfitData?.systems?.general?.tending) > 0;
     }
 
+    static getFleetShipMetrics(ship) {
+        if (!this.fleetWeapons) throw new Error('Fleet catalogues have not finished loading.');
+        const classWidget = window.widgetManager?.getWidget(ship.classWidgetId);
+        const outfitWidget = window.widgetManager?.getWidget(ship.outfitWidgetId);
+        const missing = classWidget?.type !== 'ship' || outfitWidget?.type !== 'outfit';
+        const quantum = Object.fromEntries(['targeting', 'command', 'navigation'].map(id => [
+            id, this.num(outfitWidget?.outfitData?.systems?.quantum?.[id])
+        ]));
+        const quantumCapabilities = [];
+        if (quantum.targeting > 0) quantumCapabilities.push(['Natural Compute', quantum.targeting]);
+        if (quantum.command > 0) {
+            quantumCapabilities.push(['Orbit Quality', quantum.command]);
+            if (quantum.command > 1) quantumCapabilities.push(['Hardening', quantum.command - 1]);
+        }
+        if (quantum.navigation > 0) {
+            quantumCapabilities.push(['Jump Distance', 2],
+                ['Jump Inefficiency', Number(Math.max(1,
+                    4 - Math.max(0, quantum.navigation - 1) * 0.1).toFixed(1))]);
+        }
+        const deviceResources = {
+            adapters: 0, cells: 0, clamps: 0, bays: 0, cradles: 0, jumpium: 0,
+            fixtures: 0, mounts: 0, grapples: 0, grapple: 0, survey: 0,
+            zParticleSails: 0, laserFoci: 0
+        };
+        const groups = {
+            adapter: ['adapters', 'cells'], clamp: ['clamps', 'bays'],
+            cradle: ['cradles', 'jumpium'], fixture: ['fixtures', 'mounts'],
+            grapple: ['grapples', 'grapple'], survey: ['survey'],
+            'zparticle-sail': ['zParticleSails'], 'laser-focus': ['laserFoci']
+        };
+        const devices = ship.contents?.hardpointLoadout?.devices || [];
+        for (const entry of devices) {
+            const device = ShipLoadoutWidget.getDeviceCatalogue()
+                .find(candidate => candidate.id === entry.deviceId);
+            const group = groups[entry.deviceId];
+            if (!device || !group) continue;
+            deviceResources[group[0]]++;
+            if (group[1]) deviceResources[group[1]] += this.num(device[group[1]]);
+        }
+        const contentsByType = {};
+        const contentTotals = {};
+        for (const [type, key, deviceId] of [
+            ['troops', 'berths', null], ['munitions', 'magazine', 'adapter'],
+            ['craft', 'hangar', 'clamp']
+        ]) {
+            const grouped = new Map();
+            const entries = [
+                ...(ship.contents?.[key] || []),
+                ...devices.filter(entry => entry.deviceId === deviceId)
+                    .flatMap(entry => entry.contents || [])
+            ];
+            for (const entry of entries) {
+                const widget = window.widgetManager?.getWidget(entry.id);
+                const data = widget?.[type === 'troops' ? 'troopData' :
+                    type === 'munitions' ? 'munitionData' : 'craftData'];
+                const current = grouped.get(entry.id) || {
+                    id: entry.id, name: data?.name || entry.id, count: 0,
+                    missing: widget?.type !== type
+                };
+                current.count += this.num(entry.count);
+                grouped.set(entry.id, current);
+            }
+            contentsByType[type] = [...grouped.values()];
+            contentTotals[type] = contentsByType[type].reduce((sum, entry) => sum + entry.count, 0);
+        }
+        const summary = this.summarizeContents(ship.contents || {},
+            this.getContentOptions(true), this.fleetWeapons);
+        // Outfit costs already include the core, but never the default loadout.
+        let baseCost = 0;
+        let costAvailable = !missing && summary.valid;
+        for (const widget of [classWidget, outfitWidget]) {
+            const totals = widget?.getCostTotals?.();
+            if (!totals || !Object.values(totals).some(Number.isFinite)) costAvailable = false;
+            else baseCost += Object.values(totals).filter(Number.isFinite)
+                .reduce((sum, value) => sum + value, 0);
+        }
+        return {
+            cost: costAvailable ? baseCost + summary.cost : null,
+            capacities: this.getCapacities(classWidget, outfitWidget),
+            storesMaxima: this.getStoresMaxima(classWidget),
+            endurance: missing ? null : this.getEndurance(classWidget, outfitWidget, ship.stores?.cargo),
+            consumption: missing ? null : this.getConsumption(classWidget),
+            berthingCargo: missing ? null : this.getBerthingCargo(outfitWidget),
+            quantum,
+            quantumCapabilities,
+            jumpDistance: quantum.navigation > 0 ? 2 : null,
+            jumpiumCapacity: quantum.navigation + deviceResources.jumpium,
+            deviceResources, contentTotals, contentsByType, missing,
+            contentsValid: summary.valid,
+            used: summary.used,
+            hasTending: this.hasTending(outfitWidget)
+        };
+    }
+
     // --- Content options ---------------------------------------------------
     // Operational designs from the canvas; hardpoint weapons from the
     // weapons catalogue gated by researched tech.
 
-    static getContentOptions() {
+    static getContentOptions(includeUnavailable = false) {
         const widgets = window.widgetManager?.getAllWidgets?.() || [];
         const options = { troops: [], craft: [], munitions: [], hardpointWeapons: [] };
         const isAvailable = widget => {
@@ -259,7 +362,8 @@ class ShipCapacity {
                 .every(tech => window.empire?.hasTech?.(tech) ?? false);
         };
         for (const widget of widgets) {
-            if (widget.type === 'troops' && widget.troopData?.operational && isAvailable(widget)) {
+            if (widget.type === 'troops' &&
+                (includeUnavailable || (widget.troopData?.operational && isAvailable(widget)))) {
                 const stats = typeof widget.calculateStats === 'function' ? widget.calculateStats() : {};
                 options.troops.push({
                     id: widget.id,
@@ -270,7 +374,8 @@ class ShipCapacity {
                     cost: ShipCapacity.num(stats.combatValue),
                     requiredTech: widget.troopData.requiredTech || []
                 });
-            } else if (widget.type === 'craft' && widget.craftData?.operational && isAvailable(widget)) {
+            } else if (widget.type === 'craft' &&
+                (includeUnavailable || (widget.craftData?.operational && isAvailable(widget)))) {
                 const stats = typeof widget.calculateStats === 'function' ? widget.calculateStats() : {};
                 options.craft.push({
                     id: widget.id,
@@ -281,7 +386,8 @@ class ShipCapacity {
                     cost: ShipCapacity.num(stats.combatValue),
                     requiredTech: widget.craftData.requiredTech || []
                 });
-            } else if (widget.type === 'munitions' && widget.munitionData?.operational && isAvailable(widget)) {
+            } else if (widget.type === 'munitions' &&
+                (includeUnavailable || (widget.munitionData?.operational && isAvailable(widget)))) {
                 options.munitions.push({
                     id: widget.id,
                     name: widget.munitionData.name || 'Munition',
@@ -333,9 +439,12 @@ class ShipCapacity {
     // --- Content accounting ------------------------------------------------
 
     // contents: { berths: [{id,count}], magazine: [{id,count}], hangar: [{id,count}],
-    //             hardpoints: [{weaponId,count,arc,turreted}] }
+    //             hardpointLoadout: { devices: [...], weapons: [...] } }
     // Returns { used: {...}, cost: totalCv } given capacities and option lists.
     static summarizeContents(contents, options, hardpointWeapons = []) {
+        if (Object.hasOwn(contents, 'hardpoints')) {
+            throw new Error('Direct hardpoint contents are not part of the current ship format.');
+        }
         const lookup = (list, id) => list.find(item => item.id === id);
         const used = {
             berths: 0, magazineCells: 0, hangarBays: 0, hardpoints: 0,
@@ -343,7 +452,17 @@ class ShipCapacity {
         };
         // Cost buckets keyed by campaign cost-rule category for Materiel totals.
         const costByCategory = { equipment: 0, munitions: 0, general: 0, weapons: 0 };
-        let valid = true;
+        const devices = contents.hardpointLoadout?.devices || [];
+        const countedEntries = [
+            ...(contents.berths || []), ...(contents.magazine || []), ...(contents.hangar || []),
+            ...(contents.hardpointLoadout?.weapons || []),
+            ...devices.flatMap(device => device.contents || [])
+        ];
+        const instanceIds = new Set(devices.map(device => device.instanceId));
+        let valid = countedEntries.every(entry =>
+            Number.isSafeInteger(entry.count) && entry.count >= 0) &&
+            devices.every(device => typeof device.instanceId === 'string' && device.instanceId) &&
+            instanceIds.size === devices.length;
         let cost = 0;
         for (const entry of contents.berths || []) {
             const option = lookup(options.troops, entry.id);
@@ -438,20 +557,6 @@ class ShipCapacity {
             costByCategory.weapons += ShipCapacity.num(weapon.cost) * count;
         }
         if (used.fixtureMounts > fixtureMounts) valid = false;
-        for (const entry of contents.hardpoints || []) {
-            const weapon = lookup(hardpointWeapons, entry.weaponId);
-            if (!weapon) {
-                valid = false;
-                continue;
-            }
-            const count = ShipCapacity.num(entry.count);
-            // Multi-arc mounts (turreted only) use one additional hardpoint,
-            // mirroring OutfitWidget.getWeaponResourceUse.
-            const arcs = String(entry.arc || 'F').length;
-            const surcharge = entry.turreted && arcs > 1 ? 1 : 0;
-            used.hardpoints += (ShipCapacity.num(WeaponCatalogue.getMount(weapon).resourceCount) + surcharge) * count;
-            costByCategory.weapons += ShipCapacity.num(weapon.cost) * count;
-        }
         cost = Object.values(costByCategory).reduce((sum, value) => sum + value, 0);
         return { used, cost, costByCategory, valid };
     }

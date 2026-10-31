@@ -1,0 +1,138 @@
+.ship-modal-backdrop {
+    align-items: start;
+    justify-items: center;
+    padding: 20px;
+}
+
+.ship-modal.ship-builder-dialog:not(.tending-dialog) {
+    display: flex;
+    flex-direction: column;
+    width: min(920px, 100%);
+    max-height: calc(100dvh - 40px);
+    overflow: hidden;
+    padding: 18px;
+}
+
+.ship-modal-header {
+    flex: 0 0 auto;
+    margin-bottom: 14px;
+}
+
+.ship-modal-header h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.ship-modal-header .widget-control-btn {
+    flex: 0 0 20px;
+}
+
+.ship-modal-body {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.ship-modal > .ship-builder-config,
+.ship-modal > .ship-builder-capacities,
+.ship-modal > .ship-builder-batch-controls,
+.ship-modal > .ship-builder-footer {
+    flex: 0 0 auto;
+}
+
+.ship-modal .ship-builder-ship-list {
+    max-height: none;
+    overflow: visible;
+    margin-bottom: 0;
+}
+
+.ship-modal > .ship-builder-footer {
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.ship-modal .ship-builder-ship-row {
+    grid-template-columns: auto minmax(100px, 1fr) minmax(80px, 1fr) minmax(100px, 1fr) auto;
+}
+
+.ship-modal .ship-builder-ship-row input {
+    min-width: 0;
+    width: 100%;
+}
+
+.ship-modal .ship-builder-ship-row input[type="checkbox"] {
+    width: auto;
+}
+
+.ship-modal .ship-contents-sections {
+    margin-bottom: 0;
+}
+
+.ship-modal .ship-device-contents {
+    margin-top: 8px;
+    padding: 8px;
+    background: transparent;
+}
+
+.ship-modal .ship-device-contents h4 {
+    margin: 0 0 8px;
+    font-size: 12px;
+}
+
+.ship-modal .ship-contents-row.design-entry {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) auto auto auto;
+    gap: 8px;
+}
+
+.ship-modal .ship-contents-row .design-entry-quantity[type="number"] {
+    width: 65px;
+}
+
+.ship-modal [aria-invalid="true"] {
+    border-color: #e88a8a;
+}
+
+.ship-modal [hidden] {
+    display: none !important;
+}
+
+.ship-modal .ship-contents-cost {
+    white-space: nowrap;
+    color: #e8d29f;
+    font-size: 12px;
+}
+
+/* TendingDialog still appends its sections directly to the shared dialog. */
+.ship-modal.tending-dialog > .ship-modal-body:empty {
+    display: none;
+}
+
+@media (max-width: 650px) {
+    .ship-modal-backdrop {
+        padding: 8px;
+    }
+
+    .ship-modal.ship-builder-dialog:not(.tending-dialog) {
+        max-height: calc(100dvh - 16px);
+        padding: 12px;
+    }
+
+    .ship-modal .ship-builder-config {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .ship-modal .ship-builder-field {
+        min-width: 0;
+    }
+
+    .ship-modal .ship-builder-ship-row {
+        grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .ship-modal .ship-builder-contents-summary {
+        grid-column: 2 / -1;
+    }
+}

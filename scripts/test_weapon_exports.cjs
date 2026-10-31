@@ -30,7 +30,6 @@ function loadExportContext() {
         ShipBuilder: {
             cloneContents: contents => JSON.parse(JSON.stringify(contents)),
             emptyContents: () => ({
-                hardpoints: [],
                 hardpointLoadout: { devices: [], weapons: [] },
                 magazine: [],
                 berths: []
@@ -160,7 +159,6 @@ function installExportFixture(context, catalogue, widgets) {
         outfitWidgetId: outfitWidget.id,
         stores: {},
         contents: {
-            hardpoints: [],
             hardpointLoadout: { devices: [], weapons: [] },
             magazine: [],
             berths: []

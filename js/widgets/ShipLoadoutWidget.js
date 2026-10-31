@@ -440,6 +440,13 @@ class ShipLoadoutWidget extends DesignWidget {
                 issues.push(`contains an unknown hardpoint device "${entry.deviceId}"`);
                 continue;
             }
+            const contentType = device.id === 'adapter' ? 'munitions' :
+                device.id === 'clamp' ? 'craft' : '';
+            for (const content of entry.contents || []) {
+                if (contentType && !this.getDesignItem(contentType, content.id)) {
+                    issues.push(`${device.name} contains unavailable contents "${content.id}"`);
+                }
+            }
             if (device.id === 'adapter') {
                 const profiles = new Set(entry.contents.map(content =>
                     this.getDesignItem('munitions', content.id)?.profile).filter(Boolean));
@@ -538,7 +545,7 @@ class ShipLoadoutWidget extends DesignWidget {
         const deviceSections = document.createElement('div');
         deviceSections.id = `${this.id}-device-sections`;
         deviceSections.className = 'design-device-sections';
-        sections.appendChild(deviceSections);
+        hardpoints.section.appendChild(deviceSections);
 
         const fixtures = this.createDesignSection('fixtures', 'Fixtures');
         this.addSubtotal(fixtures.titleElement, 'fixture-cost');
@@ -714,10 +721,15 @@ class ShipLoadoutWidget extends DesignWidget {
             row.className = 'design-entry';
             const name = document.createElement('span');
             name.className = 'design-entry-name';
-            name.textContent = device?.name || deviceId;
+            name.textContent = `${device?.name || deviceId}${device && this.isOptionAvailable(device) ? '' : ' (unavailable)'}`;
             const quantity = document.createElement('span');
             quantity.className = 'design-entry-quantity';
-            quantity.textContent = `×${entries.length}`;
+            const attribute = device?.cells ? `${device.cells * entries.length} cells` :
+                device?.bays ? `${device.bays * entries.length} bays` :
+                device?.mounts ? `${device.mounts * entries.length} mounts` :
+                device?.jumpium ? `${device.jumpium * entries.length} jumpium` :
+                device?.grapple ? `${device.grapple * entries.length} grapple` : '';
+            quantity.textContent = `×${entries.length}${attribute ? ` · ${attribute}` : ''}`;
             const cost = document.createElement('span');
             cost.className = 'design-entry-cost';
             cost.textContent = device
@@ -754,28 +766,25 @@ class ShipLoadoutWidget extends DesignWidget {
                 .filter(entry => entry.deviceId === deviceId);
             if (!devices.length) continue;
             const isAdapter = deviceId === 'adapter';
-            const category = this.createDesignSection(
-                `${deviceId}-contents`,
-                isAdapter ? 'Adapters' : 'Clamps'
-            );
-            this.addSubtotal(category.titleElement, `${deviceId}-cost`);
-            this.setSectionContent(category, '');
-            container.appendChild(category.section);
-            const categoryContents = devices.flatMap(device => device.contents);
-            category.titleElement.querySelector(`#${this.id}-${deviceId}-cost`).textContent =
-                this.formatCostTotals(this.getContentCostTotals(
-                    categoryContents, isAdapter ? 'magazine' : 'hangar'
-                ));
-            for (const entry of devices) {
+            const category = document.createElement('div');
+            category.className = 'design-subsection design-loadout';
+            container.appendChild(category);
+            for (const [index, entry] of devices.entries()) {
                 const device = this.findDevice(entry.deviceId);
                 if (!device) continue;
                 const instance = document.createElement('div');
                 instance.className = 'design-subsection design-loadout-group design-device-instance';
                 const title = document.createElement('div');
                 title.className = 'design-subtitle';
-                title.appendChild(document.createTextNode(device.name || deviceId));
+                title.appendChild(document.createTextNode(`${device.name || deviceId} ${index + 1} contents`));
+                const subtotalKey = `device-${entry.instanceId}-cost`;
+                this.addSubtotal(title, subtotalKey);
+                title.querySelector(`#${this.id}-${subtotalKey}`).textContent =
+                    this.formatCostTotals(this.getContentCostTotals(
+                        entry.contents, isAdapter ? 'magazine' : 'hangar'
+                    ));
                 instance.appendChild(title);
-                category.section.appendChild(instance);
+                category.appendChild(instance);
                 const contentType = isAdapter ? 'munitions' : 'craft';
                 const entries = entry.contents;
                 const used = isAdapter ? this.getAdapterCellsUsed(entry) : this.getClampBaysUsed(entry);
@@ -792,19 +801,22 @@ class ShipLoadoutWidget extends DesignWidget {
                 const currentProfile = isAdapter
                     ? this.getDesignItem('munitions', entries[0]?.id)?.profile
                     : '';
+                const contentsKnown = entries.every(content => this.getDesignItem(contentType, content.id));
                 const options = this.getPickerOptions(contentType, entries[0]?.id || '')
+                    .filter(() => contentsKnown)
                     .filter(item => !isAdapter || !currentProfile || item.profile === currentProfile)
-                    .filter(item => this.isOperationalDesignAvailable(item.widget));
+                    .filter(item => this.isOperationalDesignAvailable(item.widget))
+                    .filter(item => used + (isAdapter ? item.cells : item.required) <= capacity);
                 const blank = document.createElement('option');
                 blank.value = '';
                 blank.textContent = options.length
                     ? `Select ${isAdapter ? 'munition variant' : 'craft'}`
-                    : `No operational ${contentType} available`;
+                    : !contentsKnown ? 'Remove unavailable contents first' : `No ${contentType} fit this device`;
                 select.appendChild(blank);
                 options.forEach(item => {
                     const option = document.createElement('option');
                     option.value = item.widget.id;
-                    option.textContent = `${item.name} (${isAdapter ? `${item.cells} cells` : `${item.required} bays`}, ${this.formatOptionCost(item.cost, isAdapter ? 'munitions' : 'general')})`;
+                    option.textContent = `${item.name} (${this.formatOptionCost(item.cost, isAdapter ? 'munitions' : 'general')})`;
                     select.appendChild(option);
                 });
                 const add = document.createElement('button');
@@ -812,6 +824,7 @@ class ShipLoadoutWidget extends DesignWidget {
                 add.className = 'widget-add-action';
                 add.dataset.addDeviceContent = entry.instanceId;
                 add.textContent = 'Add';
+                add.disabled = options.length === 0;
                 picker.append(select, add);
 
                 const list = document.createElement('div');
@@ -822,7 +835,7 @@ class ShipLoadoutWidget extends DesignWidget {
                     row.className = 'design-entry';
                     const name = document.createElement('span');
                     name.className = 'design-entry-name';
-                    name.textContent = `${item?.name || content.id}${item && !this.isOperationalDesignAvailable(item.widget) ? ' (unavailable)' : ''}`;
+                    name.textContent = `${item?.name || content.id}${item && this.isOperationalDesignAvailable(item.widget) ? '' : ' (unavailable)'}`;
                     const quantity = document.createElement('span');
                     quantity.className = 'design-entry-quantity';
                     quantity.textContent = `×${content.count}`;
@@ -992,9 +1005,15 @@ class ShipLoadoutWidget extends DesignWidget {
         const action = button.dataset.action;
         if (action === 'add-device') {
             const id = this.element.querySelector(`#${this.id}-device-select`).value;
-            if (!id || !this.findDevice(id)) return;
+            if (!id || !this.findDevice(id) || !this.isOptionAvailable(this.findDevice(id))) {
+                window.app?.showNotification?.('Select an available hardpoint device.', 'error');
+                return;
+            }
             const available = this.getAvailableHardpoints();
-            if (available !== null && this.getUsedHardpoints() + 1 > available) return;
+            if (available !== null && this.getUsedHardpoints() + 1 > available) {
+                window.app?.showNotification?.('No hardpoints are available for this device.', 'error');
+                return;
+            }
             let index = 1;
             const usedIds = new Set(this.loadoutData.hardpointDevices.map(entry => entry.instanceId));
             while (usedIds.has(`device-${index}`)) index++;
@@ -1005,8 +1024,15 @@ class ShipLoadoutWidget extends DesignWidget {
         if (action === 'add-weapon') {
             const weaponId = this.element.querySelector(`#${this.id}-weapon-select`).value;
             const weapon = this.findWeapon(weaponId);
-            if (!weapon || this.loadoutData.weapons.reduce((sum, entry) => sum + entry.count, 0) >=
-                this.getDeviceAttributes().mounts) return;
+            if (!weapon || !this.isOptionAvailable(weapon)) {
+                window.app?.showNotification?.('Select an available fixture weapon.', 'error');
+                return;
+            }
+            if (this.loadoutData.weapons.reduce((sum, entry) => sum + entry.count, 0) >=
+                this.getDeviceAttributes().mounts) {
+                window.app?.showNotification?.('No fixture mounts are available for this weapon.', 'error');
+                return;
+            }
             const existing = this.loadoutData.weapons.find(entry => entry.weaponId === weaponId && entry.arc === 'F');
             if (existing) existing.count++;
             else this.loadoutData.weapons.push({ weaponId, count: 1, arc: 'F' });
@@ -1029,12 +1055,16 @@ class ShipLoadoutWidget extends DesignWidget {
             return;
         }
         if (button.dataset.removeDevice) {
+            const deviceEntry = this.loadoutData.hardpointDevices.find(entry =>
+                entry.instanceId === button.dataset.removeDevice);
+            if (deviceEntry?.deviceId === 'fixture' && !this.canRemoveFixture()) return;
             this.loadoutData.hardpointDevices = this.loadoutData.hardpointDevices
                 .filter(entry => entry.instanceId !== button.dataset.removeDevice);
             this.refresh();
             return;
         }
         if (button.dataset.removeDeviceType) {
+            if (button.dataset.removeDeviceType === 'fixture' && !this.canRemoveFixture()) return;
             const index = this.loadoutData.hardpointDevices.findIndex(entry =>
                 entry.deviceId === button.dataset.removeDeviceType);
             if (index >= 0) this.loadoutData.hardpointDevices.splice(index, 1);
@@ -1043,7 +1073,7 @@ class ShipLoadoutWidget extends DesignWidget {
         }
         if (button.dataset.removeDeviceContent) {
             const device = this.loadoutData.hardpointDevices.find(entry =>
-                entry.instanceId === button.dataset.removeDevice);
+                entry.instanceId === button.dataset.removeDeviceContent);
             const index = Number(button.dataset.contentIndex);
             const content = device?.contents[index];
             if (content) {
@@ -1091,6 +1121,17 @@ class ShipLoadoutWidget extends DesignWidget {
         else entries.push({ id, count: 1 });
     }
 
+    canRemoveFixture() {
+        const mountsAfterRemoval = this.getDeviceAttributes().mounts -
+            (Number(this.findDevice('fixture')?.mounts) || 0);
+        const installed = this.loadoutData.weapons.reduce((sum, entry) => sum + entry.count, 0);
+        if (installed <= mountsAfterRemoval) return true;
+        window.app?.showNotification?.(
+            'Remove enough fixture-mounted weapons before removing this Fixture.', 'error'
+        );
+        return false;
+    }
+
     addResourceContent(type) {
         if (!['magazine', 'hangar'].includes(type)) return;
         const itemType = this.getResourceItemType(type);
@@ -1109,20 +1150,38 @@ class ShipLoadoutWidget extends DesignWidget {
     addDeviceContent(instanceId) {
         const device = this.loadoutData.hardpointDevices.find(entry => entry.instanceId === instanceId);
         const definition = this.findDevice(device?.deviceId);
-        if (!device || !definition) return;
+        const fail = message => window.app?.showNotification?.(message, 'error');
+        if (!device || !definition) {
+            fail('This hardpoint device is unavailable.');
+            return;
+        }
         const type = definition.id === 'adapter' ? 'munitions' :
             definition.id === 'clamp' ? 'craft' : '';
         if (!type) return;
         const select = this.element.querySelector(`[data-device-picker="${instanceId}"]`);
         const id = select?.value || '';
         const item = this.getDesignItem(type, id);
-        if (!item || !this.isOperationalDesignAvailable(item.widget)) return;
+        if (device.contents.some(content => !this.getDesignItem(type, content.id))) {
+            fail(`Remove unavailable contents from this ${definition.name} first.`);
+            return;
+        }
+        if (!item || !this.isOperationalDesignAvailable(item.widget)) {
+            fail(`Select available contents for this ${definition.name}.`);
+            return;
+        }
         if (type === 'munitions') {
             const profile = this.getDesignItem('munitions', device.contents[0]?.id)?.profile;
-            if (profile && profile !== item.profile) return;
+            if (profile && profile !== item.profile) {
+                fail('An Adapter can contain only one munition profile.');
+                return;
+            }
             const used = this.getAdapterCellsUsed(device);
-            if (used + item.cells > Number(definition.cells)) return;
+            if (used + item.cells > Number(definition.cells)) {
+                fail('This Adapter has insufficient cells.');
+                return;
+            }
         } else if (this.getClampBaysUsed(device) + item.required > Number(definition.bays)) {
+            fail('This Clamp has insufficient bays.');
             return;
         }
         this.incrementEntry(device.contents, id);

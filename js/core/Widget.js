@@ -229,7 +229,7 @@ class Widget {
         this.setupEventListeners();
     }
 
-    // Cost per resource unit (e.g. { CV: 12 }) for widgets that contribute to a hull plan total.
+    // Costs by economy resource (e.g. { CV: 12 }) contributing to a hull plan total.
     getCostTotals() {
         return {};
     }
